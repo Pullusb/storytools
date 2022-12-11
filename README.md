@@ -2,7 +2,7 @@
 
 Blender addon - Set of tool for storyboarding in Blender
 
-Sponsored by El Guiri Studio
+Sponsored by [**El Guiri Studios**](https://www.elguiristudios.com/)
 
 
 **/!\ Alpha** - work in progress
