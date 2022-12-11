@@ -1,0 +1,359 @@
+{
+	"line": {
+		"alignment_mode": "PATH",
+		"alignment_rotation": 0.0,
+		"color": [
+			0.0,
+			0.0,
+			0.0,
+			1.0
+		],
+		"fill_color": [
+			0.0,
+			0.0,
+			0.0,
+			0.0
+		],
+		"fill_image": null,
+		"fill_style": "SOLID",
+		"flip": false,
+		"ghost": false,
+		"gradient_type": "LINEAR",
+		"hide": false,
+		"lock": false,
+		"mix_color": [
+			1.0,
+			1.0,
+			1.0,
+			1.0
+		],
+		"mix_factor": 0.5,
+		"mix_stroke_factor": 0.0,
+		"mode": "LINE",
+		"pass_index": 0,
+		"pixel_size": 100.0,
+		"show_fill": false,
+		"show_stroke": true,
+		"stroke_image": null,
+		"stroke_style": "SOLID",
+		"texture_angle": 0.0,
+		"texture_clamp": false,
+		"texture_offset": [
+			-0.5,
+			0.0
+		],
+		"texture_scale": [
+			1.0,
+			1.0
+		],
+		"use_fill_holdout": false,
+		"use_overlap_strokes": false,
+		"use_stroke_holdout": false
+	},
+	"line_white": {
+		"alignment_mode": "PATH",
+		"alignment_rotation": 0.0,
+		"color": [
+			1.0,
+			1.0,
+			1.0,
+			1.0
+		],
+		"fill_color": [
+			1.0,
+			1.0,
+			1.0,
+			1.0
+		],
+		"fill_image": null,
+		"fill_style": "SOLID",
+		"flip": false,
+		"ghost": false,
+		"gradient_type": "LINEAR",
+		"hide": false,
+		"lock": false,
+		"mix_color": [
+			1.0,
+			1.0,
+			1.0,
+			1.0
+		],
+		"mix_factor": 0.5,
+		"mix_stroke_factor": 0.0,
+		"mode": "LINE",
+		"pass_index": 0,
+		"pixel_size": 100.0,
+		"show_fill": false,
+		"show_stroke": true,
+		"stroke_image": null,
+		"stroke_style": "SOLID",
+		"texture_angle": 0.0,
+		"texture_clamp": false,
+		"texture_offset": [
+			-0.5,
+			0.0
+		],
+		"texture_scale": [
+			1.0,
+			1.0
+		],
+		"use_fill_holdout": false,
+		"use_overlap_strokes": false,
+		"use_stroke_holdout": false
+	},
+	"fill_white": {
+		"alignment_mode": "PATH",
+		"alignment_rotation": 0.0,
+		"color": [
+			1.0,
+			1.0,
+			1.0,
+			1.0
+		],
+		"fill_color": [
+			1.0,
+			1.0,
+			1.0,
+			1.0
+		],
+		"fill_image": null,
+		"fill_style": "SOLID",
+		"flip": false,
+		"ghost": false,
+		"gradient_type": "LINEAR",
+		"hide": false,
+		"lock": false,
+		"mix_color": [
+			1.0,
+			1.0,
+			1.0,
+			1.0
+		],
+		"mix_factor": 0.5,
+		"mix_stroke_factor": 0.0,
+		"mode": "LINE",
+		"pass_index": 0,
+		"pixel_size": 100.0,
+		"show_fill": true,
+		"show_stroke": false,
+		"stroke_image": null,
+		"stroke_style": "SOLID",
+		"texture_angle": 0.0,
+		"texture_clamp": false,
+		"texture_offset": [
+			-0.5,
+			0.0
+		],
+		"texture_scale": [
+			1.0,
+			1.0
+		],
+		"use_fill_holdout": false,
+		"use_overlap_strokes": false,
+		"use_stroke_holdout": false
+	},
+	"fill_grey_light": {
+		"alignment_mode": "PATH",
+		"alignment_rotation": 0.0,
+		"color": [
+			0.6307569742202759,
+			0.6307569742202759,
+			0.6307569742202759,
+			1.0
+		],
+		"fill_color": [
+			0.6307573914527893,
+			0.6307573914527893,
+			0.6307573914527893,
+			1.0
+		],
+		"fill_image": null,
+		"fill_style": "SOLID",
+		"flip": false,
+		"ghost": false,
+		"gradient_type": "LINEAR",
+		"hide": false,
+		"lock": false,
+		"mix_color": [
+			1.0,
+			1.0,
+			1.0,
+			1.0
+		],
+		"mix_factor": 0.5,
+		"mix_stroke_factor": 0.0,
+		"mode": "LINE",
+		"pass_index": 0,
+		"pixel_size": 100.0,
+		"show_fill": true,
+		"show_stroke": false,
+		"stroke_image": null,
+		"stroke_style": "SOLID",
+		"texture_angle": 0.0,
+		"texture_clamp": false,
+		"texture_offset": [
+			-0.5,
+			0.0
+		],
+		"texture_scale": [
+			1.0,
+			1.0
+		],
+		"use_fill_holdout": false,
+		"use_overlap_strokes": false,
+		"use_stroke_holdout": false
+	},
+	"fill_grey_mid": {
+		"alignment_mode": "PATH",
+		"alignment_rotation": 0.0,
+		"color": [
+			0.3613069951534271,
+			0.3613069951534271,
+			0.3613069951534271,
+			1.0
+		],
+		"fill_color": [
+			0.3613068759441376,
+			0.3613068759441376,
+			0.3613068759441376,
+			1.0
+		],
+		"fill_image": null,
+		"fill_style": "SOLID",
+		"flip": false,
+		"ghost": false,
+		"gradient_type": "LINEAR",
+		"hide": false,
+		"lock": false,
+		"mix_color": [
+			1.0,
+			1.0,
+			1.0,
+			1.0
+		],
+		"mix_factor": 0.5,
+		"mix_stroke_factor": 0.0,
+		"mode": "LINE",
+		"pass_index": 0,
+		"pixel_size": 100.0,
+		"show_fill": true,
+		"show_stroke": false,
+		"stroke_image": null,
+		"stroke_style": "SOLID",
+		"texture_angle": 0.0,
+		"texture_clamp": false,
+		"texture_offset": [
+			-0.5,
+			0.0
+		],
+		"texture_scale": [
+			1.0,
+			1.0
+		],
+		"use_fill_holdout": false,
+		"use_overlap_strokes": false,
+		"use_stroke_holdout": false
+	},
+	"fill_grey_dark": {
+		"alignment_mode": "PATH",
+		"alignment_rotation": 0.0,
+		"color": [
+			0.10224200040102005,
+			0.10224200040102005,
+			0.10224200040102005,
+			1.0
+		],
+		"fill_color": [
+			0.10224173218011856,
+			0.10224173218011856,
+			0.10224173218011856,
+			1.0
+		],
+		"fill_image": null,
+		"fill_style": "SOLID",
+		"flip": false,
+		"ghost": false,
+		"gradient_type": "LINEAR",
+		"hide": false,
+		"lock": false,
+		"mix_color": [
+			1.0,
+			1.0,
+			1.0,
+			1.0
+		],
+		"mix_factor": 0.5,
+		"mix_stroke_factor": 0.0,
+		"mode": "LINE",
+		"pass_index": 0,
+		"pixel_size": 100.0,
+		"show_fill": true,
+		"show_stroke": false,
+		"stroke_image": null,
+		"stroke_style": "SOLID",
+		"texture_angle": 0.0,
+		"texture_clamp": false,
+		"texture_offset": [
+			-0.5,
+			0.0
+		],
+		"texture_scale": [
+			1.0,
+			1.0
+		],
+		"use_fill_holdout": false,
+		"use_overlap_strokes": false,
+		"use_stroke_holdout": false
+	},
+	"fill_black": {
+		"alignment_mode": "PATH",
+		"alignment_rotation": 0.0,
+		"color": [
+			0.0,
+			0.0,
+			0.0,
+			1.0
+		],
+		"fill_color": [
+			0.0,
+			0.0,
+			0.0,
+			1.0
+		],
+		"fill_image": null,
+		"fill_style": "SOLID",
+		"flip": false,
+		"ghost": false,
+		"gradient_type": "LINEAR",
+		"hide": false,
+		"lock": false,
+		"mix_color": [
+			1.0,
+			1.0,
+			1.0,
+			1.0
+		],
+		"mix_factor": 0.5,
+		"mix_stroke_factor": 0.0,
+		"mode": "LINE",
+		"pass_index": 0,
+		"pixel_size": 100.0,
+		"show_fill": true,
+		"show_stroke": true,
+		"stroke_image": null,
+		"stroke_style": "SOLID",
+		"texture_angle": 0.0,
+		"texture_clamp": false,
+		"texture_offset": [
+			-0.5,
+			0.0
+		],
+		"texture_scale": [
+			1.0,
+			1.0
+		],
+		"use_fill_holdout": false,
+		"use_overlap_strokes": false,
+		"use_stroke_holdout": false
+	}
+}
