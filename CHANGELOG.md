@@ -2,6 +2,15 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+0.2.0
+
+- added: Create aligned object operator with config popup
+- added: Load default palette (only one currently)
+- added: Super basic UI, mostly for testing purposes
+- added: properties and preferences for object creation
+- added: Realign to view operator
+- added: toolbar: gyzmo button "lock camera to view" (only in camera view)
+
 0.1.0
 
 - initial commit

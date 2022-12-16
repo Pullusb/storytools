@@ -7,7 +7,7 @@ from .preferences import get_addon_prefs
 class STORYTOOLS_PT_storytools_ui(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "Gpencil" # Storytools
+    bl_category = "Storytools" # Gpencil
     bl_label = "Storytools"
 
     def draw(self, context):
@@ -16,6 +16,10 @@ class STORYTOOLS_PT_storytools_ui(Panel):
         ob = context.object
         col.operator('storytools.load_default_palette', text='Load Base Palette')
         col.label(text='Storytool panel')
+        
+        col.label(text='Test buttons')
+        col.operator('storytools.align_with_view')
+        col.operator('storytools.create_object')
 
         ## Add plain material slot list
         # if ob and ob.type == 'GPENCIL':

@@ -44,7 +44,7 @@ class STORYTOOLS_OT_opsname_modal(Operator):
 
 
 classes=(
-STORYTOOLS_OT_opsname,
+#STORYTOOLS_OT_opsname,
 STORYTOOLS_OT_opsname_modal,
 )
 

@@ -1,9 +1,8 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 import bpy
-import json
-import os
-from pathlib import Path
+# import json
+# from pathlib import Path
 from .preferences import get_addon_prefs
 from . import fn
 
@@ -37,6 +36,7 @@ class STORYTOOLS_OT_load_default_palette(bpy.types.Operator):
         # load json
         # pfp = Path(bpy.path.abspath(get_addon_prefs().palette_path))
         
+        """
         pfp = Path(__file__).parent / 'palettes'
         print('pfp: ', pfp)
         
@@ -48,10 +48,10 @@ class STORYTOOLS_OT_load_default_palette(bpy.types.Operator):
         if not base.exists():
             self.report({'ERROR'}, f'base.json palette not found in {pfp.as_posix()}')
             return {"CANCELLED"}
+        """
 
         ## maybe move up all addition so it fit order ?
-
-        fn.load_palette(context, base)
+        fn.load_default_palette(ob=context.object)
         self.report({'INFO'}, f'Loaded base Palette')
 
         return {"FINISHED"}
