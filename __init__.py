@@ -4,7 +4,7 @@ bl_info = {
     "name": "Storytools - Storyboard Tools",
     "description": "Set of tools for Storyboarding",
     "author": "Samuel Bernou",
-    "version": (0, 2, 0),
+    "version": (0, 3, 0),
     "blender": (3, 3, 0),
     "location": "View3D",
     "warning": "Alpha",
@@ -13,9 +13,10 @@ bl_info = {
 
 from . import properties
 from . import preferences
-from . import GZ_toolbar
 from . import OP_story_palettes
+from . import OP_camera_controls
 from . import OP_gp_objects
+from . import GZ_toolbar
 from . import panels
 # from . import keymaps
 
@@ -24,10 +25,11 @@ import bpy
 modules = (
     properties,
     preferences,
-    GZ_toolbar,
     OP_story_palettes,
     OP_gp_objects,
+    OP_camera_controls,
     panels,
+    GZ_toolbar,
 )
 
 def register():

@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+0.3.0
+
+- added: camera key location/rotation gizmo
+
 0.2.0
 
 - added: Create aligned object operator with config popup
