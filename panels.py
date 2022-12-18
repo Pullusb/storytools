@@ -21,12 +21,23 @@ class STORYTOOLS_PT_storytools_ui(Panel):
         col.operator('storytools.align_with_view')
         col.operator('storytools.create_object')
 
-        ## Add plain material slot list
-        # if ob and ob.type == 'GPENCIL':
-        #     # col.label(text=ob.name)
-        #     col.label(text=f'Materials:')
-        #     row = col.row()
-        #     row.template_list("GPENCIL_UL_matslots", "", ob, "material_slots", ob, "active_material_index", rows=7)
+        ob = context.object
+        if not ob:
+            return
+        if ob.type == 'GPENCIL':
+            gpd = ob.data
+
+            # 
+            #col.template_list("STORYTOOLS_UL_gp_objects_list", "", ob.data, "layers", ob, "active_material_index", rows=6)
+
+            ## Plain Layer list
+            col.template_list("GPENCIL_UL_layer", "", gpd, "layers", gpd.layers, "active_index",
+                            rows=3, sort_reverse=True, sort_lock=True)
+            ## Add plain material slot list
+            # col.label(text=ob.name)
+            col.label(text=f'Materials:')
+            row = col.row()
+            row.template_list("GPENCIL_UL_matslots", "", ob, "material_slots", ob, "active_material_index", rows=7)
 
         # row = col.row()
         # row.operator('catname.opsname', text='Turbo Ops', icon='SNAP_ON')

@@ -157,10 +157,101 @@ class STORYTOOLS_OT_align_with_view(bpy.types.Operator):
 
         return {"FINISHED"}
 
+""" 
+class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        # self.use_filter_show = True # force open/close the search feature
+        # prefs = get_addon_prefs()
+        # split = layout.split(align=False, factor=0.3)
+        row = layout.row()
+
+        ## active (draw) : GREASEPENCIL
+        ## sculpt : SCULPTMODE_HLT
+        ## active edit : EDITMODE_HLT
+        ## others : OUTLINER_DATA_GREASEPENCIL
+
+        hide_ico = 'OUTLINER_OB_GREASEPENCIL' if item.active else 'HIDE_OFF'
+        source_ico = 'NETWORK_DRIVE' if item.is_project else 'USER' # BLANK1
+        
+        row.label(text='', icon=source_ico)
+        row.prop(item, 'hide', text='', icon=hide_ico, invert_checkbox=True) 
+        subrow = row.row(align=True)
+        subrow.prop(item, 'tag', text='')
+        subrow.prop(item, 'name', text='')
+        subrow.enabled = not item.is_project
+"""
+class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
+    # Constants (flags)
+    # Be careful not to shadow FILTER_ITEM (i.e. UIList().bitflag_filter_item)!
+    # E.g. VGROUP_EMPTY = 1 << 0
+
+    # Custom properties, saved with .blend file. E.g.
+    # use_filter_empty: bpy.props.BoolProperty(
+    #     name="Filter Empty", default=False, options=set(),
+    #     description="Whether to filter empty vertex groups",
+    # )
+
+    # Called for each drawn item.
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
+        # # 'DEFAULT' and 'COMPACT' layout types should usually use the same draw code.
+        # if self.layout_type in {'DEFAULT', 'COMPACT'}:
+        #     pass
+        # # 'GRID' layout type should be as compact as possible (typically a single icon!).
+        # elif self.layout_type == 'GRID':
+        #     pass
+
+        for o in context.scene.objects:
+            if o.type != 'GPENCIL':
+                continue
+            row = layout.row()
+            if o == context.view_layer.objects.active:
+                # if context.mode == 'PAINT'
+                icon = 'GREASEPENCIL'
+                # row.label(text='', icon='GREASEPENCIL')
+            else:
+                icon = 'OUTLINER_DATA_GREASEPENCIL'
+                # row.label(text='', icon='OUTLINER_DATA_GREASEPENCIL')
+            
+            row.label(text=o.name, icon=icon)
+            if o.data.users > 1:
+                row.template_ID(o, "data")
+            else:
+                row.label(text='',icon='BLANK1')
+
+
+    # Called once to draw filtering/reordering options.
+    def draw_filter(self, context, layout):
+        # Nothing much to say here, it's usual UI code...
+        pass
+
+    # Called once to filter/reorder items.
+    def filter_items(self, context, data, propname):
+        # This function gets the collection property (as the usual tuple (data, propname)), and must return two lists:
+        # * The first one is for filtering, it must contain 32bit integers were self.bitflag_filter_item marks the
+        #   matching item as filtered (i.e. to be shown), and 31 other bits are free for custom needs. Here we use the
+        #   first one to mark VGROUP_EMPTY.
+        # * The second one is for reordering, it must return a list containing the new indices of the items (which
+        #   gives us a mapping org_idx -> new_idx).
+        # Please note that the default UI_UL_list defines helper functions for common tasks (see its doc for more info).
+        # If you do not make filtering and/or ordering, return empty list(s) (this will be more efficient than
+        # returning full lists doing nothing!).
+
+        # Default return values.
+        flt_flags = []
+        flt_neworder = []
+
+        # Do filtering/reordering here...
+
+        return flt_flags, flt_neworder
+
+
+## to test -> bl_options = {'HIDE_HEADER'}
 
 classes=(
 STORYTOOLS_OT_create_object,
 STORYTOOLS_OT_align_with_view,
+STORYTOOLS_UL_gp_objects_list,
 )
 
 def register(): 
