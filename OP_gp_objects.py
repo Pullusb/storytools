@@ -21,6 +21,11 @@ from .preferences import get_addon_prefs
 # def create_new_gp_object():
 #     pass
 
+def distance_selection_update(self, context):
+    if self.place_from_cam and context.scene.camera:
+        self.init_dist = self.cam_distance_from_cursor
+    else:
+        self.init_dist = self.view_distance_from_cursor
 
 class STORYTOOLS_OT_create_object(bpy.types.Operator):
     bl_idname = "storytools.create_object"
@@ -28,7 +33,8 @@ class STORYTOOLS_OT_create_object(bpy.types.Operator):
     bl_description = "Create a new grease pencil object"
     bl_options = {"REGISTER"} # , "INTERNAL"
 
-    name : bpy.props.StringProperty(name='Name')
+    name : bpy.props.StringProperty(name='Name',
+        description="Name of Grease pencil object")
     
     parented : bpy.props.BoolProperty(name='Attached To Camera',
         description="When Creating the object, Attach it to the camera",
@@ -40,14 +46,26 @@ class STORYTOOLS_OT_create_object(bpy.types.Operator):
     
     place_from_cam : bpy.props.BoolProperty(name='Use Active Camera',
         description="Create the object facing camera, else create from your current view",
+        default=False, update=)
+
+    at_cursor : bpy.props.BoolProperty(name='At Cursor',
+        description="Create object at cursor location, else centered position at cursor 'distance' facing view",
         default=False)
 
     def invoke(self, context, event):
-        # Suggest a numbered default name for quick use
+        ## Suggest a numbered default name for quick use
         gp_ct = len([o for o in context.scene.objects if o.type == 'GPENCIL'])
         self.name = f'Drawing_{gp_ct+1:03d}'
         settings = context.scene.storytools_settings
-        self.init_dist = settings.initial_distance
+        
+        ## Calculate distance to 3D cursor
+        # self.init_dist = settings.initial_distance # overwritten by dist from cusor
+        self.view_distance_from_cursor = fn.coord_distance_from_view(context=context)
+        self.cam_distance_from_cursor = None
+        if context.scene.camera:
+            self.cam_distance_from_cursor = fn.coord_distance_from_cam(context=context)
+
+        distance_selection_update(self, context)
         self.parented = settings.initial_parented
         return context.window_manager.invoke_props_dialog(self, width=250)
 
@@ -55,8 +73,12 @@ class STORYTOOLS_OT_create_object(bpy.types.Operator):
         layout = self.layout
         layout.use_property_split = True
         layout.prop(self, 'name')
-        layout.prop(self, 'init_dist')
+        layout.prop(self, 'at_cursor')
+        row = layout.row()
+        row.prop(self, 'init_dist')
+        row.activated = not self.at_cursor
         layout.prop(self, 'parented')
+
         if context.space_data.region_3d.view_perspective != 'CAMERA':
             col=layout.column()
             col.label(text='Not in camera', icon='ERROR')
@@ -78,7 +100,10 @@ class STORYTOOLS_OT_create_object(bpy.types.Operator):
         else:    
             view_matrix = r3d.view_matrix.inverted()
 
-        loc = view_matrix @ Vector((0.0, 0.0, -self.init_dist))
+        if self.at_cursor:
+            loc = context.scene.cursor.location
+        else:
+            loc = view_matrix @ Vector((0.0, 0.0, -self.init_dist))
         
         ## Create GP object
         #TODO: maybe check if want to use same data as another drawing
@@ -123,8 +148,10 @@ class STORYTOOLS_OT_create_object(bpy.types.Operator):
         
         # Enter Draw mode
         bpy.ops.object.mode_set(mode='PAINT_GPENCIL')
+        fn.reset_draw_settings(context=context)
 
         return {"FINISHED"}
+
 
 class STORYTOOLS_OT_align_with_view(bpy.types.Operator):
     bl_idname = "storytools.align_with_view"

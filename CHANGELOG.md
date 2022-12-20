@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+0.3.2
+
+- added: reset tool settings location and orientation
+
 0.3.0
 
 - added: camera key location/rotation gizmo
