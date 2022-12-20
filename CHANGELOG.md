@@ -5,6 +5,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 0.3.2
 
 - added: reset tool settings location and orientation
+- fixed: prevent alignement of camera (avoid error when seleced)
+
 
 0.3.0
 

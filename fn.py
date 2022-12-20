@@ -5,7 +5,7 @@ import json
 import os
 from pathlib import Path
 from mathutils import Matrix, Vector, geometry
-from bpy_extra import view3d_utils
+from bpy_extras import view3d_utils
 from math import pi
 
 
@@ -31,18 +31,28 @@ def reset_draw_settings(context=None):
     settings.gpencil_stroke_placement_view3d = 'ORIGIN'
 
 
-def coord_distance_from_view(coord=bpy.context.scene.cursor.location, context=None):
+def coord_distance_from_view(coord=None, context=None):
     context = context or bpy.context
+    coord = coord or context.scene.cursor.location
+
     rv3d = context.region_data
     view_mat = rv3d.view_matrix.inverted()
     view_point = view_mat @ Vector((0, 0, -1000))
-    return geometry.instersect_line_plane(view_mat.translation, view_point, coord, view_point)
+    co = geometry.intersect_line_plane(view_mat.translation, view_point, coord, view_point)
+    if co is None:
+        return None
+    return (co - view_mat.translation).length
 
-def coord_distance_from_cam(coord=bpy.context.scene.cursor.location, context=None):
+def coord_distance_from_cam(coord=None, context=None):
     context = context or bpy.context
+    coord = coord or context.scene.cursor.location
+
     view_mat = context.scene.camera.matrix_world
     view_point = view_mat @ Vector((0, 0, -1000))
-    return geometry.instersect_line_plane(view_mat.translation, view_point, coord, view_point)
+    co = geometry.intersect_line_plane(view_mat.translation, view_point, coord, view_point)
+    if co is None:
+        return None
+    return (co - view_mat.translation).length
 
 
 def rotate_by_90_degrees(ob, axis='X', negative=True):

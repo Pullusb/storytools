@@ -22,10 +22,12 @@ from .preferences import get_addon_prefs
 #     pass
 
 def distance_selection_update(self, context):
+    # print('self: ', dir(self))
     if self.place_from_cam and context.scene.camera:
-        self.init_dist = self.cam_distance_from_cursor
+        self.init_dist = fn.coord_distance_from_cam(context=context)
     else:
-        self.init_dist = self.view_distance_from_cursor
+        self.init_dist = fn.coord_distance_from_view(context=context)
+
 
 class STORYTOOLS_OT_create_object(bpy.types.Operator):
     bl_idname = "storytools.create_object"
@@ -46,7 +48,7 @@ class STORYTOOLS_OT_create_object(bpy.types.Operator):
     
     place_from_cam : bpy.props.BoolProperty(name='Use Active Camera',
         description="Create the object facing camera, else create from your current view",
-        default=False, update=)
+        default=False, update=distance_selection_update)
 
     at_cursor : bpy.props.BoolProperty(name='At Cursor',
         description="Create object at cursor location, else centered position at cursor 'distance' facing view",
@@ -60,10 +62,10 @@ class STORYTOOLS_OT_create_object(bpy.types.Operator):
         
         ## Calculate distance to 3D cursor
         # self.init_dist = settings.initial_distance # overwritten by dist from cusor
-        self.view_distance_from_cursor = fn.coord_distance_from_view(context=context)
-        self.cam_distance_from_cursor = None
-        if context.scene.camera:
-            self.cam_distance_from_cursor = fn.coord_distance_from_cam(context=context)
+        # self.view_distance_from_cursor = fn.coord_distance_from_view(context=context)
+        # self.cam_distance_from_cursor = None
+        # if context.scene.camera:
+        #     self.cam_distance_from_cursor = fn.coord_distance_from_cam(context=context)
 
         distance_selection_update(self, context)
         self.parented = settings.initial_parented
@@ -76,7 +78,7 @@ class STORYTOOLS_OT_create_object(bpy.types.Operator):
         layout.prop(self, 'at_cursor')
         row = layout.row()
         row.prop(self, 'init_dist')
-        row.activated = not self.at_cursor
+        row.active = not self.at_cursor # enabled
         layout.prop(self, 'parented')
 
         if context.space_data.region_3d.view_perspective != 'CAMERA':
@@ -169,6 +171,15 @@ class STORYTOOLS_OT_align_with_view(bpy.types.Operator):
         r3d = context.space_data.region_3d            
         
         for ob in context.selected_objects:
+            ## skip camera object
+            if ob.type == 'CAMERA':
+                continue
+
+            ## skip active camera if selected and IN cam view
+            # if context.scene.camera \
+            #     and ob == context.scene.camera \
+            #     and context.space_data.region_3d.view_perspective == 'CAMERA':
+            #     continue
     
             if self.keep_z_up:
                 ## Align to view but keep world Up
