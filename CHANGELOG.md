@@ -2,20 +2,27 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+0.4.0
+
+- added: gizmo button to pan camera
+- added: gizmo button to scale active object
+- added: gizmo button to realign object
+- added: Ctrl + Click on align button to realign keeping world Up
+
 0.3.3
 
-- added: Object list
+- added: Custom Object list
     - filter to show only GP object 
     - switch object upon selection
     - keep mode across objects
-    - Display data user when objects is a duplicate 
-- added: Basic Layer list
-- added: Basic Material list
+    - Display data user when objects is a linked duplicate 
+- added: Layer list
+- added: Material list
 
 
 0.3.2
 
-- added: Reset tool settings location and orientation when adding a new object
+- added: Reset location and orientation (GP tool settings) when adding a new object
 - added: Object creation: choice to use cursor location 
 - fixed: Prevent alignement of camera (avoid potential user error when camera is selected)
 

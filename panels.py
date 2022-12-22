@@ -24,7 +24,7 @@ class STORYTOOLS_PT_storytools_ui(Panel):
         # col.label(text='Storytool panel')
         
         # col.label(text='Test buttons')
-        col.operator('storytools.align_with_view', icon='AXIS_FRONT')
+        # col.operator('storytools.align_with_view', icon='AXIS_FRONT')
 
 
         ## TODO best way to populate uilist with objects without new propertygroup if possible...

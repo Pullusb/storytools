@@ -3,7 +3,7 @@ import bpy
 from math import pi
 from mathutils import Vector, Matrix, Quaternion
 
-from bpy.types import Panel, PropertyGroup
+from bpy.types import Operator, Panel, PropertyGroup
 from bpy.props import CollectionProperty, PointerProperty
 
 from . import fn
@@ -18,12 +18,50 @@ from .preferences import get_addon_prefs
 ## Bonus
 # - load guides if there are any
 
-## UI
-# - Add '+' button in a GP UI-list
 
+class STORYTOOLS_OT_object_scale(Operator):
+    bl_idname = "storytools.object_scale"
+    bl_label = 'Object Scale'
+    bl_description = "Scale object by going left-right"
+    bl_options = {'REGISTER', 'INTERNAL'}
 
-# def create_new_gp_object():
-#     pass
+    @classmethod
+    def poll(cls, context):
+        return context.object
+
+    def invoke(self, context, event):
+        self.init_scale = context.object.scale.copy()
+        self.init_mouse_x = event.mouse_x
+        context.window.cursor_set("SCROLL_X")
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context, event):
+        delta = event.mouse_x - self.init_mouse_x
+        context.object.scale = self.init_scale * (1 + delta * 0.01)
+        
+        if event.type == 'LEFTMOUSE': #  and event.value == 'RELEASE'
+            context.window.cursor_set("DEFAULT")
+            # set key autokeying
+            if context.scene.tool_settings.use_keyframe_insert_auto:
+                context.object.keyframe_insert('scale')
+
+            return {'FINISHED'}
+
+        elif event.type in {'RIGHTMOUSE', 'ESC'}:
+            context.object.scale = self.init_scale
+            context.window.cursor_set("DEFAULT")
+            return {'CANCELLED'}
+        
+        return {'RUNNING_MODAL'}
+    
+    def execute(self, context):
+        # with context.temp_override(selected_objects=[context.object]):
+        #     bpy.ops.transform.resize('INVOKE_DEFAULT')
+        # bpy.ops.transform.resize('INVOKE_DEFAULT')
+        return {"FINISHED"}
+
+## Create object
 
 def distance_selection_update(self, context):
     # print('self: ', dir(self))
@@ -33,7 +71,7 @@ def distance_selection_update(self, context):
         self.init_dist = fn.coord_distance_from_view(context=context)
 
 
-class STORYTOOLS_OT_create_object(bpy.types.Operator):
+class STORYTOOLS_OT_create_object(Operator):
     bl_idname = "storytools.create_object"
     bl_label = "Create New Drawing"
     bl_description = "Create a new grease pencil object"
@@ -162,17 +200,22 @@ class STORYTOOLS_OT_create_object(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class STORYTOOLS_OT_align_with_view(bpy.types.Operator):
+class STORYTOOLS_OT_align_with_view(Operator):
     bl_idname = "storytools.align_with_view"
     bl_label = "Align With View"
-    bl_description = "Align object with view"
-    bl_options = {"REGISTER"} # "INTERNAL"
+    bl_description = "Align object with view\
+        \nCtrl + Click align but keep object Z axis pointing up"
+    bl_options = {"REGISTER", "UNDO"} # "INTERNAL"
 
     @classmethod
     def poll(cls, context):
         return context.object # and context.object.type == 'GPENCIL'
 
     keep_z_up : bpy.props.BoolProperty(name='Keep Z Up', default=False)
+
+    def invoke(self, context, event):
+        self.keep_z_up = event.ctrl
+        return self.execute(context)
 
     def execute(self, context):
         r3d = context.space_data.region_3d            
@@ -355,6 +398,7 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
 classes=(
 STORYTOOLS_OT_create_object,
 STORYTOOLS_OT_align_with_view,
+STORYTOOLS_OT_object_scale,
 CUSTOM_object_collection, ## Test all bugged
 STORYTOOLS_UL_gp_objects_list,
 )
