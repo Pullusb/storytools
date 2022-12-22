@@ -2,11 +2,22 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+0.3.3
+
+- added: Object list
+    - filter to show only GP object 
+    - switch object upon selection
+    - keep mode across objects
+    - Display data user when objects is a duplicate 
+- added: Basic Layer list
+- added: Basic Material list
+
+
 0.3.2
 
-- added: reset tool settings location and orientation
-- fixed: prevent alignement of camera (avoid error when seleced)
-
+- added: Reset tool settings location and orientation when adding a new object
+- added: Object creation: choice to use cursor location 
+- fixed: Prevent alignement of camera (avoid potential user error when camera is selected)
 
 0.3.0
 

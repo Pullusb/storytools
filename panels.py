@@ -10,38 +10,53 @@ class STORYTOOLS_PT_storytools_ui(Panel):
     bl_category = "Storytools" # Gpencil
     bl_label = "Storytools"
 
+    # @property
+    # def gp_list(self):
+    #     return [o for o in bpy.context.scene.objects if o.type == 'GPENCIL']
+
+    # my_index : bpy.props.IntProperty(default=-1)
+
     def draw(self, context):
         layout = self.layout
         col = layout.column()
         ob = context.object
         col.operator('storytools.load_default_palette', text='Load Base Palette')
-        col.label(text='Storytool panel')
+        # col.label(text='Storytool panel')
         
-        col.label(text='Test buttons')
-        col.operator('storytools.align_with_view')
-        col.operator('storytools.create_object')
+        # col.label(text='Test buttons')
+        col.operator('storytools.align_with_view', icon='AXIS_FRONT')
+
+
+        ## TODO best way to populate uilist with objects without new propertygroup if possible...
+        
+        ## Objects
+        col.label(text='Object:')
+        
+        col.operator('storytools.create_object', icon='PLUS') # 'ADD'
+        
+        scn = context.scene        
+        col.template_list("STORYTOOLS_UL_gp_objects_list", "",
+            scn, "objects", scn.gp_object_props, "index", rows=6)
+        ## :: listtype_name, list_id, dataptr, propname, active_dataptr, active_propname,
+        ## item_dyntip_propname, rows, maxrows, type, columns, sort_reverse, sort_lock) 
+
+        col.label(text='Layers:')
 
         ob = context.object
-        if not ob:
+        if not ob or ob.type != 'GPENCIL':
+            col.label(text=f'No Grease Pencil Active')
             return
-        if ob.type == 'GPENCIL':
-            gpd = ob.data
-
-            # 
-            #col.template_list("STORYTOOLS_UL_gp_objects_list", "", ob.data, "layers", ob, "active_material_index", rows=6)
-
-            ## Plain Layer list
-            col.template_list("GPENCIL_UL_layer", "", gpd, "layers", gpd.layers, "active_index",
-                            rows=3, sort_reverse=True, sort_lock=True)
-            ## Add plain material slot list
-            # col.label(text=ob.name)
-            col.label(text=f'Materials:')
-            row = col.row()
-            row.template_list("GPENCIL_UL_matslots", "", ob, "material_slots", ob, "active_material_index", rows=7)
-
-        # row = col.row()
-        # row.operator('catname.opsname', text='Turbo Ops', icon='SNAP_ON')
-
+        gpd = ob.data
+        
+        ## Layers:
+        col.template_list("GPENCIL_UL_layer", "", gpd, "layers", gpd.layers, "active_index",
+                        rows=3, sort_reverse=True, sort_lock=True)
+        
+        ## Material:
+        col.label(text=f'Materials:')
+        row = col.row()
+        row.template_list("GPENCIL_UL_matslots", "", ob, "material_slots", ob, "active_material_index", rows=7)
+    
 
 # ## function to append in a menu
 # def palette_manager_menu(self, context):

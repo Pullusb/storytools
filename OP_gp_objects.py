@@ -2,6 +2,10 @@ import bpy
 # from .preferences import get_addon_prefs
 from math import pi
 from mathutils import Vector, Matrix, Quaternion
+
+from bpy.types import Panel, PropertyGroup
+from bpy.props import CollectionProperty, PointerProperty
+
 from . import fn
 from .preferences import get_addon_prefs
 
@@ -75,17 +79,20 @@ class STORYTOOLS_OT_create_object(bpy.types.Operator):
         layout = self.layout
         layout.use_property_split = True
         layout.prop(self, 'name')
+        layout.prop(self, 'parented')
         layout.prop(self, 'at_cursor')
         row = layout.row()
         row.prop(self, 'init_dist')
         row.active = not self.at_cursor # enabled
-        layout.prop(self, 'parented')
 
         if context.space_data.region_3d.view_perspective != 'CAMERA':
             col=layout.column()
             col.label(text='Not in camera', icon='ERROR')
             col.prop(self, 'place_from_cam', text='Face Active Camera')
-            
+        
+        # if self.init_dist <= 0: (FIXME init_dist always positive, need futher check)
+        #     viewpoint ='camera' if self.place_from_cam else 'view'
+        #     col.label(text=f'Cursor is behind {viewpoint}', icon='ERROR') 
     
     def execute(self, context):
         prefs = get_addon_prefs()
@@ -195,30 +202,58 @@ class STORYTOOLS_OT_align_with_view(bpy.types.Operator):
 
         return {"FINISHED"}
 
-""" 
-class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
 
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        # self.use_filter_show = True # force open/close the search feature
-        # prefs = get_addon_prefs()
-        # split = layout.split(align=False, factor=0.3)
-        row = layout.row()
+## ---
+## Object Property groups and UIlist
+## ---
 
-        ## active (draw) : GREASEPENCIL
-        ## sculpt : SCULPTMODE_HLT
-        ## active edit : EDITMODE_HLT
-        ## others : OUTLINER_DATA_GREASEPENCIL
+def update_object_change(self, context):
+    ob = context.scene.objects[self.index]
+    print('Switch to object', ob.name)
+    if ob.type != 'GPENCIL' or context.object is ob:
+        # Don't do anything
+        return
 
-        hide_ico = 'OUTLINER_OB_GREASEPENCIL' if item.active else 'HIDE_OFF'
-        source_ico = 'NETWORK_DRIVE' if item.is_project else 'USER' # BLANK1
-        
-        row.label(text='', icon=source_ico)
-        row.prop(item, 'hide', text='', icon=hide_ico, invert_checkbox=True) 
-        subrow = row.row(align=True)
-        subrow.prop(item, 'tag', text='')
-        subrow.prop(item, 'name', text='')
-        subrow.enabled = not item.is_project
-"""
+    prev_mode = context.mode
+    possible_gp_mods = ('OBJECT', 
+                        'EDIT_GPENCIL', 'SCULPT_GPENCIL', 'PAINT_GPENCIL',
+                        'WEIGHT_GPENCIL', 'VERTEX_GPENCIL')
+
+    if prev_mode not in possible_gp_mods:
+        prev_mode = None
+
+    mode_swap = False
+    ## TODO: set in same mode as previous object??
+    if context.scene.tool_settings.lock_object_mode:
+        if context.mode != 'OBJECT':
+            mode_swap = True
+            bpy.ops.object.mode_set(mode='OBJECT')
+
+        # set active
+        context.view_layer.objects.active = ob
+
+        ## keep same mode accross objects
+        if mode_swap and prev_mode is not None:
+            bpy.ops.object.mode_set(mode=prev_mode)
+            
+    else:
+        ## keep same mode accross objects
+        context.view_layer.objects.active = ob
+        if context.mode != prev_mode is not None:
+            bpy.ops.object.mode_set(mode=prev_mode)
+
+    ob.select_set(True)
+
+
+class CUSTOM_object_collection(PropertyGroup):
+
+    # need an index for the native object list
+    index : bpy.props.IntProperty(default=-1, update=update_object_change)
+    
+    # point_prop : PointerProperty(
+    #     name="Object",
+    #     type=bpy.types.Object)
+
 class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
     # Constants (flags)
     # Be careful not to shadow FILTER_ITEM (i.e. UIList().bitflag_filter_item)!
@@ -230,38 +265,58 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
     #     description="Whether to filter empty vertex groups",
     # )
 
+    # The draw_item function is called for each item of the collection that is visible in the list.
+    #   data is the RNA object containing the collection,
+    #   item is the current drawn item of the collection,
+    #   icon is the "computed" icon for the item (as an integer, because some objects like materials or textures
+    #   have custom icons ID, which are not available as enum items).
+    #   active_data is the RNA object containing the active property for the collection (i.e. integer pointing to the
+    #   active item of the collection).
+    #   active_propname is the name of the active property (use 'getattr(active_data, active_propname)').
+    #   index is index of the current item in the collection.
+    #   flt_flag is the result of the filtering process for this item.
+    #   Note: as index and flt_flag are optional arguments, you do not have to use/declare them here if you don't
+    #         need them.
+
     # Called for each drawn item.
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
-        # # 'DEFAULT' and 'COMPACT' layout types should usually use the same draw code.
-        # if self.layout_type in {'DEFAULT', 'COMPACT'}:
-        #     pass
-        # # 'GRID' layout type should be as compact as possible (typically a single icon!).
-        # elif self.layout_type == 'GRID':
-        #     pass
+        ## active (draw) : GREASEPENCIL
+        ## sculpt : SCULPTMODE_HLT
+        ## active edit : EDITMODE_HLT
+        ## others : OUTLINER_DATA_GREASEPENCIL
 
-        for o in context.scene.objects:
-            if o.type != 'GPENCIL':
-                continue
-            row = layout.row()
-            if o == context.view_layer.objects.active:
-                # if context.mode == 'PAINT'
-                icon = 'GREASEPENCIL'
-                # row.label(text='', icon='GREASEPENCIL')
-            else:
-                icon = 'OUTLINER_DATA_GREASEPENCIL'
-                # row.label(text='', icon='OUTLINER_DATA_GREASEPENCIL')
-            
-            row.label(text=o.name, icon=icon)
-            if o.data.users > 1:
-                row.template_ID(o, "data")
-            else:
-                row.label(text='',icon='BLANK1')
+        # hide_ico = 'OUTLINER_OB_GREASEPENCIL' if item.active else 'HIDE_OFF'
+        # source_ico = 'NETWORK_DRIVE' if item.is_project else 'USER' # BLANK1
+        # row.label(text='', icon=source_ico)
+        # row.prop(item, 'hide', text='', icon=hide_ico, invert_checkbox=True)
 
-
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index): # , flt_flag
+        # layout.label(text=item.name)
+        row = layout.row()
+        if item == context.view_layer.objects.active:
+            # if context.mode == 'PAINT'
+            icon = 'GREASEPENCIL'
+            # row.label(text='', icon='GREASEPENCIL')
+        else:
+            icon = 'OUTLINER_OB_GREASEPENCIL'
+            # row.label(text='', icon='OUTLINER_DATA_GREASEPENCIL')
+        
+        row.label(text=item.name, icon=icon)
+        if item.data.users > 1:
+            row.template_ID(item, "data")
+        else:
+            row.label(text='', icon='BLANK1')
+        
+        ## Make a clickable toggle that set viewport and render at the same time
+        ## Can lead to confusion with blender model... but heh !
+        if item.hide_viewport:
+            row.label(text='', icon='HIDE_ON')
+        else:
+            row.label(text='', icon='HIDE_OFF')
+    
     # Called once to draw filtering/reordering options.
-    def draw_filter(self, context, layout):
-        # Nothing much to say here, it's usual UI code...
-        pass
+    # def draw_filter(self, context, layout):
+    #     # Nothing much to say here, it's usual UI code...
+    #     pass
 
     # Called once to filter/reorder items.
     def filter_items(self, context, data, propname):
@@ -279,7 +334,18 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
         flt_flags = []
         flt_neworder = []
 
-        # Do filtering/reordering here...
+        #### Do filtering/reordering here...
+        ## data : scene struct -> propname: 'objects' string 
+        objs = getattr(data, propname)
+        # objs: scene objects collection
+    
+        helper_funcs = bpy.types.UI_UL_list
+
+        flt_flags = [self.bitflag_filter_item if o.type == 'GPENCIL' else 0 for o in objs]
+        ## By name
+        # flt_flags = helper_funcs.filter_items_by_name(self.filter_name, self.bitflag_filter_item, objs, "name", reverse=False)
+
+        ## BONUS option: By distance to camera ? (need to be computed OTF... possible ?)
 
         return flt_flags, flt_neworder
 
@@ -289,13 +355,19 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
 classes=(
 STORYTOOLS_OT_create_object,
 STORYTOOLS_OT_align_with_view,
+CUSTOM_object_collection, ## Test all bugged
 STORYTOOLS_UL_gp_objects_list,
 )
 
 def register(): 
+    # bpy.types.Scene.index_constant = -1
     for cls in classes:
         bpy.utils.register_class(cls)
+    bpy.types.Scene.gp_object_props = bpy.props.PointerProperty(type=CUSTOM_object_collection)
 
 def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
+    
+    # del bpy.types.Scene.index_constant
+    del bpy.types.Scene.gp_object_props
