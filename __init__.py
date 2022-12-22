@@ -17,6 +17,7 @@ from . import OP_story_palettes
 from . import OP_camera_controls
 from . import OP_gp_objects
 from . import GZ_toolbar
+from . import brush_handle
 from . import panels
 # from . import keymaps
 
@@ -28,8 +29,9 @@ modules = (
     OP_story_palettes,
     OP_gp_objects,
     OP_camera_controls,
-    panels,
+    brush_handle,
     GZ_toolbar,
+    panels,
 )
 
 def register():

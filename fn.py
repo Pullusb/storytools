@@ -200,3 +200,21 @@ def load_default_palette(ob=None):
     
     load_palette(base, ob=ob)
     return ('FINISHED', f'Loaded base Palette')
+
+## ---
+## Brushes
+## ---
+
+def create_brush(name, context=None):
+    context = context or bpy.context
+    brush = bpy.data.grease_pencil.brushes.new(name)
+    bpy.data.brushes.create_gpencil_data(brush)
+
+    # need to create preview
+    # how to add to brush list
+    # how to define brush type
+
+    ## maybe better to append brush from a provided blend file or targeted brushlib
+    ## (Better for customization)
+
+    # context.scene.tool_settings.gpencil_paint.brush = brush
