@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+0.4.1
+
+- added: associate selected material with active layers
+
 0.4.0
 
 - added: gizmo button to pan camera
