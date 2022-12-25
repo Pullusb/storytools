@@ -74,6 +74,7 @@ def material_change_callback():
         # if ob.data.layers.active.info not in ob.data.keys():
 
         ob[ob.data.layers.active.info] = ob.active_material.name
+        
         ## cleanup ?
         all_keys = [k for k in ob.keys()] # if in loop, error IDpropgroup size has changed
         for k in all_keys:

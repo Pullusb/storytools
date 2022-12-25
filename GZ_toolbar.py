@@ -39,7 +39,7 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         # return context.space_data.region_3d.view_perspective == 'CAMERA'
         return True
 
-    icon_size = 25
+    icon_size = 25 # currently more vertical gap size
     gap_size = 15
 
     @staticmethod
@@ -63,7 +63,7 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         gz.scale_basis = scale_basis
 
     def setup(self, context):
-
+        # FIXME: set bigger icon size and backdrop size
         ## --- Object
 
         self.object_gizmos = []
@@ -112,17 +112,19 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         props = self.gz_key_cam.target_set_operator("storytools.camera_key_transform")
         self.camera_gizmos.append(self.gz_key_cam)        
 
-        count = len(self.gizmos)
-        self.bar_width = (count * self.icon_size) + (count - 1) * self.gap_size
         # self.object_gizmos.append()
 
     def draw_prepare(self, context):
         region = context.region
+        count = len(self.gizmos)
+        ## FIXME : Need to adapt for system resolution ?:
+        # bpy.context.preferences.system.dpi : 72 (on 1080 laptop)
         ui_scale = context.preferences.view.ui_scale
+        self.bar_width = (count * (self.icon_size * ui_scale)) + (count - 1) * (self.gap_size * ui_scale)
         vertical_pos = self.icon_size + 2 * ui_scale
         
         left_pos = region.width / 2 - self.bar_width / 2 - self.icon_size / 2
-        next_pos = self.icon_size + self.gap_size
+        next_pos = self.icon_size * ui_scale + self.gap_size * ui_scale
 
         """# define position individually 
         self.gz_lock_cam.matrix_basis = Matrix.Translation((left_pos, vertical_pos, 0))

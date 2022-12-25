@@ -5,6 +5,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 0.4.1
 
 - added: associate selected material with active layers
+- fixed: viewport button gap not adjusting to UI scale 
 
 0.4.0
 
