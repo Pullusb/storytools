@@ -3,11 +3,12 @@
 import bpy
 import json
 import os
+import numpy as np
 from pathlib import Path
 from mathutils import Matrix, Vector, geometry
 from bpy_extras import view3d_utils
 from math import pi
-
+from .constants import LAYERMAT_PREFIX
 
 ## Vector
 
@@ -54,6 +55,38 @@ def coord_distance_from_cam(coord=None, context=None):
         return None
     return (co - view_mat.translation).length
 
+def get_cam_frame_world(cam, scene=None):
+    '''get camera frame center position in 3d space
+    Need scene to get resolution ratio (default to active scene)
+    ortho camera note: scale must be 1,1,1 (parent too)
+    to fit right in cam-frame rectangle
+    '''
+
+    scene = scene or bpy.context.scene
+
+    # Without scene passed, base on square
+    frame = cam.data.view_frame(scene=scene)
+    mat = cam.matrix_world
+    frame = [mat @ v for v in frame]
+    #-# Get center
+    # import numpy as np
+    # center = np.add.reduce(frame) / 4
+    # center = np.sum(frame, axis=0) / 4
+    return frame
+
+def get_cam_frame_world_center(cam, scene=None):
+    '''get camera frame center position in 3d space
+    Need scene to get resolution ratio (default to active scene)
+    ortho camera note: scale must be 1,1,1 (parent too)
+    to fit right in cam-frame rectangle
+    '''
+
+    scene = scene or bpy.context.scene
+
+    frame = get_cam_frame_world(cam, scene=scene)
+    #-# Get center
+    # return np.sum(frame, axis=0) / 4
+    return np.add.reduce(frame) / 4
 
 def rotate_by_90_degrees(ob, axis='X', negative=True):
     angle = pi/2
@@ -200,6 +233,17 @@ def load_default_palette(ob=None):
     
     load_palette(base, ob=ob)
     return ('FINISHED', f'Loaded base Palette')
+
+def set_material_association(ob, layer, mat_name):
+    '''Take an object, a gp layer and a material name
+    Create custom prop for layer material association if possible
+    '''
+    if not ob.data.materials.get(mat_name):
+        print(f'/!\ material "{mat_name}" not found (for association with layer "{layer.info}")')
+        return
+    # create custom prop at object level
+    ob[LAYERMAT_PREFIX + layer.info] = mat_name
+
 
 ## ---
 ## Brushes

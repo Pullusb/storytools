@@ -69,6 +69,12 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         self.object_gizmos = []
         
         ## Object Scale
+        self.gz_ob_pan = self.gizmos.new("GIZMO_GT_button_2d")
+        self.set_gizmo_settings(self.gz_ob_pan, 'VIEW_PAN', show_drag=True)
+        props = self.gz_ob_pan.target_set_operator("storytools.object_pan") 
+        self.object_gizmos.append(self.gz_ob_pan)
+
+        ## Object Scale
         self.gz_ob_scale = self.gizmos.new("GIZMO_GT_button_2d")
         self.set_gizmo_settings(self.gz_ob_scale, 'FULLSCREEN_ENTER', show_drag=True)
         props = self.gz_ob_scale.target_set_operator("storytools.object_scale")
@@ -89,7 +95,9 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         self.set_gizmo_settings(self.gz_cam_pan, 'VIEW_PAN', show_drag=True) # ARROW_LEFTRIGHT
         # props = self.gz_cam_pan.target_set_operator("transform.translate")
         # props.orient_type = 'VIEW'
+        
         props = self.gz_cam_pan.target_set_operator("storytools.camera_pan")
+        # props = self.gz_cam_pan.target_set_operator("storytools.object_pan")
 
         self.camera_gizmos.append(self.gz_cam_pan)
 
@@ -101,7 +109,7 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
 
         ## Camera lock
         self.gz_lock_cam = self.gizmos.new("GIZMO_GT_button_2d")
-        self.set_gizmo_settings(self.gz_lock_cam, 'LOCKVIEW_ON')
+        self.set_gizmo_settings(self.gz_lock_cam, 'OUTLINER_OB_CAMERA') # LOCKVIEW_ON
         # self.gz_lock_cam.icon = 'LOCKVIEW_ON' if context.space_data.lock_camera else 'LOCKVIEW_OFF'
         props = self.gz_lock_cam.target_set_operator("storytools.camera_lock_toggle")
         self.camera_gizmos.append(self.gz_lock_cam)
@@ -119,6 +127,7 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         count = len(self.gizmos)
         ## FIXME : Need to adapt for system resolution ?:
         # bpy.context.preferences.system.dpi : 72 (on 1080 laptop)
+        
         ui_scale = context.preferences.view.ui_scale
         self.bar_width = (count * (self.icon_size * ui_scale)) + (count - 1) * (self.gap_size * ui_scale)
         vertical_pos = self.icon_size + 2 * ui_scale

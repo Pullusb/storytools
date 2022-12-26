@@ -2,6 +2,14 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+0.4.2
+
+- added: Object pan modal operator and gizmo
+- added: Object visibility toggle, auto-sync 3 hide parameters `viewlayer`, `viewport`, `render` (WYSIWYG approach)
+- added: Setup for layer-material association at object creation (hardcoded with current default palette)
+- added: object can be renamed on double click in object sidebar stack
+- changed: Complete rewrite of the camera pan modal operator
+
 0.4.1
 
 - added: associate selected material with active layers

@@ -8,6 +8,7 @@ from bpy.props import CollectionProperty, PointerProperty
 
 from . import fn
 from .preferences import get_addon_prefs
+from .constants import LAYERMAT_PREFIX
 
 # TODO: Build new object
 # - facing camera
@@ -18,12 +19,96 @@ from .preferences import get_addon_prefs
 ## Bonus
 # - load guides if there are any
 
+## possible modal cursor set
+# ('DEFAULT', 'NONE', 'WAIT', 'CROSSHAIR', 'MOVE_X', 'MOVE_Y', 'KNIFE', 'TEXT', 
+# 'PAINT_BRUSH', 'PAINT_CROSS', 'DOT', 'ERASER', 'HAND', 
+# 'SCROLL_X', 'SCROLL_Y', 'SCROLL_XY', 'EYEDROPPER', 'PICK_AREA', 
+# 'STOP', 'COPY', 'CROSS', 'MUTE', 'ZOOM_IN', 'ZOOM_OUT')
+
+## Object transform
+
+    # on_cam : bpy.props.BoolProperty(
+    #     default=False, options={'SKIP_SAVE'})
+        # if self.on_cam:
+        #     self.ob = context.scene.camera
+        #     if not self.ob:
+        #         return {'CANCELLED'}
+
+        #     ## Take view center when in viewcam
+        #     if context.space_data.region_3d.view_perspective == 'CAMERA':
+        #         self.init_world_loc = fn.get_cam_frame_world_center(self.ob)
+        #     else:
+        #         self.init_world_loc = self.ob.matrix_world.to_translation()
+
+        # else:
+        #     self.ob = context.object
+        #     self.init_world_loc = self.ob.matrix_world.to_translation()
+class STORYTOOLS_OT_object_pan(Operator):
+    bl_idname = "storytools.object_pan"
+    bl_label = 'Object Pan Translate'
+    bl_description = "Translate active object"
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.object
+
+    def invoke(self, context, event):
+        
+        self.ob = context.object
+        self.init_world_loc = self.ob.matrix_world.to_translation()
+
+        self.init_pos = self.ob.location.copy() # to restore if cancelled
+        self.init_mouse_x = event.mouse_x
+        self.init_mouse_y = event.mouse_y
+        self.init_mouse = Vector((event.mouse_x, event.mouse_y))
+
+        self.init_vector = fn.region_to_location(self.init_mouse, self.init_world_loc)
+
+        context.window.cursor_set("SCROLL_XY")
+        context.window_manager.modal_handler_add(self)
+        self.update_position(context, event)
+        return {'RUNNING_MODAL'}
+
+    def update_position(self, context, event):
+        mouse_co = Vector((event.mouse_x, event.mouse_y))
+        # delta_x = event.mouse_x - self.init_mouse_x
+        # context.object.location = self.init_pos * (1 + delta_x * 0.01)
+        vec = fn.region_to_location(mouse_co, self.init_world_loc)
+        move_vec = vec - self.init_vector
+        
+        ## move by vector (recompose matrix)
+        self.ob.matrix_world.translation = self.init_world_loc + move_vec
+
+    def modal(self, context, event):
+        
+        self.update_position(context, event)
+        
+        if event.type == 'LEFTMOUSE': # and event.value == 'RELEASE'
+            context.window.cursor_set("DEFAULT")
+            # set key autokeying
+            if context.scene.tool_settings.use_keyframe_insert_auto:
+                self.ob.keyframe_insert('location')
+                # Better to insert all
+                self.ob.keyframe_insert('rotation_euler')
+                self.ob.keyframe_insert('scale')
+
+            return {'FINISHED'}
+
+        elif event.type in {'RIGHTMOUSE', 'ESC'}:
+            self.ob.location = self.init_pos
+            context.window.cursor_set("DEFAULT")
+            return {'CANCELLED'}
+        return {'RUNNING_MODAL'}
+    
+    def execute(self, context):
+        return {"FINISHED"}
 
 class STORYTOOLS_OT_object_scale(Operator):
     bl_idname = "storytools.object_scale"
     bl_label = 'Object Scale'
     bl_description = "Scale object by going left-right"
-    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     @classmethod
     def poll(cls, context):
@@ -193,6 +278,13 @@ class STORYTOOLS_OT_create_object(Operator):
             layer.frames.new(context.scene.frame_start)
             layer.use_lights = False # Can be a project prefs
         
+            ## Set default association
+            ## TODO: set default name as string in prefs ?
+            if l_name in ['Line', 'Sketch']:
+                fn.set_material_association(ob, layer, 'line')
+            elif l_name == 'Color':
+                fn.set_material_association(ob, layer, 'fill_white')
+
         # Enter Draw mode
         bpy.ops.object.mode_set(mode='PAINT_GPENCIL')
         fn.reset_draw_settings(context=context)
@@ -250,11 +342,42 @@ class STORYTOOLS_OT_align_with_view(Operator):
 ## Object Property groups and UIlist
 ## ---
 
+class STORYTOOLS_OT_visibility_toggle(Operator):
+    bl_idname = "storytools.visibility_toggle"
+    bl_label = 'Toggle Visibility'
+    bl_description = "Toggle and synchronize viewlayer visibility, viewport and render visibility"
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+
+    @classmethod
+    def poll(cls, context):
+        return True
+    # def invoke(self, context, event):
+    #     return self.execute(context)
+
+    name : bpy.props.StringProperty()
+
+    def execute(self, context):
+        if not self.name:
+            return {"CANCELLED"}
+        ob = context.scene.objects.get(self.name)
+        if not ob:
+            return {"CANCELLED"}
+        
+        # hide = not ob.hide_viewport
+        hide = ob.visible_get() # Already inversed
+        
+        ob.hide_viewport = hide
+        ob.hide_render = hide
+        # Set viewlayer visibility
+        ob.hide_set(hide)
+        return {"FINISHED"}
+
+## Property groups
+
 def update_object_change(self, context):
     ob = context.scene.objects[self.index]
-    print('Switch to object', ob.name)
+    # print('Switch to object', ob.name)
     if ob.type != 'GPENCIL' or context.object is ob:
-        # Don't do anything
         return
 
     prev_mode = context.mode
@@ -266,7 +389,9 @@ def update_object_change(self, context):
         prev_mode = None
 
     mode_swap = False
-    ## TODO: set in same mode as previous object??
+    
+    ## TODO: add pref to choose if mode should be transfered ?
+    ## Set in same mode as previous object
     if context.scene.tool_settings.lock_object_mode:
         if context.mode != 'OBJECT':
             mode_swap = True
@@ -343,22 +468,25 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
             icon = 'OUTLINER_OB_GREASEPENCIL'
             # row.label(text='', icon='OUTLINER_DATA_GREASEPENCIL')
         
-        row.label(text=item.name, icon=icon)
+        # row.label(text=item.name, icon=icon)
+        row.prop(item, 'name', icon=icon, text='',emboss=False)
         if item.data.users > 1:
             row.template_ID(item, "data")
         else:
             row.label(text='', icon='BLANK1')
         
-        ## Make a clickable toggle that set viewport and render at the same time
-        ## Can lead to confusion with blender model... but heh !
-        if item.hide_viewport:
-            row.label(text='', icon='HIDE_ON')
+        ## Clickable toggle, set and sync hide from viewlayer, viewport and render 
+        ## (Can lead to confusion with blender model... but heh !)
+        # if item.hide_viewport:
+        if item.visible_get():
+            # row.label(text='', icon='HIDE_OFF')
+            row.operator('storytools.visibility_toggle', text='', icon='HIDE_OFF', emboss=False).name = item.name
         else:
-            row.label(text='', icon='HIDE_OFF')
+            # row.label(text='', icon='HIDE_ON')
+            row.operator('storytools.visibility_toggle', text='', icon='HIDE_ON', emboss=False).name = item.name
     
     # Called once to draw filtering/reordering options.
     # def draw_filter(self, context, layout):
-    #     # Nothing much to say here, it's usual UI code...
     #     pass
 
     # Called once to filter/reorder items.
@@ -398,7 +526,9 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
 classes=(
 STORYTOOLS_OT_create_object,
 STORYTOOLS_OT_align_with_view,
+STORYTOOLS_OT_object_pan,
 STORYTOOLS_OT_object_scale,
+STORYTOOLS_OT_visibility_toggle,
 CUSTOM_object_collection, ## Test all bugged
 STORYTOOLS_UL_gp_objects_list,
 )

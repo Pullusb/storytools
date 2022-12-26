@@ -4,7 +4,7 @@ bl_info = {
     "name": "Storytools - Storyboard Tools",
     "description": "Set of tools for Storyboarding",
     "author": "Samuel Bernou",
-    "version": (0, 4, 1),
+    "version": (0, 4, 2),
     "blender": (3, 3, 0),
     "location": "View3D",
     "warning": "Alpha",
@@ -17,7 +17,7 @@ from . import OP_story_palettes
 from . import OP_camera_controls
 from . import OP_gp_objects
 from . import GZ_toolbar
-from . import brush_handle
+from . import handles
 from . import panels
 # from . import keymaps
 
@@ -29,7 +29,7 @@ modules = (
     OP_story_palettes,
     OP_gp_objects,
     OP_camera_controls,
-    brush_handle,
+    handles,
     GZ_toolbar,
     panels,
 )

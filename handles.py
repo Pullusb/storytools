@@ -1,5 +1,6 @@
 import bpy
 from bpy.app.handlers import persistent
+from .constants import LAYERMAT_PREFIX
 
 def set_material_by_name(ob, mat_name):
     if mat_name is None or mat_name == '':
@@ -29,9 +30,10 @@ def layer_change_callback():
         # if not hasattr(ob.data.layers.active, 'material'):
         #     return
         ## set_material_by_name(ob, ob.data.layers.active['material'])
-
-        if ob.data.layers.active.info in ob.keys():
-            set_material_by_name(ob, ob[ob.data.layers.active.info])
+        
+        key_name = LAYERMAT_PREFIX + ob.data.layers.active.info
+        if key_name in ob.keys():
+            set_material_by_name(ob, ob[key_name])
     else:
         scn = bpy.context.scene
         if not hasattr(scn, 'gp_mat_by_layer'):
@@ -76,9 +78,9 @@ def material_change_callback():
         ob[ob.data.layers.active.info] = ob.active_material.name
         
         ## cleanup ?
-        all_keys = [k for k in ob.keys()] # if in loop, error IDpropgroup size has changed
+        all_keys = [k for k in ob.keys() if k.startswith(LAYERMAT_PREFIX)] # if in loop, error IDpropgroup size has changed
         for k in all_keys:
-            if k not in [l.info for l in ob.data.layers]:
+            if k.split(LAYERMAT_PREFIX)[1] not in [l.info for l in ob.data.layers]: # k[len('lmat--'):]
                 del ob[k]
         
         ## using LayerType prop
@@ -149,6 +151,7 @@ def register():
     # subscribe_layer_handler(0)
     # subscribe_brush_handler(0)
     # bpy.types.GPencilLayer.use_material = '' # = bpy.props.StringProperty(name='Associated Material')
+    
     bpy.app.handlers.load_post.append(subscribe_layer_handler) # need to restart after first activation
     bpy.app.handlers.load_post.append(subscribe_material_handler) # need to restart after first activation
     
