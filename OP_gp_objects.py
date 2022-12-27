@@ -43,6 +43,109 @@ from .constants import LAYERMAT_PREFIX
         # else:
         #     self.ob = context.object
         #     self.init_world_loc = self.ob.matrix_world.to_translation()
+
+class STORYTOOLS_OT_object_depth_move(Operator):
+    bl_idname = "storytools.object_depth_move"
+    bl_label = "Object Depth Move"
+    bl_description = "Move object in the depth\
+                    \n+ Ctrl : Adjust Scale (Retain same size in camera framing)"
+    bl_options = {"REGISTER", "INTERNAL", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.object and context.object.type != 'CAMERA'
+
+    def invoke(self, context, event):
+        self.init_mouse_x = event.mouse_x
+        self.cam = bpy.context.scene.camera
+        if not self.cam:
+            self.report({'ERROR'}, 'No active camera')
+            return {"CANCELLED"}
+
+        self.cam_pos = self.cam.matrix_world.translation
+        self.mode = 'distance'
+        self.objects = [o for o in context.selected_objects if o.type != 'CAMERA']
+        self.init_mats = [o.matrix_world.copy() for o in self.objects]
+        
+        if self.cam.data.type == 'ORTHO':
+            context.area.header_text_set(f'Move factor: 0.00')
+            # distance is view vector based
+            self.view_vector = Vector((0,0,-1))
+            self.view_vector.rotate(self.cam.matrix_world)
+        else:
+            self.init_vecs = [o.matrix_world.translation - self.cam_pos for o in self.objects]
+            self.init_dists = [v.length for v in self.init_vecs]
+            context.area.header_text_set(f'Move factor: 0.00 | Mode: {self.mode} (M to switch)')
+        
+        context.window.cursor_set("SCROLL_XY")
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+
+    def stop(self, context):
+        context.area.header_text_set(None)
+        context.window.cursor_set("DEFAULT")
+
+    def modal(self, context, event):
+        if self.mode == 'distance':
+            factor = 0.1
+            if event.shift:
+                factor = 0.01
+        else:
+            # Smaller factor for proportional dist
+            factor = 0.01
+            if event.shift:
+                factor = 0.001
+
+        if event.type in {'MOUSEMOVE'}:
+            diff = (event.mouse_x - self.init_mouse_x) * factor
+
+            if self.cam.data.type == 'ORTHO':
+                # just push in view vector direction
+                context.area.header_text_set(f'Move factor: {diff:.2f}')
+                for i, obj in enumerate(self.objects):
+                    new_vec = self.init_mats[i].translation + (self.view_vector * diff)
+                    obj.matrix_world.translation = new_vec
+            else:
+                # Push from camera point and scale accordingly
+                context.area.header_text_set(f'Move factor: {diff:.2f} | Mode: {self.mode} (M to switch)')
+
+                for i, obj in enumerate(self.objects):
+                    if self.mode == 'distance':
+                        ## move with the same length for everyone 
+                        new_vec = self.init_vecs[i] + (self.init_vecs[i].normalized() * diff)
+                    
+                    else:
+                        ## move with proportional factor from individual distance vector to camera
+                        new_vec = self.init_vecs[i] + (self.init_vecs[i] * diff)
+
+                    obj.matrix_world.translation = self.cam_pos + new_vec
+                    
+                    if event.ctrl: # Adjust scale only if Ctrl is pressed
+                        dist_percentage = new_vec.length / self.init_dists[i]
+                        obj.scale = self.init_mats[i].to_scale() * dist_percentage
+                    else:
+                        obj.scale = self.init_mats[i].to_scale() # reset to initial size
+
+
+        if event.type in {'M'} and event.value == 'PRESS':
+            # Switch mode
+            self.mode = 'distance' if self.mode == 'proportional' else 'proportional'
+
+        # cancel on release
+        if event.type in {'LEFTMOUSE'}: # and event.value == 'PRESS'
+            self.stop(context)
+            # TODO: respect autokeying
+            return {"FINISHED"}
+        
+        if event.type in {'RIGHTMOUSE', 'ESC'} and event.value == 'PRESS':
+            for i, obj in enumerate(self.objects):
+                obj.matrix_world = self.init_mats[i]
+            self.stop(context)
+            return {"CANCELLED"}
+
+        return {"RUNNING_MODAL"}
+
+
 class STORYTOOLS_OT_object_pan(Operator):
     bl_idname = "storytools.object_pan"
     bl_label = 'Object Pan Translate'
@@ -528,6 +631,7 @@ STORYTOOLS_OT_create_object,
 STORYTOOLS_OT_align_with_view,
 STORYTOOLS_OT_object_pan,
 STORYTOOLS_OT_object_scale,
+STORYTOOLS_OT_object_depth_move,
 STORYTOOLS_OT_visibility_toggle,
 CUSTOM_object_collection, ## Test all bugged
 STORYTOOLS_UL_gp_objects_list,

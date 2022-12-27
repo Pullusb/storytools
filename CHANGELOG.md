@@ -2,13 +2,22 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+0.5.0
+
+- added: Object depth move modal operator and gizmo button
+    - Ctrl : Adjust Scale (Retain same size in camera framing) 
+    - 'M' key: switch between "distance" and "proportional" mode (only useful when pushing multiple objects)
+
 0.4.2
 
 - added: Object pan modal operator and gizmo
 - added: Object visibility toggle, auto-sync 3 hide parameters `viewlayer`, `viewport`, `render` (WYSIWYG approach)
 - added: Setup for layer-material association at object creation (hardcoded with current default palette)
-- added: object can be renamed on double click in object sidebar stack
-- changed: Complete rewrite of the camera pan modal operator
+- added: Object can be renamed on double click in object sidebar stack
+- changed: Camera pan modal operator complete rewrite (mode independent):
+    - 'X' / 'Y' key to lock on axis during pan
+    - Ctrl continuous press : autolock on major Axis
+    - Shift continuous press : Precision Pan (Slower)
 
 0.4.1
 

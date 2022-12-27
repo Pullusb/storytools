@@ -79,6 +79,12 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         self.set_gizmo_settings(self.gz_ob_scale, 'FULLSCREEN_ENTER', show_drag=True)
         props = self.gz_ob_scale.target_set_operator("storytools.object_scale")
         self.object_gizmos.append(self.gz_ob_scale)
+        
+        ## Object Depth
+        self.gz_ob_depth = self.gizmos.new("GIZMO_GT_button_2d")
+        self.set_gizmo_settings(self.gz_ob_depth, 'EMPTY_SINGLE_ARROW', show_drag=True) # 
+        props = self.gz_ob_depth.target_set_operator("storytools.object_depth_move")
+        self.object_gizmos.append(self.gz_ob_depth)
 
         ## Object Align to view
         self.gz_ob_align_to_view = self.gizmos.new("GIZMO_GT_button_2d")

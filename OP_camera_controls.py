@@ -36,7 +36,9 @@ class STORYTOOLS_OT_camera_pan(Operator):
 class STORYTOOLS_OT_camera_pan(Operator):
     bl_idname = "storytools.camera_pan"
     bl_label = 'Object Pan Translate'
-    bl_description = "Translate active object"
+    bl_description = "Pan Camera, X/Y to lock on axis\
+                    \n+ Ctrl autolock on major Axis\
+                    \n+ Shift Slower move"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     @classmethod

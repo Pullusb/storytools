@@ -4,12 +4,12 @@ bl_info = {
     "name": "Storytools - Storyboard Tools",
     "description": "Set of tools for Storyboarding",
     "author": "Samuel Bernou",
-    "version": (0, 4, 2),
+    "version": (0, 5, 0),
     "blender": (3, 3, 0),
     "location": "View3D",
     "warning": "Alpha",
     "doc_url": "https://github.com/Pullusb/storytools",
-    "category": "Object" }
+    "category": "Object"}
 
 from . import properties
 from . import preferences
