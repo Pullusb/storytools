@@ -268,3 +268,74 @@ def create_brush(name, context=None):
     ## (Better for customization)
 
     # context.scene.tool_settings.gpencil_paint.brush = brush
+
+
+## Animation
+
+def key_object(ob, loc=True, rot=True, scale=True, use_autokey=False, mode=None, options=set(), context=None):
+    '''Keyframe object location, rotation, scale 
+    :ob: Object to key
+    :loc: key location
+    :rot: key rotation
+    :scale: key scale
+    :use_autokey: Respect auto_key (if enabled, key only if autokey is activated)
+    :mode: in None (default), 'AVAILABLE' (add INSERTKEY_AVAILABLE), 'KEYING_SET' (respect keying set, not implemented)
+
+    :options: Set in keyframe insert options:
+    - ``INSERTKEY_NEEDED`` Only insert keyframes where they're needed in the relevant F-Curves.
+    - ``INSERTKEY_VISUAL`` Insert keyframes based on 'visual transforms'.
+    - ``INSERTKEY_XYZ_TO_RGB`` Color for newly added transformation F-Curves (Location, Rotation, Scale) is based on the transform axis.
+    - ``INSERTKEY_REPLACE`` Only replace already existing keyframes.
+    - ``INSERTKEY_AVAILABLE`` Only insert into already existing F-Curves.
+    - ``INSERTKEY_CYCLE_AWARE`` Take cyclic extrapolation into account (Cycle-Aware Keying option).
+    '''
+
+    context = context or bpy.context
+
+    ## Return if not autokeying
+    if use_autokey and not context.scene.tool_settings.use_keyframe_insert_auto:
+        return False
+    if mode == 'AVAILABLE' and not options:
+        options={'INSERTKEY_AVAILABLE',}
+
+    act = None
+    animation_data = ob.animation_data
+    if animation_data:
+        act = animation_data.action
+    
+    key_loc = False
+    key_rot = False
+    key_scale = False
+
+    if mode is None:
+        if loc: key_loc = True
+        if rot: key_rot = True
+        if scale: key_scale = True
+
+    elif mode == 'AVAILABLE':
+        if not act:
+            return
+        if loc: key_loc = next((fc for fc in act.fcurves if fc.data_path == 'location'), None)
+        if rot: key_rot = next((fc for fc in act.fcurves if fc.data_path == 'rotation_euler'), None)
+        if scale: key_scale = next((fc for fc in act.fcurves if fc.data_path == 'scale'), None)
+    
+    # if not act:
+    #     if loc: key_loc = True
+    #     if rot: key_rot = True
+    #     if scale: key_scale = Truew
+
+    text=[]
+    if key_loc:
+        ob.keyframe_insert('location', group='Object Transforms', options=options)
+        text += ['location']
+    if key_rot:
+        ob.keyframe_insert('rotation_euler', group='Object Transforms', options=options)
+        text += ['rotation']
+    if key_scale:
+        ob.keyframe_insert('scale', group='Object Transforms', options=options)
+        text += ['scale']
+
+
+    if text:
+        return f'{ob.name}: Insert {", ".join(text)} keyframes'
+    return

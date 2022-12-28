@@ -30,9 +30,6 @@ from . import fn
 #         context.space_data.lock_camera = not context.space_data.lock_camera
 #         return {'FINISHED'}
 
-
-
-
 class STORYTOOLS_GGT_toolbar(GizmoGroup):
     # bl_idname = "STORYTOOLS_GGT_toolbar"
     bl_label = "Story Tool Bar"
@@ -68,10 +65,9 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         gz.draw_options = draw_options
         gz.scale_basis = scale_basis
         gz.use_draw_offset_scale = True
-        # print('gz.use_draw_offset_scale:', gz.use_draw_offset_scale)
+        # gz.line_width = 3.0 # no affect on 2D gizmo ?
         
-        # gz.line_width = 3.0
-        
+        ## prop tester
         # gz.use_draw_scale = True # already True
         # for att in ['group',
         #             'matrix_offset',
@@ -150,17 +146,12 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         ## Camera Pan
         self.gz_cam_pan = self.gizmos.new("GIZMO_GT_button_2d")
         self.set_gizmo_settings(self.gz_cam_pan, 'VIEW_PAN', show_drag=True) # ARROW_LEFTRIGHT
-        # props = self.gz_cam_pan.target_set_operator("transform.translate")
-        # props.orient_type = 'VIEW'
-        
         props = self.gz_cam_pan.target_set_operator("storytools.camera_pan")
-        # props = self.gz_cam_pan.target_set_operator("storytools.object_pan")
-
         self.camera_gizmos.append(self.gz_cam_pan)
         
         ## Camera Depth
         self.gz_cam_depth = self.gizmos.new("GIZMO_GT_button_2d")
-        self.set_gizmo_settings(self.gz_cam_depth, 'EMPTY_SINGLE_ARROW', show_drag=True) # ARROW_LEFTRIGHT
+        self.set_gizmo_settings(self.gz_cam_depth, 'EMPTY_SINGLE_ARROW', show_drag=True)
         props = self.gz_cam_depth.target_set_operator("storytools.camera_depth")
         self.camera_gizmos.append(self.gz_cam_depth)
 
@@ -172,8 +163,7 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
 
         ## Camera lock
         self.gz_lock_cam = self.gizmos.new("GIZMO_GT_button_2d")
-        self.set_gizmo_settings(self.gz_lock_cam, 'OUTLINER_OB_CAMERA') # LOCKVIEW_ON
-        # self.gz_lock_cam.icon = 'LOCKVIEW_ON' if context.space_data.lock_camera else 'LOCKVIEW_OFF'
+        self.set_gizmo_settings(self.gz_lock_cam, 'OUTLINER_OB_CAMERA')
         props = self.gz_lock_cam.target_set_operator("storytools.camera_lock_toggle")
         self.camera_gizmos.append(self.gz_lock_cam)
 
@@ -183,13 +173,13 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         props = self.gz_key_cam.target_set_operator("storytools.camera_key_transform")
         self.camera_gizmos.append(self.gz_key_cam)        
 
-        # self.object_gizmos.append()
-
     def draw_prepare(self, context):
         region = context.region
         count = len(self.gizmos)
+
         ## FIXME : Need to adapt for system resolution ?:
         # bpy.context.preferences.system.dpi : 72 (on 1080 laptop) at 1.0 UI scale
+
         section_separator = 20
         ui_scale = context.preferences.view.ui_scale
         self.bar_width = (count * (self.icon_size * ui_scale)) + (count - 1) * (self.gap_size * ui_scale) + section_separator
@@ -198,21 +188,16 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         left_pos = region.width / 2 - self.bar_width / 2 - self.icon_size / 2
         next_pos = self.icon_size * ui_scale + self.gap_size * ui_scale
 
-        """# define position individually 
-        self.gz_lock_cam.matrix_basis = Matrix.Translation((left_pos, vertical_pos, 0))
-            # (region.width / 2 - self.icon_size, vertical_pos, 0)) # center
-            ## On right bor0der
-            # (2 * ui_scale + region.width - self.icon_size * ui_scale, region.height / 2 - self.icon_size, 0))
-
-        self.gz_key_cam.matrix_basis = Matrix.Translation((left_pos + next_pos, vertical_pos, 0))
-        """
-
         obj_color = (0.6, 0.3, 0.2)
         obj_color_hl = (0.7, 0.4, 0.3)
         cam_color = (0.2, 0.2, 0.6)
         cam_color_hl = (0.3, 0.3, 0.8)
 
         separator_flag = False
+        
+        ## On right border
+        # (2 * ui_scale + region.width - self.icon_size * ui_scale, region.height / 2 - self.icon_size, 0))
+
         for i, gz in enumerate(self.gizmos):
             
             if gz in self.object_gizmos:
@@ -247,10 +232,8 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
 
         ## ! Not working : self.gz_lock_cam.icon = 'LOCKVIEW_ON' if context.space_data.lock_camera else 'LOCKVIEW_OFF'
         
-        # self.gz_lock_cam.color = (0.4, 0.0,0.0) if context.space_data.lock_camera else (0.0, 0.0, 0.0)
-        # self.gz_lock_cam.color_highlight = (1.0, 0.5, 0.5) if context.space_data.lock_camera else (0.5, 0.5, 0.5)
-        self.gz_lock_cam.color = (0.4, 0.0,0.0) if context.space_data.lock_camera else cam_color
-        self.gz_lock_cam.color_highlight = (1.0, 0.5, 0.5) if context.space_data.lock_camera else cam_color_hl
+        self.gz_lock_cam.color = (0.5, 0.1, 0.1) if context.space_data.lock_camera else cam_color
+        self.gz_lock_cam.color_highlight = (0.6, 0.2, 0.2) if context.space_data.lock_camera else cam_color_hl
 
     # def refresh(self, context):
     #     self.gz_lock_cam.icon = 'LOCKVIEW_ON' if context.space_data.lock_camera else 'LOCKVIEW_OFF'

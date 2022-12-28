@@ -134,7 +134,9 @@ class STORYTOOLS_OT_object_depth_move(Operator):
         # cancel on release
         if event.type in {'LEFTMOUSE'}: # and event.value == 'PRESS'
             self.stop(context)
-            # TODO: respect autokeying
+            ## Key objects
+            for o in self.objects:
+                fn.key_object(o, use_autokey=True)
             return {"FINISHED"}
         
         if event.type in {'RIGHTMOUSE', 'ESC'} and event.value == 'PRESS':
@@ -189,12 +191,8 @@ class STORYTOOLS_OT_object_pan(Operator):
         
         if event.type == 'LEFTMOUSE': # and event.value == 'RELEASE'
             context.window.cursor_set("DEFAULT")
-            # set key autokeying
-            if context.scene.tool_settings.use_keyframe_insert_auto:
-                self.ob.keyframe_insert('location')
-                # Better to insert all
-                self.ob.keyframe_insert('rotation_euler')
-                self.ob.keyframe_insert('scale')
+            
+            fn.key_object(self.ob)
 
             return {'FINISHED'}
 
@@ -228,11 +226,14 @@ class STORYTOOLS_OT_object_scale(Operator):
         delta = event.mouse_x - self.init_mouse_x
         context.object.scale = self.init_scale * (1 + delta * 0.01)
         
-        if event.type == 'LEFTMOUSE': #  and event.value == 'RELEASE'
+        if event.type == 'LEFTMOUSE':
             context.window.cursor_set("DEFAULT")
-            # set key autokeying
-            if context.scene.tool_settings.use_keyframe_insert_auto:
-                context.object.keyframe_insert('scale')
+
+            ## Key all transforms
+            fn.key_object(context.object, use_autokey=True)
+
+            ## Key only scale
+            # fn.key_object(context.object, loc=False, rot=False, use_autokey=True)
 
             return {'FINISHED'}
 
@@ -243,11 +244,11 @@ class STORYTOOLS_OT_object_scale(Operator):
         
         return {'RUNNING_MODAL'}
     
-    def execute(self, context):
-        # with context.temp_override(selected_objects=[context.object]):
-        #     bpy.ops.transform.resize('INVOKE_DEFAULT')
-        # bpy.ops.transform.resize('INVOKE_DEFAULT')
-        return {"FINISHED"}
+    # def execute(self, context):
+    #     with context.temp_override(selected_objects=[context.object]):
+    #         bpy.ops.transform.resize('INVOKE_DEFAULT')
+    #     bpy.ops.transform.resize('INVOKE_DEFAULT')
+    #     return {"FINISHED"}
 
 ## Create object
 
@@ -341,7 +342,7 @@ class STORYTOOLS_OT_create_object(Operator):
             loc = view_matrix @ Vector((0.0, 0.0, -self.init_dist))
         
         ## Create GP object
-        #TODO: maybe check if want to use same data as another drawing
+        # TODO: maybe check if want to use same data as another drawing
         # (need to show number of user)
         gp = bpy.data.grease_pencils.new(self.name)
         ob_name = self.name
@@ -575,6 +576,11 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
         row.prop(item, 'name', icon=icon, text='',emboss=False)
         if item.data.users > 1:
             row.template_ID(item, "data")
+        else:
+            row.label(text='', icon='BLANK1')
+        
+        if item.parent:
+            row.label(text='', icon='DECORATE_LINKED')
         else:
             row.label(text='', icon='BLANK1')
         

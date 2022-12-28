@@ -1,6 +1,7 @@
 import bpy
 from bpy.types import Operator
 from mathutils import Vector
+from . import fn
 
 
 class STORYTOOLS_OT_camera_depth(Operator):
@@ -35,10 +36,8 @@ class STORYTOOLS_OT_camera_depth(Operator):
         
         if event.type == 'LEFTMOUSE':
             context.window.cursor_set("DEFAULT")
-            # Set key autokeying
-            if context.scene.tool_settings.use_keyframe_insert_auto:
-                self.cam.keyframe_insert('location')
-                self.cam.keyframe_insert('rotation_euler')
+            
+            fn.key_object(self.cam, scale=False, use_autokey=True)
 
             return {'FINISHED'}
 
@@ -144,12 +143,8 @@ class STORYTOOLS_OT_camera_pan(Operator):
         
         elif event.type == 'LEFTMOUSE': # and event.value == 'RELEASE'
             context.window.cursor_set("DEFAULT")
-            # set key autokeying
-            if context.scene.tool_settings.use_keyframe_insert_auto:
-                self.cam.keyframe_insert('location')
-                # Better to insert all
-                self.cam.keyframe_insert('rotation_euler')
-                self.cam.keyframe_insert('scale')
+            
+            fn.key_object(self.cam, scale=False, use_autokey=True)
 
             self.stop(context)
             return {'FINISHED'}
@@ -220,12 +215,10 @@ class STORYTOOLS_OT_camera_rotate(Operator):
             bpy.ops.transform.rotate('INVOKE_DEFAULT', orient_axis='Z') # orient_type='VIEW'
         return {"FINISHED"}
 
-
-
 class STORYTOOLS_OT_attach_toggle(Operator):
     bl_idname = "storytools.attach_toggle"
-    bl_label = "Turn Front"
-    bl_description = "Turn object front in direction of camera"
+    bl_label = "Attach Toggle"
+    bl_description = "Parent / Unparent object to active Camera"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -236,10 +229,27 @@ class STORYTOOLS_OT_attach_toggle(Operator):
         if not context.object:
             self.report({'ERROR'}, 'No active object')
             return {"CANCELLED"}
-        # TODO:
-        # Either set object orientation
-        # Or create a constraint to camera ?
-        print('Super simple ops !')        
+        
+        if context.object == context.scene.camera:
+            self.report({'ERROR'}, 'The active object is the camera')
+            return {"CANCELLED"}
+
+        mat = context.object.matrix_world.copy()
+        if context.object.parent == context.scene.camera:
+            # unparent
+            context.object.parent = None # remove parent
+
+        elif not context.object.parent:
+            # parent
+            context.object.parent = context.scene.camera # remove parent
+
+        context.object.matrix_world = mat
+
+        ## FIXME: respect autokey (or always key ?)
+        ## maybe need to double the key (custom keying)
+        ## TODO: dynamic parent ?
+        fn.key_object(context.object, use_autokey=True)
+
         return {"FINISHED"}
 
 
@@ -257,12 +267,11 @@ class STORYTOOLS_OT_camera_lock_toggle(Operator):
     def execute(self, context):
         sd = context.space_data
         sd.lock_camera = not sd.lock_camera
-        # context.area.tag_redraw()
         return {"FINISHED"}
 
 class STORYTOOLS_OT_camera_key_transform(Operator):
     bl_idname = "storytools.camera_key_transform"
-    bl_label = 'Key Transforms'
+    bl_label = 'Key Camera Transforms'
     bl_description = "Key current camera location and rotation"
     bl_options = {'REGISTER', 'INTERNAL'}
 
@@ -272,9 +281,9 @@ class STORYTOOLS_OT_camera_key_transform(Operator):
         return context.scene.camera
 
     def execute(self, context):
-        cam = context.scene.camera
-        cam.keyframe_insert('location', group='Object Transforms')
-        cam.keyframe_insert('rotation_euler', group='Object Transforms')
+        ret = fn.key_object(context.scene.camera, scale=False)
+        if ret:
+            self.report({'INFO'}, ret)
         return {"FINISHED"}
 
 classes=(

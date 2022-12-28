@@ -68,7 +68,12 @@ Camera Actions:
 
 <!-- ## TODO
 
-Create a test storyboard template 
+-> Create a test storyboard template and check how to load
+
+Modals
+- For all modals, add icon warning if in autokey (same draw func call/stop for all) 
+
+- obj/cam pan and depth move : Show corner minimap... (Big work!)
 
 Object list (UIlist)
 - Object are created stored in a `GP` / `Gpencil` / `Drawings` collection (user can manually create sub-collection if needed)

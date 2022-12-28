@@ -10,29 +10,30 @@ class STORYTOOLS_PT_storytools_ui(Panel):
     bl_category = "Storytools" # Gpencil
     bl_label = "Storytools"
 
-    # @property
-    # def gp_list(self):
-    #     return [o for o in bpy.context.scene.objects if o.type == 'GPENCIL']
-
-    # my_index : bpy.props.IntProperty(default=-1)
-
     def draw(self, context):
         layout = self.layout
         col = layout.column()
         ob = context.object
         col.operator('storytools.load_default_palette', text='Load Base Palette')
-        # col.label(text='Storytool panel')
         
-        # col.label(text='Test buttons')
         # col.operator('storytools.align_with_view', icon='AXIS_FRONT')
 
-
-        ## TODO best way to populate uilist with objects without new propertygroup if possible...
-        
         ## Objects
-        col.label(text='Object:')
-        
-        col.operator('storytools.create_object', icon='PLUS') # 'ADD'
+        # col.label(text='Object:')
+        row = col.row()
+        row.label(text='Object:')
+
+        row = col.row()
+        row.operator('storytools.create_object', icon='PLUS') # 'ADD'
+        row.prop(context.space_data.overlay, "use_gpencil_grid", text='', icon='MESH_GRID')
+
+        if context.object:
+            if context.object.parent:
+                col.operator('storytools.attach_toggle', text='Detach From Camera', icon='UNLINKED')
+            else:
+                col.operator('storytools.attach_toggle', text='Attach To Camera', icon='LINKED')
+        else:
+            col.operator('storytools.attach_toggle', text='Attach To Camera', icon='LINKED')
         
         scn = context.scene        
         col.template_list("STORYTOOLS_UL_gp_objects_list", "",

@@ -2,6 +2,13 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+0.7.0
+
+- added: Button in sidebar to Attach/Detach object to/from camera
+- added: UI _chain_ icon to show when object is parented in object stack
+- added: UI show _grid overlay_ toggle (often used)
+- added: when doing moving actions, key object/cam (respect autokey setting)
+
 0.6.0
 
 - added: Camera forward backward move modal operator and gizmo button
