@@ -43,7 +43,7 @@ class STORYTOOLS_OT_camera_depth(Operator):
             return {'FINISHED'}
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
-            context.object.scale = self.init_pos
+            self.cam.location = self.init_pos
             context.window.cursor_set("DEFAULT")
             return {'CANCELLED'}
         

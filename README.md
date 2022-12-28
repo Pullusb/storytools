@@ -5,30 +5,68 @@ Blender addon - Set of tool for storyboarding in Blender
 Sponsored by [**El Guiri Studios**](https://www.elguiristudios.com/)
 
 
-**/!\ Alpha** - work in progress
+**/!\ Alpha** - Work in progress
 
-<!-- **[Download latest](https://github.com/Pullusb/REPO_NAME/archive/master.zip)** -->
+**[Download latest](https://github.com/Pullusb/storytools/archive/master.zip)**
 
+<!-- https://github.com/Pullusb/storytools/archive/refs/heads/master.zip -->
 
-
-<!-- 
+ 
 ---  
 
 ## Description
 
 Quick usage description
 
-**tool action** : `SHORTCUT`
+Add a `storytools` Tab in viewport sidebar 
 
 
-### Where ?
+### Create New Drawing
 
-Where is the stuff in UI or shortcut
- -->
+Popup choices to Add a new grease pencil object in facing camera
+
+Multiple Choice:
+
+- At cursor position or right in front of camera
+- Parented to camera
+- Tweak distance directly (in meters)
+
+When creating a new object:
+
+- A default palette for storyboard is automatically loaded
+- Draw mode is auto-reset to `Origin - Front Axis`
+
+### Drawing Objects Stack
+
+When select object in stack, keep same mode as previous object
+
+
+### Bottom Toolbar
+
+Action buttons to easily place object and camera
+
+> Note: currently not all actions respects autokey
+
+Objects Actions:
+
+- Pan object
+- Move object forward/backward
+- Scale object
+- Align object to camera 
+
+Camera Actions:
+
+- Pan camera
+- Move camera forward/backward
+- Toggle _Lock camera to view_
+- Key camera position
+
 
 
 
 <!-- ## TODO
+
+Create a test storyboard template 
 
 Object list (UIlist)
 - Object are created stored in a `GP` / `Gpencil` / `Drawings` collection (user can manually create sub-collection if needed)

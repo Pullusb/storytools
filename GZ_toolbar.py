@@ -45,15 +45,15 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         # return context.space_data.region_3d.view_perspective == 'CAMERA'
         return True
 
-    icon_size = 28 # currently more vertical gap size
+    icon_size = 34 # currently more vertical gap size
     gap_size = 28
 
     @staticmethod
     def set_gizmo_settings(gz, icon,
             color=(0.0, 0.0, 0.0),
             color_highlight=(0.5, 0.5, 0.5),
-            alpha=0.5,
-            alpha_highlight=0.5, # 0.1
+            alpha=0.6,
+            alpha_highlight=0.6, # 0.1
             show_drag=False,
             draw_options={'BACKDROP', 'OUTLINE'},
             scale_basis=24): # scale_basis default: 14
