@@ -103,6 +103,12 @@ def get_scale_matrix(scale):
     matscale = matscale_x @ matscale_y @ matscale_z
     return matscale
 
+def compose_matrix(loc, rot, scale):
+    loc_mat = Matrix.Translation(loc)
+    rot_mat = rot.to_matrix().to_4x4()
+    scale_mat = get_scale_matrix(scale)
+    return loc_mat @ rot_mat @ scale_mat
+
 def assign_rotation_from_ref_matrix(obj, ref_mat, rot_90=True):
     '''Get an object, a reference matrix and assign
     :obj: Object to modify

@@ -3,6 +3,133 @@ from bpy.types import Operator
 from mathutils import Vector
 
 
+class STORYTOOLS_OT_camera_depth(Operator):
+    bl_idname = "storytools.camera_depth"
+    bl_label = 'Camera Depth Move'
+    bl_description = "Move Camera Depth (forward and backward)"
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.scene.camera
+
+    def invoke(self, context, event):
+        self.cam = context.scene.camera
+
+        self.init_pos = self.cam.location.copy()
+        self.init_mouse_x = event.mouse_x
+        context.window.cursor_set("SCROLL_X")
+        context.window_manager.modal_handler_add(self)
+        
+        # camera forward vector
+        self.cam_forward_vec = self.cam.matrix_world.to_quaternion() @ Vector((0,0,-1))
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context, event):
+        # Shift precision move
+        fac = 0.01 if event.shift else 0.1
+        delta = event.mouse_x - self.init_mouse_x
+        # self.cam.scale = self.init_pos * (1 + delta * fac)
+        move_val = delta * fac
+        self.cam.matrix_world.translation = self.init_pos + self.cam_forward_vec * move_val
+        
+        if event.type == 'LEFTMOUSE':
+            context.window.cursor_set("DEFAULT")
+            # Set key autokeying
+            if context.scene.tool_settings.use_keyframe_insert_auto:
+                self.cam.keyframe_insert('location')
+                self.cam.keyframe_insert('rotation_euler')
+
+            return {'FINISHED'}
+
+        elif event.type in {'RIGHTMOUSE', 'ESC'}:
+            context.object.scale = self.init_pos
+            context.window.cursor_set("DEFAULT")
+            return {'CANCELLED'}
+        
+        return {'RUNNING_MODAL'}
+
+    """
+    def invoke(self, context, event):
+        self.cam = context.scene.camera
+        # self.use_x, self.use_y = True
+        self.lock = None
+        self.init_pos = self.cam.location.copy() # to restore if cancelled
+        self.init_mouse = Vector((event.mouse_x, event.mouse_y))
+        self.lock_text = 'Camera Pan'
+        self.local_x = self.cam.matrix_world.to_quaternion() @ Vector((1,0,0))
+        self.local_y = self.cam.matrix_world.to_quaternion() @ Vector((0,1,0))
+        context.window.cursor_set("SCROLL_XY")
+        context.window_manager.modal_handler_add(self)
+        self.update_position(context, event)
+        return {'RUNNING_MODAL'}
+
+    def update_position(self, context, event):
+        mouse_co = Vector((event.mouse_x, event.mouse_y))
+        lock = self.lock
+        
+        ## Slower with shift
+        fac = 0.01 if event.shift else 0.1
+
+        move_2d = mouse_co - self.init_mouse
+        
+        # Ctrl: override lock to "major" direction
+        if event.ctrl:
+            if abs(move_2d.x) >= abs(move_2d.y):
+                lock = 'X'
+            else:
+                lock = 'Y'
+
+        move_vec = Vector((0,0,0))
+        if not lock or lock == 'X': 
+            move_vec += self.local_x * (move_2d.x * fac)
+        if not lock or lock == 'Y': 
+            move_vec += self.local_y * (move_2d.y * fac)
+
+        # set location
+        self.cam.location = self.init_pos + move_vec
+        
+        ## set header text (optional)
+        local_move = move_2d * fac
+        self.lock_text = f'Camera Pan X: {local_move.x:.3f}, Y: {local_move.y:.3f}'
+        self.lock_text += f' | Lock Axis {lock}' if lock else ''
+        context.area.header_text_set(self.lock_text)
+
+    def modal(self, context, event):
+        self.update_position(context, event)
+        
+        if event.type in ('X','Y') and event.value == 'PRESS':
+            self.lock = event.type if self.lock != event.type else None
+        
+        elif event.type == 'LEFTMOUSE': # and event.value == 'RELEASE'
+            context.window.cursor_set("DEFAULT")
+            # set key autokeying
+            if context.scene.tool_settings.use_keyframe_insert_auto:
+                self.cam.keyframe_insert('location')
+                # Better to insert all
+                self.cam.keyframe_insert('rotation_euler')
+                self.cam.keyframe_insert('scale')
+
+            self.stop(context)
+            return {'FINISHED'}
+
+        elif event.type in {'RIGHTMOUSE', 'ESC'}:
+            self.cam.location = self.init_pos
+            self.stop(context)
+            return {'CANCELLED'}
+        
+        return {'RUNNING_MODAL'}
+    
+    def stop(self, context):
+        # remove draw handler and text set
+        context.area.header_text_set(None) # reset header
+        context.window.cursor_set("DEFAULT")
+        context.area.tag_redraw()
+    
+    def execute(self, context):
+        return {"FINISHED"}
+    """
+
 ''' ## ops based version, only valid in object mode
 class STORYTOOLS_OT_camera_pan(Operator):
     bl_idname = "storytools.camera_pan"
@@ -174,6 +301,8 @@ class STORYTOOLS_OT_camera_rotate(Operator):
             bpy.ops.transform.rotate('INVOKE_DEFAULT', orient_axis='Z') # orient_type='VIEW'
         return {"FINISHED"}
 
+
+
 class STORYTOOLS_OT_attach_toggle(Operator):
     bl_idname = "storytools.attach_toggle"
     bl_label = "Turn Front"
@@ -233,6 +362,7 @@ classes=(
     STORYTOOLS_OT_attach_toggle,
     STORYTOOLS_OT_camera_pan,
     STORYTOOLS_OT_camera_rotate,
+    STORYTOOLS_OT_camera_depth,
     STORYTOOLS_OT_camera_lock_toggle,
     STORYTOOLS_OT_camera_key_transform,
 )

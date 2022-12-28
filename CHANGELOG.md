@@ -2,6 +2,13 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+0.6.0
+
+- added: Camera forward backward move modal operator and gizmo button
+    - Slide left to right to move active forward and backward
+    - Shift: Slower move
+- added: UI:button colors, bigger buttons backdrop and space.
+
 0.5.0
 
 - added: Object depth move modal operator and gizmo button
