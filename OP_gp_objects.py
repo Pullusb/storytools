@@ -47,7 +47,7 @@ from .constants import LAYERMAT_PREFIX
 class STORYTOOLS_OT_object_depth_move(Operator):
     bl_idname = "storytools.object_depth_move"
     bl_label = "Object Depth Move"
-    bl_description = "Move object in the depth\
+    bl_description = "Move object Forward/backward (Slide left-right)\
                     \n+ Ctrl : Adjust Scale (Retain same size in camera framing)"
     bl_options = {"REGISTER", "INTERNAL", "UNDO"}
 
@@ -77,7 +77,7 @@ class STORYTOOLS_OT_object_depth_move(Operator):
             self.init_dists = [v.length for v in self.init_vecs]
             context.area.header_text_set(f'Move factor: 0.00 | Mode: {self.mode} (M to switch)')
         
-        context.window.cursor_set("SCROLL_XY")
+        context.window.cursor_set("SCROLL_X")
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
