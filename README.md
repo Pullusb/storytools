@@ -16,10 +16,9 @@ Sponsored by [**El Guiri Studios**](https://www.elguiristudios.com/)
 
 ## Description
 
-Quick usage description
-
 Add a `storytools` Tab in viewport sidebar 
 
+> After installation, restart blender once to enable material association handler
 
 ### Create New Drawing
 
@@ -38,7 +37,12 @@ When creating a new object:
 
 ### Drawing Objects Stack
 
-When select object in stack, keep same mode as previous object
+Keep same mode accross object when selecting in this stack
+
+### Special Behavior
+
+When selecting a material, it "stick" to current active layer
+(i.e: when selecting this layer again, it will switch back to this material)
 
 
 ### Bottom Toolbar
@@ -62,8 +66,6 @@ Camera Actions:
 - Key camera position
 
 
-
-
 <!-- ## TODO
 
 Create a test storyboard template 
@@ -85,7 +87,5 @@ Brush association
     - Need to create custom brushes (import from a blend or create from scratch)
     - Also need change to chosen layer (need to have association choice somewhere).
     - 
-
-- 
 
 -->
