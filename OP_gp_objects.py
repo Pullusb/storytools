@@ -75,7 +75,8 @@ class STORYTOOLS_OT_object_depth_move(Operator):
         else:
             self.init_vecs = [o.matrix_world.translation - self.cam_pos for o in self.objects]
             self.init_dists = [v.length for v in self.init_vecs]
-            context.area.header_text_set(f'Move factor: 0.00 | Mode: {self.mode} (M to switch)')
+            context.area.header_text_set(
+                f'Move factor: 0.00 | Mode: {self.mode} (M to switch) | Ctrl: Adjust scale | Shift: Slow')
         
         context.window.cursor_set("SCROLL_X")
         context.window_manager.modal_handler_add(self)
@@ -107,7 +108,8 @@ class STORYTOOLS_OT_object_depth_move(Operator):
                     obj.matrix_world.translation = new_vec
             else:
                 # Push from camera point and scale accordingly
-                context.area.header_text_set(f'Move factor: {diff:.2f} | Mode: {self.mode} (M to switch)')
+                context.area.header_text_set(
+                    f'Move factor: {diff:.2f} | Mode: {self.mode} (M to switch) | Ctrl: Adjust scale | Shift: Slow')
 
                 for i, obj in enumerate(self.objects):
                     if self.mode == 'distance':
