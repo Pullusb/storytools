@@ -23,6 +23,7 @@ class STORYTOOLS_PT_storytools_ui(Panel):
         row = col.row()
         row.label(text='Object:')
 
+        # col.operator('storytools.object_depth_move', icon='PLUS') # test poll
         row = col.row()
         row.operator('storytools.create_object', icon='PLUS') # 'ADD'
         row.prop(context.space_data.overlay, "use_gpencil_grid", text='', icon='MESH_GRID')

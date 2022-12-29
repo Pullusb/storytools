@@ -53,7 +53,14 @@ class STORYTOOLS_OT_object_depth_move(Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.object and context.object.type != 'CAMERA'
+        if not context.object:
+            cls.poll_message_set("No active object")
+            return False
+        if context.object.type == 'CAMERA' and len(context.selected_objects) < 2:
+            cls.poll_message_set("Cannot move camera object")
+            return False
+        return True
+        # return context.object and context.object.type != 'CAMERA'
 
     def invoke(self, context, event):
         self.init_mouse_x = event.mouse_x
