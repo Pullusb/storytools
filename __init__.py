@@ -4,13 +4,16 @@ bl_info = {
     "name": "Storytools - Storyboard Tools",
     "description": "Set of tools for Storyboarding",
     "author": "Samuel Bernou",
-    "version": (0, 7, 0),
+    "version": (0, 8, 0),
     "blender": (3, 3, 0),
     "location": "View3D",
     "warning": "Alpha",
     "doc_url": "https://github.com/Pullusb/storytools",
     "category": "Object"}
 
+from pathlib import Path
+
+from . import OP_git_update
 from . import properties
 from . import preferences
 from . import OP_story_palettes
@@ -24,6 +27,7 @@ from . import panels
 import bpy
 
 modules = (
+    OP_git_update,
     properties,
     preferences,
     OP_story_palettes,

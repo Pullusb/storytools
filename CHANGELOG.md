@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+0.8.0
+
+- added: Update addon from prefs using git when addon is cloned as git repository and OS has git installed
+
 0.7.0
 
 - added: Button in sidebar to Attach/Detach object to/from camera
