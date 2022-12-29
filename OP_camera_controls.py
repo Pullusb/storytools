@@ -2,7 +2,8 @@ import bpy
 from bpy.types import Operator
 from mathutils import Vector
 from . import fn
-
+import gpu
+from gpu_extras.batch import batch_for_shader
 
 class STORYTOOLS_OT_camera_depth(Operator):
     bl_idname = "storytools.camera_depth"
@@ -90,18 +91,52 @@ class STORYTOOLS_OT_camera_pan(Operator):
     def poll(cls, context):
         return context.scene.camera
 
+    def cam_pan_draw_callback(self, context):
+        # Draw lock lines
+        if not self.final_lock:
+            return
+        if self.final_lock == 'X':
+            coords = self.lock_x_coords
+            color = (1, 0, 0, 0.15)
+        elif self.final_lock == 'Y':
+            coords = self.lock_y_coords
+            color = (0, 1, 0, 0.15)
+        else:
+            return
+        
+        gpu.state.blend_set('ALPHA')
+        gpu.state.line_width_set(2)
+
+        shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+        batch = batch_for_shader(shader, 'LINES', {"pos": coords})
+        shader.uniform_float("color", color)
+        batch.draw(shader)
+
+        gpu.state.line_width_set(1)
+        gpu.state.blend_set('NONE')
+
     def invoke(self, context, event):
         self.cam = context.scene.camera
-        # self.use_x, self.use_y = True
-        self.lock = None
+        self.final_lock = self.lock = None
         self.init_pos = self.cam.location.copy() # to restore if cancelled
         self.init_mouse = Vector((event.mouse_x, event.mouse_y))
         self.lock_text = 'Camera Pan'
         self.local_x = self.cam.matrix_world.to_quaternion() @ Vector((1,0,0))
         self.local_y = self.cam.matrix_world.to_quaternion() @ Vector((0,1,0))
         context.window.cursor_set("SCROLL_XY")
-        context.window_manager.modal_handler_add(self)
+
         self.update_position(context, event)
+
+        ## Draw handler
+        center = fn.get_cam_frame_world_center(self.cam)
+        self.lock_x_coords = [center + self.local_x * 10000, center + self.local_x * -10000]
+        self.lock_y_coords = [center + self.local_y * 10000, center + self.local_y * -10000]
+        wm = context.window_manager
+        # args = (self, context)
+        args = (context,)
+        self._handle = bpy.types.SpaceView3D.draw_handler_add(self.cam_pan_draw_callback, args, 'WINDOW', 'POST_VIEW')
+
+        wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
     def update_position(self, context, event):
@@ -126,6 +161,7 @@ class STORYTOOLS_OT_camera_pan(Operator):
         if not lock or lock == 'Y': 
             move_vec += self.local_y * (move_2d.y * fac)
 
+        self.final_lock = lock
         # set location
         self.cam.location = self.init_pos + move_vec
         
@@ -160,10 +196,11 @@ class STORYTOOLS_OT_camera_pan(Operator):
         # remove draw handler and text set
         context.area.header_text_set(None) # reset header
         context.window.cursor_set("DEFAULT")
+        bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
         context.area.tag_redraw()
     
-    def execute(self, context):
-        return {"FINISHED"}
+    # def execute(self, context):
+    #     return {"FINISHED"}
 
 # Not really needed, already in Grease pencil tools
 class STORYTOOLS_OT_camera_rotate(Operator):
