@@ -68,10 +68,14 @@ class STORYTOOLS_OT_object_depth_move(Operator):
         if not self.cam:
             self.report({'ERROR'}, 'No active camera')
             return {"CANCELLED"}
-
+        if any(context.object.lock_location):
+            self.report({'ERROR'}, "Active object's location is locked")
+            return {'CANCELLED'}
         self.cam_pos = self.cam.matrix_world.translation
         self.mode = 'distance'
         self.objects = [o for o in context.selected_objects if o.type != 'CAMERA']
+        # Filter locked objects
+        self.objects = [o for o in self.objects if not any(o.lock_location)] 
         self.init_mats = [o.matrix_world.copy() for o in self.objects]
         
         if self.cam.data.type == 'ORTHO':
@@ -168,8 +172,12 @@ class STORYTOOLS_OT_object_pan(Operator):
         return context.object
 
     def invoke(self, context, event):
-        
+        # TODO add multiselection support (only on object mode)
         self.ob = context.object
+        if any(context.object.lock_location):
+            self.report({'ERROR'}, "Active object's location is locked")
+            return {'CANCELLED'}
+    
         self.init_world_loc = self.ob.matrix_world.to_translation()
 
         self.init_pos = self.ob.location.copy() # to restore if cancelled
@@ -225,6 +233,9 @@ class STORYTOOLS_OT_object_scale(Operator):
         return context.object
 
     def invoke(self, context, event):
+        if any(context.object.lock_scale):
+            self.report({'ERROR'}, "Active object's scale is locked")
+            return {'CANCELLED'}
         self.init_scale = context.object.scale.copy()
         self.init_mouse_x = event.mouse_x
         context.window.cursor_set("SCROLL_X")

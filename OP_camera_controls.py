@@ -17,6 +17,9 @@ class STORYTOOLS_OT_camera_depth(Operator):
 
     def invoke(self, context, event):
         self.cam = context.scene.camera
+        if any(self.cam.lock_location):
+            self.report({'ERROR'}, 'Camera location is locked')
+            return {'CANCELLED'}
 
         self.init_pos = self.cam.location.copy()
         self.init_mouse_x = event.mouse_x
@@ -115,8 +118,32 @@ class STORYTOOLS_OT_camera_pan(Operator):
         gpu.state.line_width_set(1)
         gpu.state.blend_set('NONE')
 
+    
+    # def execute(self, context):
+    #     context.area.tag_redraw()
+    #     # return {"CANCELLED"}
+    #     ## Button disappear on OK click
+    #     ## Crash when using redo
+    #     ## Need to lauch a sub-ops with it's own draw
+    #     return {"FINISHED"}
+
+    # def draw(self, context):
+    #     layout = self.layout
+    #     layout.label(text='Camera location is locked')
+    #     ob_lock_location_cam_draw_panel(self, context)
+
     def invoke(self, context, event):
         self.cam = context.scene.camera
+
+        if any(self.cam.lock_location):
+            # print('locked!')
+            self.report({'ERROR'}, 'Camera location is locked')
+            return {'CANCELLED'}
+
+            ## redo panel changes crash (probably cause of the mix)
+            self.ob = self.cam # need to assign 'ob' variable
+            return context.window_manager.invoke_props_dialog(self)
+            
         self.final_lock = self.lock = None
         self.init_pos = self.cam.location.copy() # to restore if cancelled
         self.init_mouse = Vector((event.mouse_x, event.mouse_y))
@@ -198,9 +225,7 @@ class STORYTOOLS_OT_camera_pan(Operator):
         context.window.cursor_set("DEFAULT")
         bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
         context.area.tag_redraw()
-    
-    # def execute(self, context):
-    #     return {"FINISHED"}
+
 
 # Not really needed, already in Grease pencil tools
 class STORYTOOLS_OT_camera_rotate(Operator):
@@ -243,7 +268,6 @@ class STORYTOOLS_OT_camera_rotate(Operator):
             
             #neg = -angle
             #rot_mat2d = mathutils.Matrix([[math.cos(neg), -math.sin(neg)], [math.sin(neg), math.cos(neg)]])
-
 
             return {"FINISHED"}
         
