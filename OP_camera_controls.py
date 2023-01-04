@@ -317,15 +317,16 @@ class STORYTOOLS_OT_attach_toggle(Operator):
 class STORYTOOLS_OT_camera_lock_toggle(Operator):
     bl_idname = "storytools.camera_lock_toggle"
     bl_label = 'Toggle Lock Camera To View'
-    bl_description = "Toggle camera lock to view in active viewport"
+    bl_description = "In Camera view: Toggle 'lock camera to view' (active viewport)\
+        \nIn free view: Go to camera"
     bl_options = {'REGISTER', 'INTERNAL'}
 
-
-    @classmethod
-    def poll(cls, context):
-        return True
-
     def execute(self, context):
+        if context.space_data.region_3d.view_perspective != 'CAMERA':
+            context.space_data.region_3d.view_perspective = 'CAMERA'
+            return {"FINISHED"}
+
+        ## Toggle lock only if in camera view 
         sd = context.space_data
         sd.lock_camera = not sd.lock_camera
         return {"FINISHED"}

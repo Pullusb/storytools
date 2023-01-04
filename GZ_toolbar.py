@@ -232,6 +232,7 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
 
         ## ! Not working : self.gz_lock_cam.icon = 'LOCKVIEW_ON' if context.space_data.lock_camera else 'LOCKVIEW_OFF'
         
+        ## Show color when out of cam view ? : context.space_data.region_3d.view_perspective != 'CAMERA'
         self.gz_lock_cam.color = (0.5, 0.1, 0.1) if context.space_data.lock_camera else cam_color
         self.gz_lock_cam.color_highlight = (0.6, 0.2, 0.2) if context.space_data.lock_camera else cam_color_hl
 
