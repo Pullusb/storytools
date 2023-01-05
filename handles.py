@@ -40,8 +40,7 @@ def layer_change_callback():
             return
         set_material_by_name(ob, scn.gp_mat_by_layer.get(ob.data.layers.active.info))
 
-@persistent
-def subscribe_layer_handler(dummy):
+def subscribe_layer():
     subscribe_to = (bpy.types.GreasePencilLayers, "active_index")
     bpy.msgbus.subscribe_rna(
         key=subscribe_to,
@@ -54,6 +53,10 @@ def subscribe_layer_handler(dummy):
         notify=layer_change_callback,
         options={'PERSISTENT'},
     )
+
+@persistent
+def subscribe_layer_handler(dummy):
+    subscribe_layer()
 
 ## material callback
 def material_change_callback():
@@ -75,7 +78,7 @@ def material_change_callback():
         ## custom prop method
         # if ob.data.layers.active.info not in ob.data.keys():
 
-        ob[ob.data.layers.active.info] = ob.active_material.name
+        ob[LAYERMAT_PREFIX + ob.data.layers.active.info] = ob.active_material.name
         
         ## cleanup ?
         all_keys = [k for k in ob.keys() if k.startswith(LAYERMAT_PREFIX)] # if in loop, error IDpropgroup size has changed
@@ -105,8 +108,7 @@ def material_change_callback():
 
     # bpy.context.scene.gptoolprops['layer_name'] = res.group('name')
 
-@persistent
-def subscribe_material_handler(dummy):
+def subscribe_material():
     # subscribe_to = (bpy.types.Material, "name") # When mat name is changed !
     subscribe_to = (bpy.types.Object, "active_material_index") # When mat name is changed !
     bpy.msgbus.subscribe_rna(
@@ -117,7 +119,11 @@ def subscribe_material_handler(dummy):
         options={'PERSISTENT'},
     )
 
-## brush callback ?
+@persistent
+def subscribe_material_handler(dummy):
+    subscribe_material()
+
+## Brush callback ?
 '''
 def brush_change_callback():
     print('Brush has changed!')
@@ -148,21 +154,18 @@ def subscribe_brush_handler(dummy):
 '''
 
 def register():
-    # subscribe_layer_handler(0)
-    # subscribe_brush_handler(0)
     # bpy.types.GPencilLayer.use_material = '' # = bpy.props.StringProperty(name='Associated Material')
-    
-    bpy.app.handlers.load_post.append(subscribe_layer_handler) # need to restart after first activation
-    bpy.app.handlers.load_post.append(subscribe_material_handler) # need to restart after first activation
-    
-    # bpy.app.handlers.load_post.append(subscribe_brush_handler) # need to restart after first activation
-    
-    # register_keymaps()
+
+    # Subscribe for register (Avoid the to restart after first activation)
+    bpy.app.timers.register(subscribe_layer, first_interval=1)
+    bpy.app.timers.register(subscribe_material, first_interval=1)
+
+    # Add a load handler when opening other blends (does not seeem to add msgbus twice)
+    bpy.app.handlers.load_post.append(subscribe_layer_handler)
+    bpy.app.handlers.load_post.append(subscribe_material_handler) # Need to restart after first activation
+
 
 def unregister():
-    # unregister_keymaps()
-    
-    # bpy.app.handlers.load_post.remove(subscribe_brush_handler)
     bpy.app.handlers.load_post.remove(subscribe_material_handler)
     bpy.app.handlers.load_post.remove(subscribe_layer_handler)
 

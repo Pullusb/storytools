@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+0.8.4
+
+- fixed: Layer / material Sync not working
+- fixed: Layer / material needing restart after first addon activation
+
 0.8.3
 
 - added: "Lock cam to view" become "Go to Camera view" when out of camera.
