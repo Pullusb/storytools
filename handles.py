@@ -10,12 +10,12 @@ def set_material_by_name(ob, mat_name):
             continue
         m = ms.material
         if m.name == mat_name:
-            print(f':{i}:', m.name, ob.active_material_index)
+            # print(f':{i}:', m.name, ob.active_material_index)
             ob.active_material_index = i
             return
 
 def layer_change_callback():
-    print('Layer has changed!')
+    # print('Layer has changed!')
 
     ob = bpy.context.object
     if not ob or ob.type != 'GPENCIL':
@@ -60,7 +60,7 @@ def subscribe_layer_handler(dummy):
 
 ## material callback
 def material_change_callback():
-    print(f'{bpy.context.object.name}: Material has changed!')
+    # print(f'{bpy.context.object.name}: Material has changed!')
     ob = bpy.context.object
     if not ob or ob.type != 'GPENCIL':
         return
