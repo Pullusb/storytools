@@ -20,6 +20,7 @@ from . import OP_story_palettes
 from . import OP_camera_controls
 from . import OP_gp_objects
 from . import GZ_toolbar
+from . import OP_workspace_setup
 from . import handles
 from . import panels
 # from . import keymaps
@@ -35,6 +36,7 @@ modules = (
     OP_camera_controls,
     handles,
     GZ_toolbar,
+    OP_workspace_setup,
     panels,
 )
 

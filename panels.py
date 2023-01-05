@@ -62,6 +62,9 @@ class STORYTOOLS_PT_storytools_ui(Panel):
         col.prop(bpy.context.scene.storytools_settings, 'material_sync', text='')
 
         # if context.window.workspace.name != 'Storyboard':
+        #     col.operator('storytools.set_storyboard_workspace', text='Set Storyboard Workspace', icon='WORKSPACE')
+
+
             
 
 # ## function to append in a menu

@@ -18,5 +18,27 @@ def activate_workspace(workspace_name = 'Storyboard', context=None):
     if ret != {'FINISHED'}:
         print(f'Could not found {workspace_name} at {workspace_filepath}')
         return False
-    
+
     return True
+
+class STORYTOOLS_OT_set_storyboard_workspace(bpy.types.Operator):
+    bl_idname = "storytools.set_storyboard_workspace"
+    bl_label = 'Set Storyboard Workspace'
+    bl_description = "Set story board workspace, import if needed"
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def execute(self, context):
+        activate_workspace(context=context)
+        return {"FINISHED"}
+
+classes=(
+    STORYTOOLS_OT_set_storyboard_workspace,
+)
+
+def register(): 
+    for cls in classes:
+        bpy.utils.register_class(cls)
+
+def unregister():
+    for cls in reversed(classes):
+        bpy.utils.unregister_class(cls)
