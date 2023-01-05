@@ -306,9 +306,7 @@ class STORYTOOLS_OT_attach_toggle(Operator):
 
         context.object.matrix_world = mat
 
-        ## FIXME: respect autokey (or always key ?)
-        ## maybe need to double the key (custom keying)
-        ## TODO: dynamic parent ?
+        ## TODO: dynamic parent ? maybe need to double the key (custom keying)
         fn.key_object(context.object, use_autokey=True)
 
         return {"FINISHED"}

@@ -36,6 +36,22 @@ class STORYTOOLS_PGT_distances(bpy.types.PropertyGroup) :
         description="When Creating the object, Attach it to the camera",
         default=False) # options={'ANIMATABLE'},subtype='NONE', update=None, get=None, set=None
 
+    select_active_only : BoolProperty(
+        name="Select Active Only",
+        description="When changing object, deselect other objects if not in 'Object mode'",
+        default=True)
+    
+    ## enum (with Icon)
+    material_sync : EnumProperty(
+        name="Material Sync", description="Only jump to defined keyframe type", 
+        default='INDIVIDUAL', options={'HIDDEN', 'SKIP_SAVE'},
+        items=(
+            ('INDIVIDUAL', 'Sync Materials', 'Sync material and layer per object', 0),
+            ('GLOBAL', 'Sync Across Objects', 'Sync material and layer globally ', 1),
+            ('DISABLED', 'No Sync', 'No material association when changing layer', 2),
+            ))
+
+
     # IntProperty : IntProperty(
     #     name="int prop", description="", default=25, min=1, max=2**31-1, soft_min=1, soft_max=2**31-1, step=1, options={'HIDDEN'})#, subtype='PIXEL'
 

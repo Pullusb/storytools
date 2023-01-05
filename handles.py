@@ -16,14 +16,17 @@ def set_material_by_name(ob, mat_name):
 
 def layer_change_callback():
     # print('Layer has changed!')
-
     ob = bpy.context.object
     if not ob or ob.type != 'GPENCIL':
         return
     if not ob.data.layers.active:
         return
     
-    mode = 'INDIVIDUAL'
+    mode = bpy.context.scene.storytools_settings.material_sync
+    if mode == 'DISABLED':
+        return
+    
+    # mode = 'INDIVIDUAL'
     
     if mode == 'INDIVIDUAL':
         ## using custom prop
@@ -69,7 +72,11 @@ def material_change_callback():
     if not ob.active_material:
         return
     
-    mode = 'INDIVIDUAL'
+    mode = bpy.context.scene.storytools_settings.material_sync
+    if mode == 'DISABLED':
+        return
+
+    # mode = 'INDIVIDUAL'
     
     if mode == 'INDIVIDUAL':
         ## use active_material_index

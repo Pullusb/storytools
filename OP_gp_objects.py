@@ -10,12 +10,6 @@ from . import fn
 from .preferences import get_addon_prefs
 from .constants import LAYERMAT_PREFIX
 
-# TODO: Build new object
-# - facing camera
-# - load "active" palette
-
-## Pop up menu for config or keep it 
-
 ## Bonus
 # - load guides if there are any
 
@@ -71,6 +65,7 @@ class STORYTOOLS_OT_object_depth_move(Operator):
         if any(context.object.lock_location):
             self.report({'ERROR'}, "Active object's location is locked")
             return {'CANCELLED'}
+
         self.cam_pos = self.cam.matrix_world.translation
         self.mode = 'distance'
         self.objects = [o for o in context.selected_objects if o.type != 'CAMERA']
@@ -172,7 +167,7 @@ class STORYTOOLS_OT_object_pan(Operator):
         return context.object
 
     def invoke(self, context, event):
-        # TODO add multiselection support (only on object mode)
+        # TODO bonus : add multiselection support like depth move (only on object mode)
         self.ob = context.object
         if any(context.object.lock_location):
             self.report({'ERROR'}, "Active object's location is locked")
@@ -362,8 +357,8 @@ class STORYTOOLS_OT_create_object(Operator):
             loc = view_matrix @ Vector((0.0, 0.0, -self.init_dist))
         
         ## Create GP object
-        # TODO: maybe check if want to use same data as another drawing
-        # (need to show number of user)
+        # TODO bonus : maybe check if want to use same data as another drawing
+
         gp = bpy.data.grease_pencils.new(self.name)
         ob_name = self.name
 
@@ -393,6 +388,7 @@ class STORYTOOLS_OT_create_object(Operator):
         ## Configure
         # TODO: Set Active palette (Need a selectable loader)
         # fn.load_palette(path_to_palette)
+
         fn.load_default_palette(ob=ob)
         gp.edit_line_color[3] = prefs.default_edit_line_opacity # 0.2 # Bl default is 0.5
         
@@ -403,7 +399,7 @@ class STORYTOOLS_OT_create_object(Operator):
             layer.use_lights = False # Can be a project prefs
         
             ## Set default association
-            ## TODO: set default name as string in prefs ?
+            ## TODO: Set default name as string in prefs ?
             if l_name in ['Line', 'Sketch']:
                 fn.set_material_association(ob, layer, 'line')
             elif l_name == 'Color':
@@ -514,7 +510,7 @@ def update_object_change(self, context):
 
     mode_swap = False
     
-    ## TODO: add pref to choose if mode should be transfered ?
+    ## TODO optional: Option to stop mode sync ?
     ## Set in same mode as previous object
     if context.scene.tool_settings.lock_object_mode:
         if context.mode != 'OBJECT':
@@ -534,7 +530,11 @@ def update_object_change(self, context):
         if context.mode != prev_mode is not None:
             bpy.ops.object.mode_set(mode=prev_mode)
 
-    ob.select_set(True)
+    if context.mode != 'OBJECT':
+        for o in [o for o in context.scene.objects if o.type == 'GPENCIL']:
+            o.select_set(o == ob) # select only active (when not in object mode)
+    
+    # ob.select_set(True)
 
 
 class CUSTOM_object_collection(PropertyGroup):

@@ -38,7 +38,7 @@ class STORYTOOLS_PT_storytools_ui(Panel):
         
         scn = context.scene        
         col.template_list("STORYTOOLS_UL_gp_objects_list", "",
-            scn, "objects", scn.gp_object_props, "index", rows=6)
+            scn, "objects", scn.gp_object_props, "index", rows=3)
         ## :: listtype_name, list_id, dataptr, propname, active_dataptr, active_propname,
         ## item_dyntip_propname, rows, maxrows, type, columns, sort_reverse, sort_lock) 
 
@@ -58,7 +58,11 @@ class STORYTOOLS_PT_storytools_ui(Panel):
         col.label(text=f'Materials:')
         row = col.row()
         row.template_list("GPENCIL_UL_matslots", "", ob, "material_slots", ob, "active_material_index", rows=7)
-    
+        
+        col.prop(bpy.context.scene.storytools_settings, 'material_sync', text='')
+
+        # if context.window.workspace.name != 'Storyboard':
+            
 
 # ## function to append in a menu
 # def palette_manager_menu(self, context):

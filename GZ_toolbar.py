@@ -110,7 +110,6 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         # use_tooltip
 
     def setup(self, context):
-        # FIXME: set bigger icon size and backdrop size
         ## --- Object
 
         self.object_gizmos = []
@@ -177,7 +176,7 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         region = context.region
         count = len(self.gizmos)
 
-        ## FIXME : Need to adapt for system resolution ?:
+        ## FIXME : Need to adapt for system resolution ?
         # bpy.context.preferences.system.dpi : 72 (on 1080 laptop) at 1.0 UI scale
 
         section_separator = 20

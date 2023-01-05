@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+0.8.5
+
+- added: filter to set layer/material sync per object or across all objects (default individual)
+
 0.8.4
 
 - fixed: Layer / material Sync not working
