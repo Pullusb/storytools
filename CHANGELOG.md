@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+0.8.7
+
+- changed: More compact UI for object options
+- added: Bring back side buttons for layers and materials
+
 0.8.6
 
 - added: Button to load bundled `Storyboard` workspace (show up if not in "Storyboard" tab)

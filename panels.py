@@ -4,6 +4,7 @@ import bpy
 from bpy.types import Panel
 from .preferences import get_addon_prefs
 
+
 class STORYTOOLS_PT_storytools_ui(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -12,35 +13,10 @@ class STORYTOOLS_PT_storytools_ui(Panel):
 
     def draw(self, context):
         layout = self.layout
-        col = layout.column()
         ob = context.object
-        
-        # col.operator('storytools.align_with_view', icon='AXIS_FRONT')
+        col = layout.column()
 
-        ## Objects
-        # col.label(text='Object:')
-        row = col.row()
-        row.label(text='Object:')
-
-        # col.operator('storytools.object_depth_move', icon='PLUS') # test poll
-        row = col.row()
-        row.operator('storytools.create_object', icon='PLUS') # 'ADD'
-        row.prop(context.space_data.overlay, "use_gpencil_grid", text='', icon='MESH_GRID')
-
-        ## Parent toggle
-        if context.object:
-            if context.object.parent:
-                col.operator('storytools.attach_toggle', text='Detach From Camera', icon='UNLINKED')
-            else:
-                col.operator('storytools.attach_toggle', text='Attach To Camera', icon='LINKED')
-        else:
-            col.operator('storytools.attach_toggle', text='Attach To Camera', icon='LINKED')
-        
-        scn = context.scene        
-        col.template_list("STORYTOOLS_UL_gp_objects_list", "",
-            scn, "objects", scn.gp_object_props, "index", rows=3)
-        ## :: listtype_name, list_id, dataptr, propname, active_dataptr, active_propname,
-        ## item_dyntip_propname, rows, maxrows, type, columns, sort_reverse, sort_lock) 
+        object_layout(col, context)
 
         col.label(text='Layers:')
 
@@ -48,27 +24,172 @@ class STORYTOOLS_PT_storytools_ui(Panel):
         if not ob or ob.type != 'GPENCIL':
             col.label(text=f'No Grease Pencil Active')
             return
-        gpd = ob.data
-        
-        ## Layers:
-        col.template_list("GPENCIL_UL_layer", "", gpd, "layers", gpd.layers, "active_index",
-                        rows=3, sort_reverse=True, sort_lock=True)
-        
-        ## Material:
-        col.label(text=f'Materials:')
-        row = col.row()
-        row.template_list("GPENCIL_UL_matslots", "", ob, "material_slots", ob, "active_material_index", rows=7)
-        
-        col.prop(bpy.context.scene.storytools_settings, 'material_sync', text='')
-        col.operator('storytools.load_default_palette', text='Load Base Palette')
 
-        if context.window.workspace.name != 'Storyboard':
+        ## Layers:
+        layers_layout(col, context)
+
+        materials_layout(col, context)
+
+        ## workspace setup
+        show_workspace_switch = context.window.workspace.name != 'Storyboard'
+        show_storypencil_setup = len(context.window_manager.windows) == 1 and context.preferences.addons.get('storypencil')
+        if not show_workspace_switch and not show_storypencil_setup:
+            return
+        
+        col.separator()
+        col.label(text='Workspace:')
+        if show_workspace_switch:
             col.operator('storytools.set_storyboard_workspace', text='Storyboard Workspace', icon='WORKSPACE')
 
-        if len(context.window_manager.windows) == 1 and context.preferences.addons.get('storypencil'):
-            col.operator('storytools.setup_storypencil', text='Set Storypencil', icon='WORKSPACE')
+        if show_storypencil_setup:
+            col.operator('storytools.setup_storypencil', text='Setup Storypencil (dual window)', icon='WORKSPACE')
 
-            
+def object_layout(layout, context):
+    col = layout
+    scn = context.scene    
+    col.label(text='Object:')
+    
+    row = col.row()
+    row.template_list("STORYTOOLS_UL_gp_objects_list", "",
+        scn, "objects", scn.gp_object_props, "index", rows=3)
+
+    col_lateral = row.column(align=True)
+    col_lateral.operator('storytools.create_object', icon='ADD', text='') # 'PLUS'
+
+    ## Parent toggle
+    if context.object:
+        if context.object.parent:
+            col_lateral.operator('storytools.attach_toggle', text='', icon='UNLINKED') # Detach From Camera
+        else:
+            col_lateral.operator('storytools.attach_toggle', text='', icon='LINKED') # Attach To Camera
+    else:
+        col_lateral.operator('storytools.attach_toggle', text='', icon='LINKED') # Attach To Camera
+    
+    col_lateral.prop(context.space_data.overlay, "use_gpencil_grid", text='', icon='MESH_GRID')
+
+
+def layers_layout(col, context):
+    gpd = context.object.data
+    row=col.row()
+    row.template_list("GPENCIL_UL_layer", "", gpd, "layers", gpd.layers, "active_index",
+                    rows=4, sort_reverse=True, sort_lock=True)
+    layer_side(row, context)
+
+
+def layer_side(layout, context):
+    gpd = context.object.data
+    gpl = gpd.layers.active
+
+    col = layout.column()
+    sub = col.column(align=True)
+    sub.operator("gpencil.layer_add", icon='ADD', text="")
+    sub.operator("gpencil.layer_remove", icon='REMOVE', text="")
+    # sub.separator()
+
+    if gpl:
+        sub.menu("GPENCIL_MT_layer_context_menu", icon='DOWNARROW_HLT', text="")
+
+        if len(gpd.layers) > 1:
+            # col.separator()
+
+            sub = col.column(align=True)
+            sub.operator("gpencil.layer_move", icon='TRIA_UP', text="").type = 'UP'
+            sub.operator("gpencil.layer_move", icon='TRIA_DOWN', text="").type = 'DOWN'
+
+            # col.separator()
+
+            # sub = col.column(align=True)
+            # sub.operator("gpencil.layer_isolate", icon='RESTRICT_VIEW_ON', text="").affect_visibility = True
+            # sub.operator("gpencil.layer_isolate", icon='LOCKED', text="").affect_visibility = False
+
+class STORYTOOLS_MT_material_context_menu(bpy.types.Menu):
+    # bl_idname = "STORYTOOLS_MT_material_context_menu"
+    bl_label = "Storyboard Material Menu"
+
+    def draw(self, context):
+        layout = self.layout
+        col=layout.column()
+        col.operator('storytools.load_default_palette', text='Load Base Palette')
+        # col.prop(bpy.context.scene.storytools_settings, 'material_sync', text='')
+
+def materials_layout(layout, context):
+    layout = layout
+
+    ob = context.object
+    ## Material:
+    layout.label(text=f'Materials:')
+    
+    row = layout.row()
+    row.template_list("GPENCIL_UL_matslots", "", ob, "material_slots", ob, "active_material_index", rows=7)
+    
+    col = row.column(align=True)
+    col.menu("STORYTOOLS_MT_material_context_menu", icon='COLOR', text="")
+    
+    ## Palette load
+    # if not ob.data.materials or not ob.data.materials.get('line'):
+    #     col.operator('storytools.load_default_palette', text='Load Base Palette')
+    
+    # col.operator('storytools.load_default_palette', text='Load Base Palette')
+
+    ## Default side buttons
+
+    col.separator()
+
+    is_sortable = len(ob.material_slots) > 1
+
+    col.operator("object.material_slot_add", icon='ADD', text="")
+    col.operator("object.material_slot_remove", icon='REMOVE', text="")
+
+    col.separator()
+
+    col.menu("GPENCIL_MT_material_context_menu", icon='DOWNARROW_HLT', text="")
+
+    if is_sortable:
+        col.separator()
+
+        col.operator("object.material_slot_move", icon='TRIA_UP', text="").direction = 'UP'
+        col.operator("object.material_slot_move", icon='TRIA_DOWN', text="").direction = 'DOWN'
+
+        # col.separator()
+
+        # sub = col.column(align=True)
+        # sub.operator("gpencil.material_isolate", icon='RESTRICT_VIEW_ON', text="").affect_visibility = True
+        # sub.operator("gpencil.material_isolate", icon='LOCKED', text="").affect_visibility = False
+    
+    ## Material sync mode
+    col = layout.column()
+    col.prop(bpy.context.scene.storytools_settings, 'material_sync', text='')
+
+'''
+## Old object layout
+def object_layout(layout, context):
+    col = layout
+    # col.operator('storytools.align_with_view', icon='AXIS_FRONT')
+
+    row = col.row()
+    row.label(text='Object:')
+
+    # col.operator('storytools.object_depth_move', icon='PLUS') # test poll
+    row = col.row()
+    row.operator('storytools.create_object', icon='PLUS') # 'ADD'
+    row.prop(context.space_data.overlay, "use_gpencil_grid", text='', icon='MESH_GRID')
+
+    ## Parent toggle
+    if context.object:
+        if context.object.parent:
+            col.operator('storytools.attach_toggle', text='Detach From Camera', icon='UNLINKED')
+        else:
+            col.operator('storytools.attach_toggle', text='Attach To Camera', icon='LINKED')
+    else:
+        col.operator('storytools.attach_toggle', text='Attach To Camera', icon='LINKED')
+    
+    scn = context.scene        
+    col.template_list("STORYTOOLS_UL_gp_objects_list", "",
+        scn, "objects", scn.gp_object_props, "index", rows=3)
+    ## :: listtype_name, list_id, dataptr, propname, active_dataptr, active_propname,
+    ## item_dyntip_propname, rows, maxrows, type, columns, sort_reverse, sort_lock)
+'''
+
 
 # ## function to append in a menu
 # def palette_manager_menu(self, context):
@@ -83,7 +204,8 @@ class STORYTOOLS_PT_storytools_ui(Panel):
 #-# REGISTER
 
 classes=(
-STORYTOOLS_PT_storytools_ui,
+    STORYTOOLS_MT_material_context_menu,
+    STORYTOOLS_PT_storytools_ui,
 )
 
 def register(): 
