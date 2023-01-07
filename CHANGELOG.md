@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+0.8.6
+
+- added: Button to load bundled `Storyboard` workspace (show up if not in "Storyboard" tab)
+- added: (Experimental) Button to load storypencil setup (show up if storypencil addon is enabled and only one window is opened)
+
 0.8.5
 
 - added: filter to set layer/material sync per object or across all objects (default individual)

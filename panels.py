@@ -14,7 +14,6 @@ class STORYTOOLS_PT_storytools_ui(Panel):
         layout = self.layout
         col = layout.column()
         ob = context.object
-        col.operator('storytools.load_default_palette', text='Load Base Palette')
         
         # col.operator('storytools.align_with_view', icon='AXIS_FRONT')
 
@@ -28,6 +27,7 @@ class STORYTOOLS_PT_storytools_ui(Panel):
         row.operator('storytools.create_object', icon='PLUS') # 'ADD'
         row.prop(context.space_data.overlay, "use_gpencil_grid", text='', icon='MESH_GRID')
 
+        ## Parent toggle
         if context.object:
             if context.object.parent:
                 col.operator('storytools.attach_toggle', text='Detach From Camera', icon='UNLINKED')
@@ -60,10 +60,13 @@ class STORYTOOLS_PT_storytools_ui(Panel):
         row.template_list("GPENCIL_UL_matslots", "", ob, "material_slots", ob, "active_material_index", rows=7)
         
         col.prop(bpy.context.scene.storytools_settings, 'material_sync', text='')
+        col.operator('storytools.load_default_palette', text='Load Base Palette')
 
-        # if context.window.workspace.name != 'Storyboard':
-        #     col.operator('storytools.set_storyboard_workspace', text='Set Storyboard Workspace', icon='WORKSPACE')
+        if context.window.workspace.name != 'Storyboard':
+            col.operator('storytools.set_storyboard_workspace', text='Storyboard Workspace', icon='WORKSPACE')
 
+        if len(context.window_manager.windows) == 1 and context.preferences.addons.get('storypencil'):
+            col.operator('storytools.setup_storypencil', text='Set Storypencil', icon='WORKSPACE')
 
             
 
