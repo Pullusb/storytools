@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+0.9.1
+
+- added: Button to key object transform at current time
+- fixed: Pan action not respecting auto-key
+
 0.9.0
 
 - fixed: Viewport UI with high-res screens (i.e: retina display)

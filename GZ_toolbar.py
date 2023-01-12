@@ -139,8 +139,15 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         props = self.gz_ob_align_to_view.target_set_operator("storytools.align_with_view")
         self.object_gizmos.append(self.gz_ob_align_to_view)
         
+        ## Object key transform
+        self.gz_key_ob = self.gizmos.new("GIZMO_GT_button_2d")
+        self.set_gizmo_settings(self.gz_key_ob, 'DECORATE_KEYFRAME')
+        props = self.gz_key_ob.target_set_operator("storytools.object_key_transform")
+        self.object_gizmos.append(self.gz_key_ob)      
+        
 
         ## --- Camera
+        
         self.camera_gizmos = []
         
         ## Camera Pan

@@ -335,7 +335,6 @@ class STORYTOOLS_OT_camera_key_transform(Operator):
     bl_description = "Key current camera location and rotation"
     bl_options = {'REGISTER', 'INTERNAL'}
 
-
     @classmethod
     def poll(cls, context):
         return context.scene.camera

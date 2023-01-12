@@ -15,7 +15,7 @@ Sponsored by [**El Guiri Studios**](https://www.elguiristudios.com/)
 
 ## Description
 
-Add a `storytools` Tab in viewport sidebar 
+Add a `storytools` Tab in viewport sidebar
 
 > After installation, restart blender once to enable material association handler
 
@@ -47,6 +47,7 @@ When selecting a material, it "stick" to current active layer
 ### Bottom Toolbar
 
 Action buttons to easily place object and camera
+All transform actions respect autokey
 
 > Note: currently not all actions respects autokey
 
@@ -55,7 +56,8 @@ Objects Actions:
 - Pan object
 - Move object forward/backward
 - Scale object
-- Align object to camera 
+- Align object to camera: rotate object to have front axis face view (`-Y` direction)
+- key object tranform at current time (note: object, not GP frame)
 
 Camera Actions:
 
@@ -63,6 +65,7 @@ Camera Actions:
 - Move camera forward/backward
 - Toggle _Lock camera to view_
 - Key camera position
+
 
 
 <!-- ## TODO

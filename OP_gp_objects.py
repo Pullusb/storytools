@@ -214,7 +214,7 @@ class STORYTOOLS_OT_object_pan(Operator):
         if event.type == 'LEFTMOUSE': # and event.value == 'RELEASE'
             context.window.cursor_set("DEFAULT")
             
-            fn.key_object(self.ob)
+            fn.key_object(self.ob, use_autokey=True)
 
             return {'FINISHED'}
 
@@ -291,22 +291,27 @@ class STORYTOOLS_OT_create_object(Operator):
     bl_description = "Create a new grease pencil object"
     bl_options = {"REGISTER"} # , "INTERNAL"
 
-    name : bpy.props.StringProperty(name='Name',
+    name : bpy.props.StringProperty(
+        name='Name',
         description="Name of Grease pencil object")
     
-    parented : bpy.props.BoolProperty(name='Attached To Camera',
+    parented : bpy.props.BoolProperty(
+        name='Attached To Camera',
         description="When Creating the object, Attach it to the camera",
         default=False)
     
     init_dist : bpy.props.FloatProperty(
         name="Distance", description="Initial distance of new grease pencil object", 
-        default=8.0, min=0.0, max=600, step=3, precision=1)
+        default=8.0, min=0.0, max=999, step=3, precision=3,
+        subtype='DISTANCE')
     
-    place_from_cam : bpy.props.BoolProperty(name='Use Active Camera',
+    place_from_cam : bpy.props.BoolProperty(
+        name='Use Active Camera',
         description="Create the object facing camera, else create from your current view",
         default=False, update=distance_selection_update)
 
-    at_cursor : bpy.props.BoolProperty(name='At Cursor',
+    at_cursor : bpy.props.BoolProperty(
+        name='At Cursor',
         description="Create object at cursor location, else centered position at cursor 'distance' facing view",
         default=False)
 
@@ -661,6 +666,21 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
 
         return flt_flags, flt_neworder
 
+class STORYTOOLS_OT_object_key_transform(Operator):
+    bl_idname = "storytools.object_key_transform"
+    bl_label = 'Key Object Transforms'
+    bl_description = "Key active object Loc / Rot / Scale"
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.object
+
+    def execute(self, context):
+        ret = fn.key_object(context.object)
+        if ret:
+            self.report({'INFO'}, ret)
+        return {"FINISHED"}
 
 ## to test -> bl_options = {'HIDE_HEADER'}
 
@@ -671,6 +691,7 @@ STORYTOOLS_OT_object_pan,
 STORYTOOLS_OT_object_scale,
 STORYTOOLS_OT_object_depth_move,
 STORYTOOLS_OT_visibility_toggle,
+STORYTOOLS_OT_object_key_transform,
 CUSTOM_object_collection, ## Test all bugged
 STORYTOOLS_UL_gp_objects_list,
 )
