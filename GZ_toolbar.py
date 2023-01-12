@@ -30,12 +30,54 @@ from . import fn
 #         context.space_data.lock_camera = not context.space_data.lock_camera
 #         return {'FINISHED'}
 
+## prop tester
+# gz.use_draw_scale = True # already True
+# for att in ['group',
+#             'matrix_offset',
+#             'use_draw_value',
+#             'use_grab_cursor',
+#             'use_tooltip',
+#             'line_width']:
+#     print(att, getattr(gz, att))
+
+# alpha
+# alpha_highlight
+# bl_idname
+# color
+# color_highlight
+# group
+# hide
+# hide_keymap
+# hide_select
+# is_highlight
+# is_modal
+# line_width
+# matrix_basis
+# matrix_offset
+# matrix_space
+# matrix_world
+# properties
+# rna_type
+# scale_basis
+# select
+# select_bias
+# use_draw_hover
+# use_draw_modal
+# use_draw_offset_scale
+# use_draw_scale
+# use_draw_value
+# use_event_handle_all
+# use_grab_cursor
+# use_operator_tool_properties
+# use_select_background
+# use_tooltip
+
 class STORYTOOLS_GGT_toolbar(GizmoGroup):
     # bl_idname = "STORYTOOLS_GGT_toolbar"
     bl_label = "Story Tool Bar"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'WINDOW'
-    bl_options = {'PERSISTENT', 'SCALE'}
+    bl_options = {'PERSISTENT', 'SCALE'} # SHOW_MODAL_ALL ? 
 
     @classmethod
     def poll(cls, context):
@@ -49,8 +91,8 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
     def set_gizmo_settings(gz, icon,
             color=(0.0, 0.0, 0.0),
             color_highlight=(0.5, 0.5, 0.5),
-            alpha=0.6,
-            alpha_highlight=0.6, # 0.1
+            alpha=0.7,
+            alpha_highlight=0.7, # 0.1
             show_drag=False,
             draw_options={'BACKDROP', 'OUTLINE'},
             scale_basis=24): # scale_basis default: 14
@@ -65,49 +107,8 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         gz.draw_options = draw_options
         gz.scale_basis = scale_basis
         gz.use_draw_offset_scale = True
-        # gz.line_width = 3.0 # no affect on 2D gizmo ?
+        # gz.line_width = 1.0 # no affect on 2D gizmo ?
         
-        ## prop tester
-        # gz.use_draw_scale = True # already True
-        # for att in ['group',
-        #             'matrix_offset',
-        #             'use_draw_value',
-        #             'use_grab_cursor',
-        #             'use_tooltip',
-        #             'line_width']:
-        #     print(att, getattr(gz, att))
-
-        # alpha
-        # alpha_highlight
-        # bl_idname
-        # color
-        # color_highlight
-        # group
-        # hide
-        # hide_keymap
-        # hide_select
-        # is_highlight
-        # is_modal
-        # line_width
-        # matrix_basis
-        # matrix_offset
-        # matrix_space
-        # matrix_world
-        # properties
-        # rna_type
-        # scale_basis
-        # select
-        # select_bias
-        # use_draw_hover
-        # use_draw_modal
-        # use_draw_offset_scale
-        # use_draw_scale
-        # use_draw_value
-        # use_event_handle_all
-        # use_grab_cursor
-        # use_operator_tool_properties
-        # use_select_background
-        # use_tooltip
 
     def setup(self, context):
         ## --- Object
@@ -180,22 +181,31 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         # bpy.context.preferences.system.dpi : 72 (on 1080 laptop) at 1.0 UI scale
 
         section_separator = 20
-        ui_scale = context.preferences.view.ui_scale
-        self.bar_width = (count * (self.icon_size * ui_scale)) + (count - 1) * (self.gap_size * ui_scale) + section_separator
-        vertical_pos = self.icon_size + 2 * ui_scale
+        px_scale = context.preferences.system.ui_scale * context.preferences.system.pixel_size
+        self.bar_width = (count * (self.icon_size * px_scale)) + (count - 1) * (self.gap_size * px_scale) + section_separator
+        vertical_pos = self.icon_size + 2 * px_scale
         
         left_pos = region.width / 2 - self.bar_width / 2 - self.icon_size / 2
-        next_pos = self.icon_size * ui_scale + self.gap_size * ui_scale
+        next_pos = self.icon_size * px_scale + self.gap_size * px_scale
 
-        obj_color = (0.6, 0.3, 0.2)
-        obj_color_hl = (0.7, 0.4, 0.3)
-        cam_color = (0.2, 0.2, 0.6)
-        cam_color_hl = (0.3, 0.3, 0.8)
+        # ## Orangy
+        # obj_color = (0.6, 0.3, 0.2)
+        # obj_color_hl = (0.7, 0.4, 0.3)
+        # ## Blue
+        # cam_color = (0.2, 0.2, 0.6)
+        # cam_color_hl = (0.3, 0.3, 0.8)
+
+        ## grey_light
+        obj_color = (0.3, 0.3, 0.3)
+        obj_color_hl = (0.4, 0.4, 0.4)
+        ## Grey_dark
+        cam_color = (0.1, 0.1, 0.1)
+        cam_color_hl = (0.3, 0.3, 0.3)
 
         separator_flag = False
         
         ## On right border
-        # (2 * ui_scale + region.width - self.icon_size * ui_scale, region.height / 2 - self.icon_size, 0))
+        # (2 * px_scale + region.width - self.icon_size * px_scale, region.height / 2 - self.icon_size, 0))
 
         for i, gz in enumerate(self.gizmos):
             
@@ -233,7 +243,7 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         
         ## Show color when out of cam view ? : context.space_data.region_3d.view_perspective != 'CAMERA'
         self.gz_lock_cam.color = (0.5, 0.1, 0.1) if context.space_data.lock_camera else cam_color
-        self.gz_lock_cam.color_highlight = (0.6, 0.2, 0.2) if context.space_data.lock_camera else cam_color_hl
+        self.gz_lock_cam.color_highlight = (0.7, 0.2, 0.2) if context.space_data.lock_camera else cam_color_hl
 
     # def refresh(self, context):
     #     self.gz_lock_cam.icon = 'LOCKVIEW_ON' if context.space_data.lock_camera else 'LOCKVIEW_OFF'

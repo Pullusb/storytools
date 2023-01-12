@@ -68,9 +68,19 @@ class STORYTOOLS_OT_object_depth_move(Operator):
 
         self.cam_pos = self.cam.matrix_world.translation
         self.mode = 'distance'
-        self.objects = [o for o in context.selected_objects if o.type != 'CAMERA']
+
+        ## Consider all selected only in object mode
+        if context.mode == 'OBJECT':
+            self.objects = [o for o in context.selected_objects if o.type != 'CAMERA']
+        else:
+            self.objects = [context.object]
+
         # Filter locked objects
         self.objects = [o for o in self.objects if not any(o.lock_location)] 
+        if not self.objects:
+            self.report({'ERROR'}, "Object is locked")
+            return {'CANCELLED'}
+
         self.init_mats = [o.matrix_world.copy() for o in self.objects]
         
         if self.cam.data.type == 'ORTHO':
@@ -533,7 +543,9 @@ def update_object_change(self, context):
     if context.mode != 'OBJECT':
         for o in [o for o in context.scene.objects if o.type == 'GPENCIL']:
             o.select_set(o == ob) # select only active (when not in object mode)
-    
+    else:
+        ob.select_set(True) # Select only active in object mode
+
     # ob.select_set(True)
 
 

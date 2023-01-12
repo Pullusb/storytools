@@ -70,11 +70,9 @@ Camera Actions:
 -> Create a test storyboard template and check how to load
 
 Modals
-- For all modals, add icon warning if in autokey (same draw func call/stop for all) 
+- Opt: For all modals, add icon warning if in autokey (same draw func call/stop for all) 
 
-
-Palette list (Material UIlist + buttons)
-- Possibility to move materials
+- 
 
 Brush association
 

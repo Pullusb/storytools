@@ -2,6 +2,13 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+0.9.0
+
+- fixed: Viewport UI with high-res screens (i.e: retina display)
+- fixed: Active object not being selected when changing with GP objects panel
+- changed: Depth move apply on whole selection only in object mode (else only active object)
+- changed: Color of buttons to grey and dark-grey instead of orange and blue
+
 0.8.7
 
 - changed: More compact UI for object options
