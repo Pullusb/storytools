@@ -30,19 +30,36 @@ class STORYTOOLS_PT_storytools_ui(Panel):
 
         materials_layout(col, context)
 
-        ## workspace setup
+        ## -- Workspace setup
         show_workspace_switch = context.window.workspace.name != 'Storyboard'
-        show_storypencil_setup = len(context.window_manager.windows) == 1 and context.preferences.addons.get('storypencil')
-        if not show_workspace_switch and not show_storypencil_setup:
-            return
-        
-        col.separator()
-        col.label(text='Workspace:')
+        # show_storypencil_setup = len(context.window_manager.windows) == 1 and context.preferences.addons.get('storypencil')
+        # if show_workspace_switch or show_storypencil_setup:        
+        #     col.separator()
+        #     col.label(text='Workspace:')
+
+        #     if show_workspace_switch:
+        #         col.operator('storytools.set_storyboard_workspace', text='Storyboard Workspace', icon='WORKSPACE')
+
+        #     if show_storypencil_setup: # Experimental Dual setup
+        #         col.operator('storytools.setup_storypencil', text='Setup Storypencil (dual window)', icon='WORKSPACE')
         if show_workspace_switch:
+            col.label(text='Workspace:')
             col.operator('storytools.set_storyboard_workspace', text='Storyboard Workspace', icon='WORKSPACE')
 
-        if show_storypencil_setup:
-            col.operator('storytools.setup_storypencil', text='Setup Storypencil (dual window)', icon='WORKSPACE')
+        ## -- Check for grease pencil tools addon
+
+        # if not hasattr(bpy.types, GP_PT_sidebarPanel):
+        if not context.preferences.addons.get('greasepencil_tools') and not context.preferences.addons.get('greasepencil-addon'):
+            col.separator()
+            col.label(text='GP Tools addon is disabled')
+            col.operator('preferences.addon_enable',text='Enable Grease Pencil Tools').module='greasepencil_tools'
+            # col.operator('preferences.addon_enable',text='Enable Grease Pencil Tools').module='greasepencil-addon' # The Dev one
+        else:
+            ## Don't know how to auto-pin GP_tools panel, so call it's panel draw directly
+            # layout.separator()
+            layout.label(text='Tools:')
+            bpy.types.GP_PT_sidebarPanel.draw(self, context) # (Use 'self.layout', Show at the end only)
+
 
 def object_layout(layout, context):
     col = layout

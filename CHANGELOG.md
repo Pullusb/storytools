@@ -2,6 +2,12 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+0.9.2
+
+- added: Button to activate native `grease pencil tools`
+- added: Show `grease pencil tools` main panel at the bottom.
+- removed: Experimental dual window setup
+
 0.9.1
 
 - added: Button to key object transform at current time
