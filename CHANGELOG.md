@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+0.9.3
+
+- fixed: wrong UI scaling
+
 0.9.2
 
 - added: Button to activate native `grease pencil tools`

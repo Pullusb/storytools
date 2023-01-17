@@ -188,7 +188,7 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         # bpy.context.preferences.system.dpi : 72 (on 1080 laptop) at 1.0 UI scale
 
         section_separator = 20
-        px_scale = context.preferences.system.ui_scale * context.preferences.system.pixel_size
+        px_scale = context.preferences.system.ui_scale
         self.bar_width = (count * (self.icon_size * px_scale)) + (count - 1) * (self.gap_size * px_scale) + section_separator
         vertical_pos = self.icon_size + 2 * px_scale
         
@@ -230,7 +230,7 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
                 gz.color_highlight = cam_color_hl
     
             ## Matrix world is readonly
-            gz.matrix_basis = Matrix.Translation((left_pos + (i * next_pos), vertical_pos, 0))
+            gz.matrix_basis = Matrix.Translation((left_pos + (i * next_pos), vertical_pos * px_scale, 0))
             
             # matrix_offset seem to affect only backdrop
             # gz.matrix_offset = fn.compose_matrix(Vector((0,0,0)), Matrix().to_quaternion(), Vector((2,2,2)))
