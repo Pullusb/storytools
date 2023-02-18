@@ -51,23 +51,11 @@ class STORYTOOLS_PGT_distances(bpy.types.PropertyGroup) :
             ('DISABLED', 'No Sync', 'No material association when changing layer', 2),
             ))
 
-
-    # IntProperty : IntProperty(
-    #     name="int prop", description="", default=25, min=1, max=2**31-1, soft_min=1, soft_max=2**31-1, step=1, options={'HIDDEN'})#, subtype='PIXEL'
-
-
-    # ## enum (with Icon)
-    # keyframe_type : EnumProperty(
-    #     name="Keyframe Filter", description="Only jump to defined keyframe type", 
-    #     default='ALL', options={'HIDDEN', 'SKIP_SAVE'},
-    #     items=(
-    #         ('ALL', 'All', '', 0), # 'KEYFRAME'
-    #         ('KEYFRAME', 'Keyframe', '', 'KEYTYPE_KEYFRAME_VEC', 1),
-    #         ('BREAKDOWN', 'Breakdown', '', 'KEYTYPE_BREAKDOWN_VEC', 2),
-    #         ('MOVING_HOLD', 'Moving Hold', '', 'KEYTYPE_MOVING_HOLD_VEC', 3),
-    #         ('EXTREME', 'Extreme', '', 'KEYTYPE_EXTREME_VEC', 4),
-    #         ('JITTER', 'Jitter', '', 'KEYTYPE_JITTER_VEC', 5),
-    #         ))
+    show_session_toolbar : bpy.props.BoolProperty(
+        name='Show Toolbar',
+        description="Show/Hide viewport Bottom Toolbar buttons on this session\
+            \nTo completely disable, uncheck 'Active Toolbar' in addon Storytools preferences",
+        default=True)
 
 
 # classes=(

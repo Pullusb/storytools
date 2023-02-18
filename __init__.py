@@ -4,10 +4,10 @@ bl_info = {
     "name": "Storytools - Storyboard Tools",
     "description": "Set of tools for Storyboarding",
     "author": "Samuel Bernou",
-    "version": (0, 9, 3),
+    "version": (0, 9, 4),
     "blender": (3, 3, 0),
     "location": "View3D",
-    "warning": "Alpha",
+    "warning": "",
     "doc_url": "https://github.com/Pullusb/storytools",
     "category": "Object"}
 
@@ -43,13 +43,15 @@ modules = (
 def register():
     if bpy.app.background:
         return
+
     for mod in modules:
         mod.register()
 
 def unregister():
     if bpy.app.background:
         return
-    for mod in modules:
+
+    for mod in reversed(modules):
         mod.unregister()
 
 if __name__ == "__main__":

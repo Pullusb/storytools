@@ -83,7 +83,8 @@ def object_layout(layout, context):
         col_lateral.operator('storytools.attach_toggle', text='', icon='LINKED') # Attach To Camera
     
     col_lateral.prop(context.space_data.overlay, "use_gpencil_grid", text='', icon='MESH_GRID')
-
+    if get_addon_prefs().active_toolbar:
+        col_lateral.prop(context.scene.storytools_settings, "show_session_toolbar", text='', icon='STATUSBAR')
 
 def layers_layout(col, context):
     gpd = context.object.data

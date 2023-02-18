@@ -36,7 +36,7 @@ When creating a new object:
 
 ### Drawing Objects Stack
 
-Keep same mode accross object when selecting in this stack
+Keep same mode across object when selecting in this stack
 
 ### Special Behavior
 

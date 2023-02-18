@@ -2,6 +2,18 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+0.9.4
+
+- added: addon-prefs toolbar options:
+    - hide bottom toolbar
+    - bottom toolbar margin
+    - clickable backdrop size
+    - distance between buttons
+    - button colors
+- added: Toolbar toggle at scene level (for quick toggle)
+- changed: Calculation to a display buttons
+- removed: _Alpha_ statement in bl_info (addon is considered stable and usable in production)
+
 0.9.3
 
 - fixed: wrong UI scaling

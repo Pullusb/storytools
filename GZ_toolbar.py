@@ -81,11 +81,9 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
 
     @classmethod
     def poll(cls, context):
+        ## to only show in camera
         # return context.space_data.region_3d.view_perspective == 'CAMERA'
         return True
-
-    icon_size = 34 # currently more vertical gap size
-    gap_size = 28
 
     @staticmethod
     def set_gizmo_settings(gz, icon,
@@ -181,19 +179,49 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         self.camera_gizmos.append(self.gz_key_cam)        
 
     def draw_prepare(self, context):
+        prefs = get_addon_prefs()
+        settings = context.scene.storytools_settings
+        # icon_size = prefs.toolbar_icon_bounds
+        icon_size = 0
+        gap_size = prefs.toolbar_gap_size
+        backdrop_size = prefs.toolbar_backdrop_size
+        
+        ## Show / Hide gizmos according to addon settings 
+        # prefs.active_toobar define if registered or not
+        # settings.show_session_toolbar define visibility on this scene
+        
+        for gz in self.gizmos:
+            gz.hide = not settings.show_session_toolbar
+        if not settings.show_session_toolbar:
+            return
+
         region = context.region
         count = len(self.gizmos)
 
-        ## FIXME : Need to adapt for system resolution ?
-        # bpy.context.preferences.system.dpi : 72 (on 1080 laptop) at 1.0 UI scale
-
         section_separator = 20
         px_scale = context.preferences.system.ui_scale
-        self.bar_width = (count * (self.icon_size * px_scale)) + (count - 1) * (self.gap_size * px_scale) + section_separator
-        vertical_pos = self.icon_size + 2 * px_scale
+
         
-        left_pos = region.width / 2 - self.bar_width / 2 - self.icon_size / 2
-        next_pos = self.icon_size * px_scale + self.gap_size * px_scale
+        ## Old method
+        # icon_size = 34
+        # gap_size = 28
+        # self.bar_width = (count * (self.icon_size * px_scale)) + (count - 1) * (self.gap_size * px_scale) + section_separator
+        # vertical_pos = self.icon_size + 2 * px_scale
+        # left_pos = region.width / 2 - self.bar_width / 2 - self.icon_size / 2
+        # next_pos = self.icon_size * px_scale + self.gap_size * px_scale
+
+        ## With icon size pref parameter
+        # self.bar_width = (count * (icon_size * px_scale)) + (count - 1) * (gap_size * px_scale) + section_separator
+        # vertical_pos = prefs.toolbar_margin * px_scale
+        # left_pos = region.width / 2 - self.bar_width / 2 - icon_size / 2
+        # next_pos = icon_size * px_scale + gap_size * px_scale
+        
+
+        ## Using only direct offset
+        self.bar_width = (count - 1) * (gap_size * px_scale) + section_separator * px_scale
+        vertical_pos = prefs.toolbar_margin * px_scale        
+        left_pos = region.width / 2 - self.bar_width / 2
+        next_pos = gap_size * px_scale
 
         # ## Orangy
         # obj_color = (0.6, 0.3, 0.2)
@@ -202,20 +230,24 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         # cam_color = (0.2, 0.2, 0.6)
         # cam_color_hl = (0.3, 0.3, 0.8)
 
-        ## grey_light
-        obj_color = (0.3, 0.3, 0.3)
-        obj_color_hl = (0.4, 0.4, 0.4)
-        ## Grey_dark
-        cam_color = (0.1, 0.1, 0.1)
-        cam_color_hl = (0.3, 0.3, 0.3)
+        # ## grey_light
+        # obj_color = (0.3, 0.3, 0.3)
+        # obj_color_hl = (0.4, 0.4, 0.4)
+        # ## Grey_dark
+        # cam_color = (0.1, 0.1, 0.1)
+        # cam_color_hl = (0.3, 0.3, 0.3)
+
+        ## Prefs Object gizmo color
+        obj_color = prefs.object_gz_color
+        obj_color_hl = [i + 0.1 for i in obj_color]
+        ## Prefs Camera gizmo color
+        cam_color = prefs.camera_gz_color
+        cam_color_hl = [i + 0.1 for i in cam_color]
 
         separator_flag = False
-        
-        ## On right border
-        # (2 * px_scale + region.width - self.icon_size * px_scale, region.height / 2 - self.icon_size, 0))
 
         for i, gz in enumerate(self.gizmos):
-            
+            gz.scale_basis = backdrop_size
             if gz in self.object_gizmos:
                 gz.color = obj_color
                 gz.color_highlight = obj_color_hl
@@ -260,10 +292,14 @@ classes=(
     STORYTOOLS_GGT_toolbar,
 )
 
-def register(): 
+def register():
+    if not get_addon_prefs().active_toolbar:
+        return
     for cls in classes:
         bpy.utils.register_class(cls)
 
 def unregister():
+    if not get_addon_prefs().active_toolbar:
+        return
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
