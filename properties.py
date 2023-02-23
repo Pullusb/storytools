@@ -56,6 +56,11 @@ class STORYTOOLS_PGT_distances(bpy.types.PropertyGroup) :
         description="Show/Hide viewport Bottom Toolbar buttons on this session\
             \nTo completely disable, uncheck 'Active Toolbar' in addon Storytools preferences",
         default=True)
+    
+    show_focal : bpy.props.BoolProperty(
+        name='Show Focal',
+        description="Show the focal length properties of every camera",
+        default=True)
 
 
 # classes=(

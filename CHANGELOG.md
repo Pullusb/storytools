@@ -2,6 +2,19 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.0.0
+
+- added: camera selection panel with following features:
+    - add new camera (add at current view)
+    - change active camera on single click
+    - show focal length editable/keyable property (with toggle)
+    - show passepartout toggle and alpha
+    - transfer passepartout values when switching cam
+    - full `Draw cam` system support when gp_toolbox is enabled:
+        - set draw acam
+        - back to main cam
+        - reset rotation to main cam
+
 0.9.4
 
 - added: addon-prefs toolbar options:

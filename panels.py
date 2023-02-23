@@ -15,6 +15,8 @@ class STORYTOOLS_PT_storytools_ui(Panel):
         layout = self.layout
         ob = context.object
         col = layout.column()
+        
+        camera_layout(col, context)
 
         object_layout(col, context)
 
@@ -29,6 +31,7 @@ class STORYTOOLS_PT_storytools_ui(Panel):
         layers_layout(col, context)
 
         materials_layout(col, context)
+
 
         ## -- Workspace setup
         show_workspace_switch = context.window.workspace.name != 'Storyboard'
@@ -177,6 +180,57 @@ def materials_layout(layout, context):
     ## Material sync mode
     col = layout.column()
     col.prop(bpy.context.scene.storytools_settings, 'material_sync', text='')
+
+
+
+def camera_layout(layout, context):
+    col = layout
+    scn = context.scene    
+    col.label(text='Camera:')
+    
+    if context.scene.camera:
+        row = layout.row(align=True)# .split(factor=0.5)
+        row.label(text='Passepartout')
+        if context.scene.camera.name == 'draw_cam' and hasattr(context.scene, 'gptoolprops'):
+            row.prop(context.scene.gptoolprops, 'drawcam_passepartout', text='', icon ='OBJECT_HIDDEN') 
+        else:
+            row.prop(context.scene.camera.data, 'show_passepartout', text='', icon ='OBJECT_HIDDEN')
+        row.prop(context.scene.camera.data, 'passepartout_alpha', text='')
+
+    row = col.row()
+    row.template_list("STORYTOOLS_UL_camera_list", "",
+        scn, "objects", scn.st_camera_props, "index", rows=3)
+
+    col_lateral = row.column(align=True)
+    # col_lateral.operator('storytools.create_camera', icon='ADD', text='') # 'PLUS'
+    
+    ## Using native ops (Do not pass active) TODO: create a dedicated operator (With invoke settings)
+    addcam = col_lateral.operator('object.add', icon='ADD', text='')
+    addcam.type='CAMERA'
+    addcam.align='VIEW'
+    addcam.location = context.space_data.region_3d.view_matrix.inverted().translation
+
+
+    col_lateral.prop(context.scene.storytools_settings, "show_focal", text='', icon='CONE')
+    
+    if hasattr(bpy.types, 'GP_OT_draw_cam_switch'):
+        if context.scene.camera and context.scene.camera.name == 'draw_cam':
+            col_lateral.operator('gp.draw_cam_switch', text='', icon='LOOP_BACK')
+            col_lateral.operator('gp.reset_cam_rot', text='', icon='DRIVER_ROTATIONAL_DIFFERENCE')
+        elif context.scene.camera:
+            col_lateral.operator('gp.draw_cam_switch', text='', icon='CON_CAMERASOLVER').cam_mode = 'draw'
+    
+    ## ! can't call lens panel, (call context.camera in property)
+    # col_lateral.operator('wm.call_panel', text='', icon='TOOL_SETTINGS').name = 'DATA_PT_lens'
+
+    ## Parent toggle
+    # if context.object:
+    #     if context.object.parent:
+    #         col_lateral.operator('storytools.attach_toggle', text='', icon='UNLINKED') # Detach From Camera
+    #     else:
+    #         col_lateral.operator('storytools.attach_toggle', text='', icon='LINKED') # Attach To Camera
+    # else:
+    #     col_lateral.operator('storytools.attach_toggle', text='', icon='LINKED') # Attach To Camera
 
 '''
 ## Old object layout
