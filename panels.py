@@ -196,6 +196,9 @@ def camera_layout(layout, context):
         else:
             row.prop(context.scene.camera.data, 'show_passepartout', text='', icon ='OBJECT_HIDDEN')
         row.prop(context.scene.camera.data, 'passepartout_alpha', text='')
+        # subrow = row.row()
+        # subrow.prop(context.scene.camera.data, 'passepartout_alpha', text='')
+        # subrow.active = context.scene.camera.data.show_passepartout
 
     row = col.row()
     row.template_list("STORYTOOLS_UL_camera_list", "",

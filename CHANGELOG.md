@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.0.1
+
+- fixed: camera passepartout sync with draw cam system
+- added: Enter in cam view when clicking
+
 1.0.0
 
 - added: camera selection panel with following features:

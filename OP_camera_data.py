@@ -36,7 +36,10 @@ def update_camera_change(self, context):
         context.scene.camera = ob
         return
 
-    ## Follow passe partout
+    ## Go in camera view
+    context.space_data.region_3d.view_perspective = 'CAMERA'
+
+    ## Sync passe partout
     show_pp, pp_alpha = cam.data.show_passepartout, cam.data.passepartout_alpha
     if cam.name != 'draw_cam':
         context.scene.camera = ob
@@ -52,8 +55,12 @@ def update_camera_change(self, context):
         ## Set cam and immediately enter draw mode
         context.scene.camera = ob
         if hasattr(bpy.types, 'GP_OT_draw_cam_switch'):
+
+            # Get 'show_pp' from gp toolbox property
+            ob.data.show_passepartout = context.scene.gptoolprops.drawcam_passepartout
+            ob.data.passepartout_alpha = pp_alpha
             bpy.ops.gp.draw_cam_switch(cam_mode='draw')
-            context.scene.gptoolprops.drawcam_passepartout = show_pp
+            # cam.data.show_passepartout = show_pp
 
     return
 
