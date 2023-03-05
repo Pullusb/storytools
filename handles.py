@@ -1,6 +1,7 @@
 import bpy
 from bpy.app.handlers import persistent
 from .constants import LAYERMAT_PREFIX
+from .fn import get_addon_prefs
 
 def set_material_by_name(ob, mat_name):
     if mat_name is None or mat_name == '':
@@ -16,6 +17,12 @@ def set_material_by_name(ob, mat_name):
 
 def layer_change_callback():
     # print('Layer has changed!')
+
+    ## Disable Sync when sidebar is not visible
+    ## TODO: add the settings also in material settings panel to keep sync when panel is disabled
+    if not get_addon_prefs().show_sidebar_ui:
+        return
+
     ob = bpy.context.object
     if not ob or ob.type != 'GPENCIL':
         return
@@ -64,6 +71,12 @@ def subscribe_layer_handler(dummy):
 ## material callback
 def material_change_callback():
     # print(f'{bpy.context.object.name}: Material has changed!')
+
+    ## Disable Sync when sidebar is not visible
+    ## TODO: add the settings also in material settings panel to keep sync when panel is disabled
+    if not get_addon_prefs().show_sidebar_ui:
+        return
+
     ob = bpy.context.object
     if not ob or ob.type != 'GPENCIL':
         return

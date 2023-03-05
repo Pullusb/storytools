@@ -2,10 +2,11 @@
 
 import bpy
 from bpy.types import Panel
-from .preferences import get_addon_prefs
+from .fn import get_addon_prefs
 
 
 class STORYTOOLS_PT_storytools_ui(Panel):
+    bl_idname = "STORYTOOLS_PT_storytools_ui"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Storytools" # Gpencil
@@ -278,17 +279,19 @@ def object_layout(layout, context):
 
 #-# REGISTER
 
-classes=(
-    STORYTOOLS_MT_material_context_menu,
-    STORYTOOLS_PT_storytools_ui,
-)
 
 def register(): 
-    for cls in classes:
-        bpy.utils.register_class(cls)
+    bpy.utils.register_class(STORYTOOLS_MT_material_context_menu)
+    if get_addon_prefs().show_sidebar_ui:
+        # Register only if needed
+        bpy.utils.register_class(STORYTOOLS_PT_storytools_ui)
+
     # bpy.types.GPENCIL_MT_material_context_menu.append(palette_manager_menu)
 
 def unregister():
     # bpy.types.GPENCIL_MT_material_context_menu.remove(palette_manager_menu)
-    for cls in reversed(classes):
-        bpy.utils.unregister_class(cls)
+
+    if hasattr(bpy.types, STORYTOOLS_PT_storytools_ui.bl_idname):
+        # Unregister only if already there.
+        bpy.utils.unregister_class(STORYTOOLS_PT_storytools_ui)
+    bpy.utils.unregister_class(STORYTOOLS_MT_material_context_menu)

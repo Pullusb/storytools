@@ -10,7 +10,7 @@ from bpy.types import (
     )
 
 from mathutils import Matrix, Vector
-from .preferences import get_addon_prefs
+from .fn import get_addon_prefs
 from . import fn
 
 

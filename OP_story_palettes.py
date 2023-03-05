@@ -3,7 +3,7 @@
 import bpy
 # import json
 # from pathlib import Path
-from .preferences import get_addon_prefs
+from .fn import get_addon_prefs
 from . import fn
 
 class STORYTOOLS_OT_load_default_palette(bpy.types.Operator):

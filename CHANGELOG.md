@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.1.0
+
+- added: Possibility to disable sidebar panel in preferences, some people just need the toolbar. (For now, it also disable Layer/material Synchronisation)
+- added: Possibility to rename category tab in preferences
+
 1.0.1
 
 - fixed: camera passepartout sync with draw cam system

@@ -9,21 +9,46 @@ from bpy.props import (FloatProperty,
                         StringProperty,
                         IntProperty,
                         PointerProperty)
+from .fn import get_addon_prefs
 
-def get_addon_prefs():
-    return bpy.context.preferences.addons[__package__].preferences
-
-def toggle_gizmo_buttons(context, scene):
+def toggle_gizmo_buttons(self, _):
     from . import GZ_toolbar
-    if get_addon_prefs().active_toolbar:
+    if self.active_toolbar:
         bpy.utils.register_class(GZ_toolbar.STORYTOOLS_GGT_toolbar)
         # Force active when user tick the box
         bpy.context.scene.storytools_settings.show_session_toolbar = True 
     else:
         bpy.utils.unregister_class(GZ_toolbar.STORYTOOLS_GGT_toolbar)
 
+def ui_in_sidebar_update(self, _):
+    from .panels import STORYTOOLS_PT_storytools_ui
+    has_panel = hasattr(bpy.types, STORYTOOLS_PT_storytools_ui.bl_idname)
+    if has_panel:
+        try:
+            bpy.utils.unregister_class(STORYTOOLS_PT_storytools_ui)
+        except:
+            pass
+
+    if self.show_sidebar_ui:
+        # STORYTOOLS_PT_storytools_ui.bl_space_type = self.panel_space_type
+        STORYTOOLS_PT_storytools_ui.bl_category = self.category.strip()
+        bpy.utils.register_class(STORYTOOLS_PT_storytools_ui)
+
 class STORYTOOLS_prefs(bpy.types.AddonPreferences):
     bl_idname = __name__.split('.')[0] # or __package__
+
+    category : StringProperty(
+            name="Category",
+            description="Choose a name for the sidebar category tab",
+            default="Storytools",
+            update=ui_in_sidebar_update)
+
+    show_sidebar_ui: bpy.props.BoolProperty(
+        name="Enable Sidebar Panel",
+        description="Show Storytools Sidebar UI",
+        default=True,
+        update=ui_in_sidebar_update,
+    )
 
     default_edit_line_opacity : bpy.props.FloatProperty(
         name='Default Edit Line Opacity',
@@ -33,8 +58,8 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         default=0.2, min=0.0, max=1.0)
 
     active_toolbar : bpy.props.BoolProperty(
-        name='Active Toolbar',
-        description="Show viewport Bottom Toolbar with gizmo buttons",
+        name='Enable Bottom Toolbar',
+        description="Show viewport bottom toolbar with gizmo buttons",
         default=True, update=toggle_gizmo_buttons)
 
     toolbar_margin : bpy.props.IntProperty(
@@ -83,6 +108,15 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         layout.use_property_split = True
 
         col = layout.column()
+        col.label(text='Sidebar Settings:', icon='NODE_SIDE')
+        col.prop(self, 'show_sidebar_ui')
+        subcol = col.column()
+        subcol.prop(self, 'category')
+        subcol.active = self.show_sidebar_ui
+        if not self.show_sidebar_ui:
+            col.label(text='Layer/Material Sync is disabled when sidebar panel is off', icon='INFO')
+
+        col.separator()
         col.label(text='Toolbar Settings:', icon='STATUSBAR')
         col.prop(self, 'active_toolbar')
         tool_col = col.column()
@@ -115,13 +149,8 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
 
 ### --- REGISTER ---
 
-classes=(
-STORYTOOLS_prefs,
-)
-
 def register(): 
-    for cls in classes:
-        bpy.utils.register_class(cls)
+    bpy.utils.register_class(STORYTOOLS_prefs)
 
     ## Update section
     prefs = get_addon_prefs()
@@ -130,5 +159,4 @@ def register():
     prefs.has_git = bool(which('git'))
 
 def unregister():
-    for cls in reversed(classes):
-        bpy.utils.unregister_class(cls)
+    bpy.utils.unregister_class(STORYTOOLS_prefs)

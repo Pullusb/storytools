@@ -10,6 +10,9 @@ from bpy_extras import view3d_utils
 from math import pi
 from .constants import LAYERMAT_PREFIX
 
+def get_addon_prefs():
+    return bpy.context.preferences.addons[__package__].preferences
+
 ## Vector
 
 def location_to_region(worldcoords):

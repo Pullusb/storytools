@@ -1,5 +1,5 @@
 import bpy
-# from .preferences import get_addon_prefs
+# from .fn import get_addon_prefs
 from math import pi
 from mathutils import Vector, Matrix, Quaternion
 
@@ -7,7 +7,7 @@ from bpy.types import Operator, Panel, PropertyGroup
 from bpy.props import CollectionProperty, PointerProperty
 
 from . import fn
-from .preferences import get_addon_prefs
+from .fn import get_addon_prefs
 from .constants import LAYERMAT_PREFIX
 
 ## Bonus

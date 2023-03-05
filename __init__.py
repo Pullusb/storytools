@@ -4,14 +4,15 @@ bl_info = {
     "name": "Storytools - Storyboard Tools",
     "description": "Set of tools for Storyboarding",
     "author": "Samuel Bernou",
-    "version": (1, 0, 1),
+    "version": (1, 1, 0),
     "blender": (3, 3, 0),
     "location": "View3D",
     "warning": "",
     "doc_url": "https://github.com/Pullusb/storytools",
+    "tracker_url": "https://github.com/Pullusb/storytools/issues",
     "category": "Object"}
 
-from pathlib import Path
+import bpy
 
 from . import OP_git_update
 from . import properties
@@ -24,9 +25,8 @@ from . import GZ_toolbar
 from . import OP_workspace_setup
 from . import handles
 from . import panels
+from .fn import get_addon_prefs
 # from . import keymaps
-
-import bpy
 
 modules = (
     OP_git_update,
@@ -48,6 +48,9 @@ def register():
 
     for mod in modules:
         mod.register()
+    
+    # Update panel name
+    preferences.ui_in_sidebar_update(get_addon_prefs(), bpy.context)
 
 def unregister():
     if bpy.app.background:
