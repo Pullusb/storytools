@@ -4,9 +4,8 @@ Blender addon - Set of tool for storyboarding in Blender
 
 ## [Download latest](https://github.com/Pullusb/storytools/archive/master.zip)
 
-**/!\ Alpha** - Work in progress
 
-Sponsored by [**El Guiri Studios**](https://www.elguiristudios.com/)
+Version 1.0 sponsored by [**El Guiri Studios**](https://www.elguiristudios.com/)
 
 <!-- https://github.com/Pullusb/storytools/archive/refs/heads/master.zip -->
 
