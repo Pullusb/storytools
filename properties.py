@@ -62,6 +62,11 @@ class STORYTOOLS_PGT_distances(bpy.types.PropertyGroup) :
         description="Show the focal length properties of every camera",
         default=True)
 
+    show_camera_panel : bpy.props.BoolProperty(
+        name='Cameras',
+        description="Show the camera panel",
+        default=True)
+
 
 # classes=(
 # PROJ_PGT_settings,

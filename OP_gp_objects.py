@@ -621,14 +621,15 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
         else:
             row.label(text='', icon='BLANK1')
         
+        # subrow.alignment = 'RIGHT'
+        subrow = row.row()
+        subrow.prop(item, 'show_in_front', text='', icon='MOD_OPACITY', emboss=False)
+        subrow.active = item.show_in_front
         ## Clickable toggle, set and sync hide from viewlayer, viewport and render 
         ## (Can lead to confusion with blender model... but heh !)
-        # if item.hide_viewport:
         if item.visible_get():
-            # row.label(text='', icon='HIDE_OFF')
             row.operator('storytools.visibility_toggle', text='', icon='HIDE_OFF', emboss=False).name = item.name
         else:
-            # row.label(text='', icon='HIDE_ON')
             row.operator('storytools.visibility_toggle', text='', icon='HIDE_ON', emboss=False).name = item.name
     
     # Called once to draw filtering/reordering options.

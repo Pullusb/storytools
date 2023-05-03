@@ -17,12 +17,32 @@ class STORYTOOLS_PT_storytools_ui(Panel):
         ob = context.object
         col = layout.column()
         
-        camera_layout(col, context)
+        settings = context.scene.storytools_settings
+        
+        row = col.row()
+        if not settings.show_camera_panel:
+            row.prop(settings, 'show_camera_panel', text='', icon='DISCLOSURE_TRI_RIGHT', emboss=False)
+            row.label(text='Cameras')
+            # col.prop(settings, 'show_camera_panel', icon='DISCLOSURE_TRI_RIGHT', emboss=False)
+        else:
+            row.prop(settings, 'show_camera_panel', text='', icon='DISCLOSURE_TRI_DOWN', emboss=False)
+            row.label(text='Cameras:')
+            # col.prop(settings, 'show_camera_panel', icon='DISCLOSURE_TRI_DOWN', emboss=False)
+            camera_layout(col, context)
 
+        if context.scene.camera:
+            row = col.row(align=True)
+            row.label(text='Passepartout')
+            if context.scene.camera.name == 'draw_cam' and hasattr(context.scene, 'gptoolprops'):
+                row.prop(context.scene.gptoolprops, 'drawcam_passepartout', text='', icon ='OBJECT_HIDDEN') 
+            else:
+                row.prop(context.scene.camera.data, 'show_passepartout', text='', icon ='OBJECT_HIDDEN')
+            row.prop(context.scene.camera.data, 'passepartout_alpha', text='')
+
+        col.label(text='Objects:')
         object_layout(col, context)
 
         col.label(text='Layers:')
-
         ob = context.object
         if not ob or ob.type != 'GPENCIL':
             col.label(text=f'No Grease Pencil Active')
@@ -56,7 +76,7 @@ class STORYTOOLS_PT_storytools_ui(Panel):
         if not context.preferences.addons.get('greasepencil_tools') and not context.preferences.addons.get('greasepencil-addon'):
             col.separator()
             col.label(text='GP Tools addon is disabled')
-            col.operator('preferences.addon_enable',text='Enable Grease Pencil Tools').module='greasepencil_tools'
+            col.operator('preferences.addon_enable',text='Enable Grease Pencil Tools').module = 'greasepencil_tools'
             # col.operator('preferences.addon_enable',text='Enable Grease Pencil Tools').module='greasepencil-addon' # The Dev one
         else:
             ## Don't know how to auto-pin GP_tools panel, so call it's panel draw directly
@@ -68,7 +88,6 @@ class STORYTOOLS_PT_storytools_ui(Panel):
 def object_layout(layout, context):
     col = layout
     scn = context.scene    
-    col.label(text='Object:')
     
     row = col.row()
     row.template_list("STORYTOOLS_UL_gp_objects_list", "",
@@ -187,19 +206,7 @@ def materials_layout(layout, context):
 def camera_layout(layout, context):
     col = layout
     scn = context.scene    
-    col.label(text='Camera:')
-    
-    if context.scene.camera:
-        row = layout.row(align=True)# .split(factor=0.5)
-        row.label(text='Passepartout')
-        if context.scene.camera.name == 'draw_cam' and hasattr(context.scene, 'gptoolprops'):
-            row.prop(context.scene.gptoolprops, 'drawcam_passepartout', text='', icon ='OBJECT_HIDDEN') 
-        else:
-            row.prop(context.scene.camera.data, 'show_passepartout', text='', icon ='OBJECT_HIDDEN')
-        row.prop(context.scene.camera.data, 'passepartout_alpha', text='')
-        # subrow = row.row()
-        # subrow.prop(context.scene.camera.data, 'passepartout_alpha', text='')
-        # subrow.active = context.scene.camera.data.show_passepartout
+    #col.label(text='Camera:')
 
     row = col.row()
     row.template_list("STORYTOOLS_UL_camera_list", "",
