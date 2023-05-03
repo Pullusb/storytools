@@ -1,26 +1,28 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-import bpy
 import json
-import os
-import numpy as np
-from pathlib import Path
-from mathutils import Matrix, Vector, geometry
-from bpy_extras import view3d_utils
 from math import pi
+from pathlib import Path
+
+import bpy
+import numpy as np
+from bpy_extras import view3d_utils
+from mathutils import Matrix, Vector, geometry
+
 from .constants import LAYERMAT_PREFIX
+
 
 def get_addon_prefs():
     return bpy.context.preferences.addons[__package__].preferences
 
 ## Vector
 
-def location_to_region(worldcoords):
+def location_to_region(worldcoords) -> Vector:
     ''' return 2d location '''
     return view3d_utils.location_3d_to_region_2d(
         bpy.context.region, bpy.context.space_data.region_3d, worldcoords)
 
-def region_to_location(viewcoords, depthcoords):
+def region_to_location(viewcoords, depthcoords) -> Vector:
     ''' return normalized 3d vector '''
     return view3d_utils.region_2d_to_location_3d(
         bpy.context.region, bpy.context.space_data.region_3d, viewcoords, depthcoords)
@@ -98,7 +100,7 @@ def rotate_by_90_degrees(ob, axis='X', negative=True):
     mat_90 = Matrix.Rotation(angle, 4, axis)
     ob.matrix_world = ob.matrix_world @ mat_90
 
-def get_scale_matrix(scale):
+def get_scale_matrix(scale) -> Matrix:
     '''Recreate a neutral mat scale'''
     matscale_x = Matrix.Scale(scale[0], 4,(1,0,0))
     matscale_y = Matrix.Scale(scale[1], 4,(0,1,0))
@@ -253,6 +255,26 @@ def set_material_association(ob, layer, mat_name):
     # create custom prop at object level
     ob[LAYERMAT_PREFIX + layer.info] = mat_name
 
+def set_material_by_name(ob, mat_name):
+    if mat_name is None or mat_name == '':
+        return
+    for i, ms in enumerate(ob.material_slots):
+        if not ms.material:
+            continue
+        m = ms.material
+        if m.name == mat_name:
+            # print(f':{i}:', m.name, ob.active_material_index)
+            ob.active_material_index = i
+            return
+
+def set_layer_by_name(ob, name):
+    if name is None or name == '':
+        return
+    for i, layer in enumerate(ob.data.layers):
+        if layer.info == name:
+            # print(f':{i}:', m.name, ob.active_material_index)
+            ob.data.layers.active_index = i
+            return
 
 ## ---
 ## Brushes

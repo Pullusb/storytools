@@ -2,6 +2,14 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.2.0
+
+- added: (beta) hardcoded shortcuts switch tool / layer / (material) with one key
+    - 1: Draw tool, layer Sketch
+    - 2: Bucket tool, layer Color
+    - 3: Draw tool, layer Color
+    - 4: Eraser
+
 1.1.1
 
 - added: Camera uilist can be hided. Allow more space when working on a shot with only one camera

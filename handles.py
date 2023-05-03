@@ -1,19 +1,7 @@
 import bpy
 from bpy.app.handlers import persistent
 from .constants import LAYERMAT_PREFIX
-from .fn import get_addon_prefs
-
-def set_material_by_name(ob, mat_name):
-    if mat_name is None or mat_name == '':
-        return
-    for i, ms in enumerate(ob.material_slots):
-        if not ms.material:
-            continue
-        m = ms.material
-        if m.name == mat_name:
-            # print(f':{i}:', m.name, ob.active_material_index)
-            ob.active_material_index = i
-            return
+from .fn import get_addon_prefs, set_material_by_name
 
 def layer_change_callback():
     # print('Layer has changed!')
