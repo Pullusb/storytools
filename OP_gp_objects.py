@@ -545,13 +545,8 @@ def update_object_change(self, context):
         if context.mode != prev_mode is not None:
             bpy.ops.object.mode_set(mode=prev_mode)
 
-    if context.mode != 'OBJECT':
-        for o in [o for o in context.scene.objects if o.type == 'GPENCIL']:
-            o.select_set(o == ob) # select only active (when not in object mode)
-    else:
-        ob.select_set(True) # Select only active in object mode
-
-    # ob.select_set(True)
+    for o in [o for o in context.scene.objects if o.type == 'GPENCIL']:
+        o.select_set(o == ob) # select only active (when not in object mode)
 
 
 class CUSTOM_object_collection(PropertyGroup):

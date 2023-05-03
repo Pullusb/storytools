@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.2.1
+
+- changed: changing gp object in Object mode select only active object
+
 1.2.0
 
 - added: (beta) hardcoded shortcuts switch tool / layer / (material) with one key
