@@ -594,32 +594,33 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
         # row.prop(item, 'hide', text='', icon=hide_ico, invert_checkbox=True)
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index): # , flt_flag
-        # layout.label(text=item.name)
+        settings = context.scene.storytools_settings
         row = layout.row()
         if item == context.view_layer.objects.active:
-            # if context.mode == 'PAINT'
             icon = 'GREASEPENCIL'
-            # row.label(text='', icon='GREASEPENCIL')
         else:
             icon = 'OUTLINER_OB_GREASEPENCIL'
-            # row.label(text='', icon='OUTLINER_DATA_GREASEPENCIL')
-        
-        # row.label(text=item.name, icon=icon)
         row.prop(item, 'name', icon=icon, text='',emboss=False)
-        if item.data.users > 1:
-            row.template_ID(item, "data")
-        else:
-            row.label(text='', icon='BLANK1')
+        # row.prop(item, 'name', text='',emboss=False)
+
+        if settings.show_gp_users:
+            if item.data.users > 1:
+                row.template_ID(item, "data")
+            else:
+                row.label(text='', icon='BLANK1')
         
-        if item.parent:
-            row.label(text='', icon='DECORATE_LINKED')
-        else:
-            row.label(text='', icon='BLANK1')
+        if settings.show_gp_parent:
+            if item.parent:
+                row.label(text='', icon='DECORATE_LINKED')
+            else:
+                row.label(text='', icon='BLANK1')
         
         # subrow.alignment = 'RIGHT'
-        subrow = row.row()
-        subrow.prop(item, 'show_in_front', text='', icon='MOD_OPACITY', emboss=False)
-        subrow.active = item.show_in_front
+        if settings.show_gp_in_front:
+            subrow = row.row()
+            subrow.prop(item, 'show_in_front', text='', icon='MOD_OPACITY', emboss=False)
+            subrow.active = item.show_in_front
+
         ## Clickable toggle, set and sync hide from viewlayer, viewport and render 
         ## (Can lead to confusion with blender model... but heh !)
         if item.visible_get():

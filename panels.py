@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 import bpy
-from bpy.types import Panel
+from bpy.types import Panel, Menu
 from .fn import get_addon_prefs
 
 
@@ -39,7 +39,7 @@ class STORYTOOLS_PT_storytools_ui(Panel):
                 row.prop(context.scene.camera.data, 'show_passepartout', text='', icon ='OBJECT_HIDDEN')
             row.prop(context.scene.camera.data, 'passepartout_alpha', text='')
 
-        col.label(text='Objects:')
+        col.label(text='Drawings:') # Objects, Grease Pencils
         object_layout(col, context)
 
         col.label(text='Layers:')
@@ -84,6 +84,16 @@ class STORYTOOLS_PT_storytools_ui(Panel):
             layout.label(text='Tools:')
             bpy.types.GP_PT_sidebarPanel.draw(self, context) # (Use 'self.layout', Show at the end only)
 
+class STORYTOOLS_MT_gp_objects_list_options(Menu):
+    bl_label = "Options"
+
+    def draw(self, context):
+        layout = self.layout
+        settings = context.scene.storytools_settings
+        layout.prop(settings, 'show_gp_users')
+        layout.prop(settings, 'show_gp_parent')
+        layout.prop(settings, 'show_gp_in_front')
+        # layout.operator("...", icon="FILE_REFRESH", text="Refresh")
 
 def object_layout(layout, context):
     col = layout
@@ -91,7 +101,7 @@ def object_layout(layout, context):
     
     row = col.row()
     row.template_list("STORYTOOLS_UL_gp_objects_list", "",
-        scn, "objects", scn.gp_object_props, "index", rows=3)
+        scn, "objects", scn.gp_object_props, "index", rows=4)
 
     col_lateral = row.column(align=True)
     col_lateral.operator('storytools.create_object', icon='ADD', text='') # 'PLUS'
@@ -108,6 +118,8 @@ def object_layout(layout, context):
     col_lateral.prop(context.space_data.overlay, "use_gpencil_grid", text='', icon='MESH_GRID')
     if get_addon_prefs().active_toolbar:
         col_lateral.prop(context.scene.storytools_settings, "show_session_toolbar", text='', icon='STATUSBAR')
+    
+    col_lateral.menu("STORYTOOLS_MT_gp_objects_list_options", icon='DOWNARROW_HLT', text='')
 
 def layers_layout(col, context):
     gpd = context.object.data
@@ -291,6 +303,7 @@ def register():
     bpy.utils.register_class(STORYTOOLS_MT_material_context_menu)
     if get_addon_prefs().show_sidebar_ui:
         # Register only if needed
+        bpy.utils.register_class(STORYTOOLS_MT_gp_objects_list_options)
         bpy.utils.register_class(STORYTOOLS_PT_storytools_ui)
 
     # bpy.types.GPENCIL_MT_material_context_menu.append(palette_manager_menu)
@@ -301,4 +314,6 @@ def unregister():
     if hasattr(bpy.types, STORYTOOLS_PT_storytools_ui.bl_idname):
         # Unregister only if already there.
         bpy.utils.unregister_class(STORYTOOLS_PT_storytools_ui)
+        bpy.utils.unregister_class(STORYTOOLS_MT_gp_objects_list_options)
+
     bpy.utils.unregister_class(STORYTOOLS_MT_material_context_menu)

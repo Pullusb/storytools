@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.2.2
+
+- added: GP object's list options in a dropdown menu to show/hide objects informations (to let more room for Name when sidebar is used thin)
+- changed: rename `Objects` label to `Drawings` (Same name as the automaticly created collection)
+
 1.2.1
 
 - changed: changing gp object in Object mode select only active object

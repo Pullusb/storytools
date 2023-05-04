@@ -66,6 +66,22 @@ class STORYTOOLS_PGT_distances(bpy.types.PropertyGroup) :
         name='Cameras',
         description="Show the camera panel",
         default=True)
+    
+    ## GP Object properties
+    show_gp_users : bpy.props.BoolProperty(
+        name='Show Linked Data Toggle',
+        description="Show object user data when object has multiple user (when object have multiple users)",
+        default=True)
+    
+    show_gp_parent : bpy.props.BoolProperty(
+        name='Show Parent Info',
+        description="Show When Object is parented",
+        default=True)
+
+    show_gp_in_front : bpy.props.BoolProperty(
+        name='Show In Front Toggle',
+        description="Show object in front toggle",
+        default=True)
 
 
 # classes=(
