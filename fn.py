@@ -15,6 +15,18 @@ from .constants import LAYERMAT_PREFIX
 def get_addon_prefs():
     return bpy.context.preferences.addons[__package__].preferences
 
+def open_addon_prefs():
+    '''Open addon prefs windows with focus on current addon'''
+    from .__init__ import bl_info
+    wm = bpy.context.window_manager
+    wm.addon_filter = 'All'
+    if not 'COMMUNITY' in  wm.addon_support: # reactivate community
+        wm.addon_support = set([i for i in wm.addon_support] + ['COMMUNITY'])
+    wm.addon_search = bl_info['name']
+    bpy.context.preferences.active_section = 'ADDONS'
+    bpy.ops.preferences.addon_expand(module=__package__)
+    bpy.ops.screen.userpref_show('INVOKE_DEFAULT')
+
 ## Vector
 
 def location_to_region(worldcoords) -> Vector:
@@ -364,3 +376,161 @@ def key_object(ob, loc=True, rot=True, scale=True, use_autokey=False, mode=None,
     if text:
         return f'{ob.name}: Insert {", ".join(text)} keyframes'
     return
+
+
+## UI
+
+def show_message_box(_message = "", _title = "Message Box", _icon = 'INFO'):
+    '''Show message box with element passed as string or list
+    if _message if a list of lists:
+        if sublist have 2 element:
+            considered a label [text,icon]
+        if sublist have 3 element:
+            considered as an operator [ops_id_name, text, icon]
+    '''
+
+    def draw(self, context):
+        for l in _message:
+            if isinstance(l, str):
+                self.layout.label(text=l)
+            else:
+                if len(l) == 2: # label with icon
+                    self.layout.label(text=l[0], icon=l[1])
+                elif len(l) == 3: # ops
+                    self.layout.operator_context = "INVOKE_DEFAULT"
+                    self.layout.operator(l[0], text=l[1], icon=l[2], emboss=False) # <- highligh the entry
+                    
+                    ## offset pnale when using row...
+                    # row = self.layout.row()
+                    # row.label(text=l[1])
+                    # row.operator(l[0], icon=l[2])
+    
+    if isinstance(_message, str):
+        _message = [_message]
+    bpy.context.window_manager.popup_menu(draw, title = _title, icon = _icon)
+
+
+## keymap UI
+
+def _indented_layout(layout, level):
+    indentpx = 16
+    if level == 0:
+        level = 0.0001   # Tweak so that a percentage of 0 won't split by half
+    indent = level * indentpx / bpy.context.region.width
+
+    split = layout.split(factor=indent)
+    col = split.column()
+    col = split.column()
+    return col
+
+def draw_kmi_custom(km, kmi, layout):
+    col = _indented_layout(layout, 0)
+    # col = layout.column()
+    if kmi.show_expanded:
+        col = col.column(align=True)
+        box = col.box()
+    else:
+        box = col.column()
+
+    split = box.split()
+
+    row = split.row(align=True)
+    row.prop(kmi, "show_expanded", text="", emboss=False)
+    row.prop(kmi, "active", text="", emboss=False)
+
+    # if km.is_modal:
+    #     row.separator()
+    #     row.prop(kmi, "propvalue", text="")
+    # else:
+    #     row.label(text=kmi.name)
+    row.label(text=kmi.name)
+
+    row = split.row()
+    map_type = kmi.map_type
+    row.prop(kmi, "map_type", text="")
+    if map_type == 'KEYBOARD':
+        row.prop(kmi, "type", text="", full_event=True)
+    elif map_type == 'MOUSE':
+        row.prop(kmi, "type", text="", full_event=True)
+    elif map_type == 'NDOF':
+        row.prop(kmi, "type", text="", full_event=True)
+    elif map_type == 'TWEAK':
+        subrow = row.row()
+        subrow.prop(kmi, "type", text="")
+        subrow.prop(kmi, "value", text="")
+    elif map_type == 'TIMER':
+        row.prop(kmi, "type", text="")
+    else:
+        row.label()
+
+    # mod_list = [m for m in ('ctrl','shift','alt', 'oskey') if getattr(kmi, m)]
+    # if mod_list:
+    #     mods = ' + '.join(mod_list)
+    #     row.label(text=f'{mods} + ')
+    # else:
+    #     row.label(text='Key:')
+    # row.prop(kmi, "key_modifier", text="", event=True)
+    # row.separator()
+    # row.label(text='+ Click')
+
+    if (not kmi.is_user_defined) and kmi.is_user_modified:
+        ops = row.operator("gp.restore_keymap_item", text="", icon='BACK') # modified
+        ops.km_name = km.name
+        ops.kmi_name = kmi.idname
+    else:
+        row.label(text='', icon='BLANK1')
+
+    # Expanded, additional event settings
+    if kmi.show_expanded:
+        col = col.column()
+        box = col.box()
+
+        split = box.column()
+        # split = box.split(factor=0.4)
+
+        ## Don't show idname (no place to change ops)
+        # sub = split.row()
+        # if km.is_modal:
+        #     sub.prop(kmi, "propvalue", text="")
+        # else:
+        #     sub.prop(kmi, "idname", text="")
+
+        if map_type not in {'TEXTINPUT', 'TIMER'}:
+            sub = split.column()
+            subrow = sub.row(align=True)
+
+            if map_type == 'KEYBOARD':
+                subrow.prop(kmi, "type", text="", event=True)
+                subrow.prop(kmi, "value", text="")
+                subrow_repeat = subrow.row(align=True)
+                subrow_repeat.active = kmi.value in {'ANY', 'PRESS'}
+                subrow_repeat.prop(kmi, "repeat", text="Repeat")
+            elif map_type in {'MOUSE', 'NDOF'}:
+                subrow.prop(kmi, "type", text="")
+                subrow.prop(kmi, "value", text="")
+
+            if map_type in {'KEYBOARD', 'MOUSE'} and kmi.value == 'CLICK_DRAG':
+                subrow = sub.row()
+                subrow.prop(kmi, "direction")
+            
+            # sub = split.column()
+            sub = box.column()
+            # sub.label(text='Modifiers:')
+            subrow = sub.row()
+            subrow.scale_x = 0.75
+            subrow.prop(kmi, "any", toggle=True)
+            if bpy.app.version >= (3,0,0):
+                subrow.prop(kmi, "shift_ui", toggle=True)
+                subrow.prop(kmi, "ctrl_ui", toggle=True)
+                subrow.prop(kmi, "alt_ui", toggle=True)
+                subrow.prop(kmi, "oskey_ui", text="Cmd", toggle=True)
+            else:
+                subrow.prop(kmi, "shift", toggle=True)
+                subrow.prop(kmi, "ctrl", toggle=True)
+                subrow.prop(kmi, "alt", toggle=True)
+                subrow.prop(kmi, "oskey", text="Cmd", toggle=True)
+            
+            subrow.prop(kmi, "key_modifier", text="", event=True)
+        
+        # Operator properties
+        box.template_keymap_item_properties(kmi)

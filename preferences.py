@@ -9,7 +9,7 @@ from bpy.props import (FloatProperty,
                         StringProperty,
                         IntProperty,
                         PointerProperty)
-from .fn import get_addon_prefs
+from .fn import get_addon_prefs, open_addon_prefs, draw_kmi_custom
 
 def toggle_gizmo_buttons(self, _):
     from . import GZ_toolbar
@@ -42,6 +42,20 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             description="Choose a name for the sidebar category tab",
             default="Storytools",
             update=ui_in_sidebar_update)
+
+    pref_tab : EnumProperty(
+        name="Preference Tool Tab", description="Choose preferences to display",
+        default='SETTINGS',
+        items=(
+            ('SETTINGS', 'Settings', 'Customize interface elements and settings', 0),
+            ('SHORTCUTS', 'Shortcuts', 'Change shortcuts affectation', 1),
+            ),
+        )
+    # items=(
+    #     ('UI', 'Interface', 'Customize interface elements', 0),
+    #     ('SHORTCUTS', 'Shortcuts', 'Change shortcuts affectation', 1),
+    #     ('SETTINGS', 'Settings', 'Various settings', 2),
+    #     ),
 
     show_sidebar_ui: bpy.props.BoolProperty(
         name="Enable Sidebar Panel",
@@ -107,33 +121,62 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         layout = self.layout
         layout.use_property_split = True
 
+        row = layout.row(align=True)
+        row.use_property_split = False
+        row.prop(self, "pref_tab", expand=True)
+
         col = layout.column()
-        col.label(text='Sidebar Settings:', icon='NODE_SIDE')
-        col.prop(self, 'show_sidebar_ui')
-        subcol = col.column()
-        subcol.prop(self, 'category')
-        subcol.active = self.show_sidebar_ui
-        if not self.show_sidebar_ui:
-            col.label(text='Layer/Material Sync is disabled when sidebar panel is off', icon='INFO')
 
-        col.separator()
-        col.label(text='Toolbar Settings:', icon='STATUSBAR')
-        col.prop(self, 'active_toolbar')
-        tool_col = col.column()
-        tool_col.prop(self, 'toolbar_margin')
-        tool_col.prop(self, 'toolbar_gap_size')
-        tool_col.prop(self, 'toolbar_backdrop_size')
-        # tool_col.prop(self, 'toolbar_icon_bounds')
-        
-        tool_col.separator()
-        tool_col.prop(self, 'object_gz_color')
-        tool_col.prop(self, 'camera_gz_color')
-        
-        tool_col.active = self.active_toolbar
+        if self.pref_tab == 'SETTINGS':
+            col.label(text='Sidebar Settings:', icon='NODE_SIDE')
+            col.prop(self, 'show_sidebar_ui')
+            subcol = col.column()
+            subcol.prop(self, 'category')
+            subcol.active = self.show_sidebar_ui
+            if not self.show_sidebar_ui:
+                col.label(text='Layer/Material Sync is disabled when sidebar panel is off', icon='INFO')
 
-        col.separator()
-        col.label(text='Object Settings:', icon='GREASEPENCIL')
-        col.prop(self, 'default_edit_line_opacity')
+            col.separator()
+            col.label(text='Toolbar Settings:', icon='STATUSBAR')
+            col.prop(self, 'active_toolbar')
+            tool_col = col.column()
+            tool_col.prop(self, 'toolbar_margin')
+            tool_col.prop(self, 'toolbar_gap_size')
+            tool_col.prop(self, 'toolbar_backdrop_size')
+            # tool_col.prop(self, 'toolbar_icon_bounds')
+            
+            tool_col.separator()
+            tool_col.prop(self, 'object_gz_color')
+            tool_col.prop(self, 'camera_gz_color')
+            
+            tool_col.active = self.active_toolbar
+
+            col.separator()
+            col.label(text='Object Settings:', icon='GREASEPENCIL')
+            col.prop(self, 'default_edit_line_opacity')
+
+        elif self.pref_tab == 'SHORTCUTS':
+
+            user_keymaps = bpy.context.window_manager.keyconfigs.user.keymaps
+            # km = user_keymaps['Grease Pencil Stroke Paint Mode']
+
+            from . keymaps import addon_keymaps
+            # user_kms = []
+            for akm in set([kms[0] for kms in addon_keymaps]):
+                km = user_keymaps.get(akm.name)
+                if not km:
+                    continue
+                for kmi in reversed(km.keymap_items):
+                    if kmi.idname == 'storytools.set_draw_tool':
+                        draw_kmi_custom(km, kmi, col)
+                        # user_kms.append((km, kmi))
+                
+            # for km, kmi in sorted(user_kms, key=lambda x: x[1].type):
+            #     draw_kmi_custom(km, kmi, col)
+
+
+
+
 
         ## Git update code
         if self.is_git_repo:
@@ -147,10 +190,22 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
                 row.operator('wm.url_open', text='Download and install git here', icon='URL').url = 'https://git-scm.com/download/'
                 row.label(text='then restart blender')
 
+class STORYTOOLS_OT_open_addon_prefs(bpy.types.Operator):
+    bl_idname = "storytools.open_addon_prefs"
+    bl_label = "Open Storytools Prefs"
+    bl_description = "Open Storytools addon preferences window in addon tab\
+        \bprefill the search with addon name"
+    bl_options = {"REGISTER", "INTERNAL"}
+
+    def execute(self, context):
+        open_addon_prefs()
+        return {'FINISHED'}
+
 ### --- REGISTER ---
 
 def register(): 
     bpy.utils.register_class(STORYTOOLS_prefs)
+    bpy.utils.register_class(STORYTOOLS_OT_open_addon_prefs)
 
     ## Update section
     prefs = get_addon_prefs()
@@ -159,4 +214,5 @@ def register():
     prefs.has_git = bool(which('git'))
 
 def unregister():
+    bpy.utils.unregister_class(STORYTOOLS_OT_open_addon_prefs)
     bpy.utils.unregister_class(STORYTOOLS_prefs)

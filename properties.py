@@ -6,15 +6,61 @@ from bpy.props import (FloatProperty,
                         EnumProperty,
                         StringProperty,
                         IntProperty,
-                        PointerProperty)
+                        PointerProperty,
+                        CollectionProperty)
+
+from bpy.types import PropertyGroup
 
 # update on prop change
 def change_edit_lines_opacity(self, context):
     for gp in bpy.data.grease_pencils:
         if not gp.is_annotation:
             gp.edit_line_color[3]=self.edit_lines_opacity
+
+""" 
+class STORYTOOLS_PGT_km_preset(PropertyGroup):
+    mode : EnumProperty(
+        name="Mode", description="Using shortcut will change to this mode", 
+        default='PAINT_GPENCIL', options={'HIDDEN', 'SKIP_SAVE'},
+        items=(
+            ('PAINT_GPENCIL', 'Draw', 'Switch to draw mode', 0),
+            ('EDIT_GPENCIL', 'Edit', 'Switch to edit mode', 1),
+            ('SCULPT_GPENCIL', 'Sculpt', 'Switch to Sculpt mode', 2),
+            ('OBJECT', 'Object', 'Switch to Object mode', 3),
+            ))
+
+    tool : StringProperty(
+        name="Tool", description="Tool to set",
+        default="builtin_brush.Draw")
     
-class STORYTOOLS_PGT_distances(bpy.types.PropertyGroup) :
+    layer : StringProperty(
+        name="Layer", description="Layer to set (exact name, case sensitive)\
+            \nEmpty field = no change",
+        default="Sketch")
+    
+    material : StringProperty(
+        name="Material", description="Material to set (exact name, case sensitive)\
+            \nEmpty field = No change or use layer-material synchronisation if enabled",
+        default="line")
+
+    name : StringProperty(
+        name="Preset Name (optional)", description="Name that define this preset.\
+            \nJust for personal organisation",
+        default="")
+
+class STORYTOOLS_PGT_keymap_presets(PropertyGroup):
+    preset_0 : CollectionProperty(type=STORYTOOLS_PGT_km_preset)
+    preset_1 : CollectionProperty(type=STORYTOOLS_PGT_km_preset)
+    preset_2 : CollectionProperty(type=STORYTOOLS_PGT_km_preset)
+    preset_3 : CollectionProperty(type=STORYTOOLS_PGT_km_preset)
+    preset_4 : CollectionProperty(type=STORYTOOLS_PGT_km_preset)
+    preset_5 : CollectionProperty(type=STORYTOOLS_PGT_km_preset)
+    preset_6 : CollectionProperty(type=STORYTOOLS_PGT_km_preset)
+    preset_7 : CollectionProperty(type=STORYTOOLS_PGT_km_preset)
+    preset_8 : CollectionProperty(type=STORYTOOLS_PGT_km_preset)
+    preset_9 : CollectionProperty(type=STORYTOOLS_PGT_km_preset)
+ """
+class STORYTOOLS_PGT_distances(PropertyGroup) :
     ## HIDDEN to hide the animatable dot thing
 
     initial_distance : FloatProperty(
@@ -83,20 +129,28 @@ class STORYTOOLS_PGT_distances(bpy.types.PropertyGroup) :
         description="Show object in front toggle",
         default=True)
 
+    ## Storyboard Keymap items
+    
+    ## Add the presets... collection property or individual settings ?
+    ## Collection is much cleaner, But incompatible with selective pref load...
+    
+    
 
-# classes=(
-# PROJ_PGT_settings,
-# )
+classes=(
+# STORYTOOLS_PGT_km_preset,
+# STORYTOOLS_PGT_keymap_presets,
+STORYTOOLS_PGT_distances,
+)
 
 def register(): 
-    # for cls in classes:
-    #     bpy.utils.register_class(cls)
-    bpy.utils.register_class(STORYTOOLS_PGT_distances)
+    for cls in classes:
+        bpy.utils.register_class(cls)
+
     bpy.types.Scene.storytools_settings = bpy.props.PointerProperty(type = STORYTOOLS_PGT_distances)
     
 
 def unregister():
-    # for cls in reversed(classes):
-    #     bpy.utils.unregister_class(cls)
-    bpy.utils.unregister_class(STORYTOOLS_PGT_distances)
+    for cls in reversed(classes):
+        bpy.utils.unregister_class(cls)
+
     del bpy.types.Scene.storytools_settings

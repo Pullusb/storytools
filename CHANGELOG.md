@@ -2,10 +2,21 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.3.0
+
+- added: Customizable operator shortcut to change tool, brush, layer and material at once with a single key in Grease pencil paint mode.
+- added: 6 predefined shortcuts (change in addon prefs):
+    - 1: tool=Draw, layer=Sketch
+    - 2: tool=Draw, layer=Line
+    - 3: tool=Fill, layer=Color
+    - 4: tool=Draw, layer=Color
+    - 5: tool=Erase, brush=Eraser Point
+    - 6: tool=Erase, brush=Eraser Stroke
+
 1.2.2
 
 - added: GP object's list options in a dropdown menu to show/hide objects informations (to let more room for Name when sidebar is used thin)
-- changed: rename `Objects` label to `Drawings` (Same name as the automaticly created collection)
+- changed: rename `Objects` label to `Drawings` (Same name as the automatically created collection)
 
 1.2.1
 

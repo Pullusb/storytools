@@ -679,6 +679,12 @@ class STORYTOOLS_OT_object_key_transform(Operator):
             self.report({'INFO'}, ret)
         return {"FINISHED"}
 
+## Cannot append to GPencil 'Add' menu, being an operator_menu_enum "object.gpencil_add"
+# def menu_add_storytools_gp(self, context):
+#     """Storyboard GP object entries in the Add Object > Gpencil Menu"""
+#     if context.mode == 'OBJECT':
+#         self.layout.operator('storytools.create_object', text="Storyboard Drawing")
+
 ## to test -> bl_options = {'HIDE_HEADER'}
 
 classes=(
@@ -697,9 +703,14 @@ def register():
     # bpy.types.Scene.index_constant = -1
     for cls in classes:
         bpy.utils.register_class(cls)
+    
     bpy.types.Scene.gp_object_props = bpy.props.PointerProperty(type=CUSTOM_object_collection)
+    
+    # bpy.types.GPENCIL_MT_....append(menu_add_storytools_gp)
 
 def unregister():
+    # bpy.types.GPENCIL_MT_....remove(menu_add_storytools_gp)
+
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
     
