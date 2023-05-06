@@ -12,6 +12,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
     - 4: tool=Draw, layer=Color
     - 5: tool=Erase, brush=Eraser Point
     - 6: tool=Erase, brush=Eraser Stroke
+- added: "line_red" material to the base palette for in-object notes
 
 1.2.2
 

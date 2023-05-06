@@ -16,6 +16,11 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
     def poll(cls, context):
         return context.object and context.object.type == 'GPENCIL'
 
+    name : StringProperty(
+        name="Name", description="Name that define this preset (Optional).\
+            \nJust for personal organisation",
+        default="", options={'SKIP_SAVE'})
+
     # mode : EnumProperty(
     #     name="Mode", description="Using shortcut will change to this mode", 
     #     default='PAINT_GPENCIL', options={'HIDDEN', 'SKIP_SAVE'},
@@ -50,11 +55,6 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
             \nEmpty field = No change or use layer-material synchronisation if enabled",
         default="", # line
         options={'SKIP_SAVE'})
-
-    # name : StringProperty(
-    #     name="Preset Name (optional)", description="Name that define this preset.\
-    #         \nJust for personal organisation",
-    #     default="", options={'SKIP_SAVE'})
 
     def execute(self, context):
         ## Mode needs to add shortcut to generic Gpencil (would conflict with Selection mask)
@@ -91,6 +91,7 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
             fn.set_layer_by_name(ob, self.layer)
         
         if self.material:
+            # FIXME: Sync happen after material set... how to prevent
             fn.set_material_by_name(ob, self.material)
 
         return {"FINISHED"}
@@ -155,43 +156,55 @@ def register_keymap():
     '''
 
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='ONE', value='PRESS')
-    kmi.properties.tool='builtin_brush.Draw'
-    kmi.properties.layer='Sketch'
-    kmi.properties.material='' # line
+    kmi.properties.name = 'Sketch Draw'
+    kmi.properties.tool = 'builtin_brush.Draw'
+    kmi.properties.layer = 'Sketch'
+    # kmi.properties.material = '' # line
+    kmi.properties.name = ''
     addon_keymaps.append((km, kmi))
 
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='TWO', value='PRESS')
-    kmi.properties.tool='builtin_brush.Draw'
-    kmi.properties.layer='Line'
-    kmi.properties.material='' # line
+    kmi.properties.name = 'Line Draw'
+    kmi.properties.tool = 'builtin_brush.Draw'
+    kmi.properties.layer = 'Line'
+    # kmi.properties.material = '' # line
     addon_keymaps.append((km, kmi))
     
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='THREE', value='PRESS')
-    kmi.properties.tool='builtin_brush.Fill'
-    kmi.properties.layer='Color'
-    kmi.properties.material='' # fill_white
+    kmi.properties.name = 'Bucket Fill'
+    kmi.properties.tool = 'builtin_brush.Fill'
+    kmi.properties.layer = 'Color'
+    # kmi.properties.material = '' # fill_white
     addon_keymaps.append((km, kmi))
     
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='FOUR', value='PRESS')
-    kmi.properties.tool='builtin_brush.Draw'
-    kmi.properties.layer='Color'
-    kmi.properties.material='' # fill_white
+    kmi.properties.name = 'Fill Draw'
+    kmi.properties.tool = 'builtin_brush.Draw'
+    kmi.properties.layer = 'Color'
+    # kmi.properties.material = '' # fill_white
     addon_keymaps.append((km, kmi))
     
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='FIVE', value='PRESS')
-    kmi.properties.tool='builtin_brush.Erase'
-    kmi.properties.brush='Eraser Point'
+    kmi.properties.name = 'Eraser by points'
+    kmi.properties.tool = 'builtin_brush.Erase'
+    kmi.properties.brush = 'Eraser Point'
     addon_keymaps.append((km, kmi))
     
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='SIX', value='PRESS')
-    kmi.properties.tool='builtin_brush.Erase'
-    kmi.properties.brush='Eraser Stroke'
+    kmi.properties.name = 'Eraser by strokes'
+    kmi.properties.tool = 'builtin_brush.Erase'
+    kmi.properties.brush = 'Eraser Stroke'
     addon_keymaps.append((km, kmi))
 
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='SEVEN', value='PRESS')
-    kmi.properties.tool=''
-    kmi.properties.brush=''
     addon_keymaps.append((km, kmi))
+
+    # kmi = km.keymap_items.new('storytools.set_draw_tool', type='SEVEN', value='PRESS')
+    # kmi.properties.name = 'Notes'
+    # kmi.properties.tool = 'builtin_brush.Draw'
+    # kmi.properties.layer = 'Line'
+    # kmi.properties.material = 'line_red' # Sync override material
+    # addon_keymaps.append((km, kmi))
 
 def unregister_keymap():
     for km, kmi in addon_keymaps:
