@@ -5,11 +5,12 @@ Blender addon - Set of tool for storyboarding in Blender
 ## [Download latest](https://github.com/Pullusb/storytools/archive/master.zip)
 
 
-Version 1.0 sponsored by [**El Guiri Studios**](https://www.elguiristudios.com/)
-
 <!-- https://github.com/Pullusb/storytools/archive/refs/heads/master.zip -->
 
- 
+![Storytools UI](https://github.com/Pullusb/images_repo/blob/master/storytools_ui.jpg)
+
+Version 1.0 sponsored by [**El Guiri Studios**](https://www.elguiristudios.com/)
+
 ---  
 
 ## Description
@@ -43,9 +44,9 @@ When selecting a material, it "stick" to current active layer
 (i.e: when selecting this layer again, it will switch back to this material)
 
 
-### Bottom Toolbar
+## Bottom Toolbar
 
-Action buttons to easily place object and camera
+Action gizmo buttons to easily place object and camera
 All transform actions respect autokey
 
 > Note: currently not all actions respects autokey
