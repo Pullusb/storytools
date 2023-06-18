@@ -436,7 +436,7 @@ class STORYTOOLS_OT_align_with_view(Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.object # and context.object.type == 'GPENCIL'
+        return context.object
 
     keep_z_up : bpy.props.BoolProperty(name='Keep Z Up', default=False)
 
@@ -448,36 +448,29 @@ class STORYTOOLS_OT_align_with_view(Operator):
         r3d = context.space_data.region_3d            
         
         for ob in context.selected_objects:
-            ## skip camera object
+            
+            ## Handle  camera object
             if ob.type == 'CAMERA':
                 continue
-
             ## skip active camera if selected and IN cam view
             # if context.scene.camera \
             #     and ob == context.scene.camera \
             #     and context.space_data.region_3d.view_perspective == 'CAMERA':
             #     continue
 
-            mat = Matrix()
-
-            if ob.type == 'FONT':
-                # Rotate text objects 90° up 
-                euler_x_90 = Euler((radians(90), 0, 0))
-                mat  = euler_x_90.to_matrix().to_4x4() @ mat
-
             if self.keep_z_up:
                 ## Align to view but keep world Up
                 Z_up_vec = Vector((0.0, 0.0, 1.0))
                 aim = r3d.view_rotation @ Z_up_vec
                 # Track Up
-                ref_matrix = aim.to_track_quat('Z','Y').to_matrix().to_4x4() @ mat
+                ref_matrix = aim.to_track_quat('Z','Y').to_matrix().to_4x4()
             
             else:
                 ## Aligned to view Matrix
-                ref_matrix = r3d.view_matrix.inverted() @ mat
+                ref_matrix = r3d.view_matrix.inverted()
 
-
-            fn.assign_rotation_from_ref_matrix(ob, ref_matrix)
+            ## Objects are rotated by 90° on X except for Text objects.
+            fn.assign_rotation_from_ref_matrix(ob, ref_matrix, rot_90=ob.type != 'FONT')
 
         return {"FINISHED"}
 
