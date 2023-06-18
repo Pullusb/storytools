@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.3.1
+
+- changed: Text objects are aligned "Y up" (rotated 90° on X Axis) using `Align to view` tool. 
+
 1.3.0
 
 - added: Customizable operator shortcut to change tool, brush, layer and material at once with a single key in Grease pencil paint mode.

@@ -1,7 +1,7 @@
 import bpy
 # from .fn import get_addon_prefs
-from math import pi
-from mathutils import Vector, Matrix, Quaternion
+from math import pi, radians
+from mathutils import Vector, Matrix, Quaternion, Euler
 
 from bpy.types import Operator, Panel, PropertyGroup
 from bpy.props import CollectionProperty, PointerProperty
@@ -457,18 +457,27 @@ class STORYTOOLS_OT_align_with_view(Operator):
             #     and ob == context.scene.camera \
             #     and context.space_data.region_3d.view_perspective == 'CAMERA':
             #     continue
-    
+
+            mat = Matrix()
+
+            if ob.type == 'FONT':
+                # Rotate text objects 90° up 
+                euler_x_90 = Euler((radians(90), 0, 0))
+                mat  = euler_x_90.to_matrix().to_4x4() @ mat
+
             if self.keep_z_up:
                 ## Align to view but keep world Up
                 Z_up_vec = Vector((0.0, 0.0, 1.0))
                 aim = r3d.view_rotation @ Z_up_vec
-                world_aligned_mat = aim.to_track_quat('Z','Y').to_matrix().to_4x4() # Track Up
-                fn.assign_rotation_from_ref_matrix(ob, world_aligned_mat)
+                # Track Up
+                ref_matrix = aim.to_track_quat('Z','Y').to_matrix().to_4x4() @ mat
             
             else:
-                ## Align to view
-                view_matrix = r3d.view_matrix.inverted()
-                fn.assign_rotation_from_ref_matrix(ob, view_matrix)
+                ## Aligned to view Matrix
+                ref_matrix = r3d.view_matrix.inverted() @ mat
+
+
+            fn.assign_rotation_from_ref_matrix(ob, ref_matrix)
 
         return {"FINISHED"}
 
