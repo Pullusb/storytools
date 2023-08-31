@@ -314,6 +314,12 @@ class STORYTOOLS_OT_create_object(Operator):
         name='At Cursor',
         description="Create object at cursor location, else centered position at cursor 'distance' facing view",
         default=False)
+    
+    track_to_cam : bpy.props.BoolProperty(
+        name='Add Track To Camera',
+        description="Add a track to constraint pointing at active camera\
+            \nThis makes object's always face camera",
+        default=False)
 
     def invoke(self, context, event):
         ## Suggest a numbered default name for quick use
@@ -341,6 +347,7 @@ class STORYTOOLS_OT_create_object(Operator):
         row = layout.row()
         row.prop(self, 'init_dist')
         row.active = not self.at_cursor # enabled
+        layout.prop(self, 'track_to_cam')
 
         if context.space_data.region_3d.view_perspective != 'CAMERA':
             col=layout.column()
@@ -399,6 +406,12 @@ class STORYTOOLS_OT_create_object(Operator):
         ## Make active and selected
         context.view_layer.objects.active = ob
         ob.select_set(True)
+
+        if self.track_to_cam:
+            constraint = ob.constraints.new('TRACK_TO')
+            constraint.target = context.scene.camera
+            constraint.track_axis = 'TRACK_Y'
+            constraint.up_axis = 'UP_Z'
 
         ## Configure
         # TODO: Set Active palette (Need a selectable loader)
