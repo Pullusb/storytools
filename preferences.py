@@ -174,10 +174,6 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             # for km, kmi in sorted(user_kms, key=lambda x: x[1].type):
             #     draw_kmi_custom(km, kmi, col)
 
-
-
-
-
         ## Git update code
         if self.is_git_repo:
             box = layout.box()
@@ -190,11 +186,44 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
                 row.operator('wm.url_open', text='Download and install git here', icon='URL').url = 'https://git-scm.com/download/'
                 row.label(text='then restart blender')
 
+class STORYTOOLS_OT_restore_keymap_item(bpy.types.Operator):
+    bl_idname = "storytools.restore_keymap_item"
+    bl_label = "Restore keymap item"
+    bl_description = "Reset keymap item to default"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        return True
+    
+    km_name : bpy.props.StringProperty()
+    # kmi_name : bpy.props.StringProperty()
+    kmi_id : bpy.props.IntProperty()
+
+    def execute(self, context):
+        km = bpy.context.window_manager.keyconfigs.user.keymaps.get(self.km_name)
+        if not km:
+            self.report({'ERROR'}, f'No keymap {self.km_name} found')
+            return {"CANCELLED"}
+        
+        kmi = next((i for i in km.keymap_items if i.id == self.kmi_id), None)
+        if not kmi:
+            self.report({'ERROR'}, f'Keymap item not found')
+            return {"CANCELLED"}
+        
+        # kmi = c.get(self.kmi_name)
+        # if not kmi:
+        #     self.report({'ERROR'}, f'No key item {self.kmi_name} found')
+        #     return {"CANCELLED"}
+        km.restore_item_to_default(kmi)
+
+        return {"FINISHED"}
+
 class STORYTOOLS_OT_open_addon_prefs(bpy.types.Operator):
     bl_idname = "storytools.open_addon_prefs"
     bl_label = "Open Storytools Prefs"
     bl_description = "Open Storytools addon preferences window in addon tab\
-        \bprefill the search with addon name"
+        \nprefill the search with addon name"
     bl_options = {"REGISTER", "INTERNAL"}
 
     def execute(self, context):
@@ -203,9 +232,15 @@ class STORYTOOLS_OT_open_addon_prefs(bpy.types.Operator):
 
 ### --- REGISTER ---
 
+classes = (
+    STORYTOOLS_prefs,
+    STORYTOOLS_OT_open_addon_prefs,
+    STORYTOOLS_OT_restore_keymap_item,
+)
+
 def register(): 
-    bpy.utils.register_class(STORYTOOLS_prefs)
-    bpy.utils.register_class(STORYTOOLS_OT_open_addon_prefs)
+    for cls in classes:
+        bpy.utils.register_class(cls)
 
     ## Update section
     prefs = get_addon_prefs()
@@ -214,5 +249,5 @@ def register():
     prefs.has_git = bool(which('git'))
 
 def unregister():
-    bpy.utils.unregister_class(STORYTOOLS_OT_open_addon_prefs)
-    bpy.utils.unregister_class(STORYTOOLS_prefs)
+    for cls in reversed(classes):
+        bpy.utils.unregister_class(cls)  

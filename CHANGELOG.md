@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.3.3
+
+- fixed: preferences keymap display and unreliable restore keymap item
+
 1.3.2
 
 - added: Possibility to add a "Track to" constraint pointing at camera when creating object

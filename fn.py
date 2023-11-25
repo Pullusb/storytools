@@ -474,9 +474,13 @@ def draw_kmi_custom(km, kmi, layout):
     # row.label(text='+ Click')
 
     if (not kmi.is_user_defined) and kmi.is_user_modified:
-        ops = row.operator("gp.restore_keymap_item", text="", icon='BACK') # modified
+        ops = row.operator("storytools.restore_keymap_item", text="", icon='BACK') # modified
         ops.km_name = km.name
-        ops.kmi_name = kmi.idname
+        ops.kmi_id = kmi.id
+        # ops.kmi_name = kmi.idname
+
+        ## keyitem_restore is not accessible in addon prefs
+        # row.operator('preferences.keyitem_restore', text="", icon='BACK').item_id = kmi.id
     else:
         row.label(text='', icon='BLANK1')
 
