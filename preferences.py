@@ -26,6 +26,9 @@ def ui_in_sidebar_update(self, _):
                          STORYTOOLS_PT_drawings_ui,
                          STORYTOOLS_PT_layers_ui,
                          STORYTOOLS_PT_materials_ui,
+                         STORYTOOLS_PT_brushes_ui,
+                         STORYTOOLS_PT_colors_ui,
+                         STORYTOOLS_PT_palette_ui,
                          STORYTOOLS_PT_tool_ui,
                          )
     
@@ -35,6 +38,9 @@ def ui_in_sidebar_update(self, _):
         (STORYTOOLS_PT_drawings_ui, 'STORYTOOLS_PT_drawings_ui'),
         (STORYTOOLS_PT_layers_ui, 'STORYTOOLS_PT_layers_ui'),
         (STORYTOOLS_PT_materials_ui, 'STORYTOOLS_PT_materials_ui'),
+        (STORYTOOLS_PT_brushes_ui, 'STORYTOOLS_PT_brushes_ui'),
+        (STORYTOOLS_PT_colors_ui, 'STORYTOOLS_PT_colors_ui'),
+        (STORYTOOLS_PT_palette_ui, 'STORYTOOLS_PT_palette_ui'),
         (STORYTOOLS_PT_tool_ui, 'STORYTOOLS_PT_tool_ui'),
     )
 

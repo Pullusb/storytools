@@ -321,7 +321,7 @@ def tool_layout(self, layout, context):
     if not context.preferences.addons.get('greasepencil_tools') and not context.preferences.addons.get('greasepencil-addon'):
         layout.separator()
         layout.label(text='GP Tools addon is disabled')
-        layout.operator('preferences.addon_enable',text='Enable Grease Pencil Tools').module = 'greasepencil_tools'
+        layout.operator('preferences.addon_enable', text='Enable Grease Pencil Tools').module = 'greasepencil_tools'
         # layout.operator('preferences.addon_enable',text='Enable Grease Pencil Tools').module='greasepencil-addon' # The Dev one
     else:
         ## Don't know how to auto-pin GP_tools panel, so call it's panel draw directly
@@ -338,6 +338,97 @@ class STORYTOOLS_MT_material_context_menu(bpy.types.Menu):
         col=layout.column()
         col.operator('storytools.load_default_palette', text='Load Base Palette')
         # col.prop(bpy.context.scene.storytools_settings, 'material_sync', text='')
+
+class STORYTOOLS_PT_brushes_ui(Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Storytools" # Gpencil
+    bl_label = "Brushes"
+    bl_parent_id = "STORYTOOLS_PT_storytools_ui" # as_subpanel
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        # Check draw mode to hide panel when not in draw (or just display message ?)
+        return context.object and context.object.type == 'GPENCIL'# and context.mode == 'PAINT_GPENCIL'
+
+    def draw(self, context):
+        layout = self.layout
+        if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_brush_select"):
+            layout.label(text='could not found Brushes select class')
+            return
+
+        brush_cls = bpy.types.VIEW3D_PT_tools_grease_pencil_brush_select
+        if not hasattr(brush_cls, "poll") or brush_cls.poll(context):
+            brush_cls.draw(self, context)
+        else:
+            layout.label(text="Need a GPencil object in Draw mode", icon="INFO")
+
+class STORYTOOLS_PT_colors_ui(Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Storytools" # Gpencil
+    bl_label = "Colors"
+    bl_parent_id = "STORYTOOLS_PT_storytools_ui" # as_subpanel
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        # Check draw mode to hide panel when not in draw (or just display message ?)
+        return context.object and context.object.type == 'GPENCIL'# and context.mode == 'PAINT_GPENCIL'
+
+    def draw(self, context):
+        layout = self.layout
+        if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_brush_mixcolor"):
+            return
+        
+        mixcolor_cls = bpy.types.VIEW3D_PT_tools_grease_pencil_brush_mixcolor
+        if not hasattr(mixcolor_cls, "poll") or mixcolor_cls.poll(context):
+            mixcolor_cls.draw(self, context)
+        else:
+            layout.label(text="Can't display this panel here!", icon="ERROR")
+
+class STORYTOOLS_PT_palette_ui(Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Storytools" # Gpencil
+    bl_label = "Palette"
+    bl_parent_id = "STORYTOOLS_PT_storytools_ui" # as_subpanel
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        # Check draw mode to hide panel when not in draw (or just display message ?)
+        return context.object and context.object.type == 'GPENCIL'# and context.mode == 'PAINT_GPENCIL'
+
+    def draw(self, context):
+        layout = self.layout
+        if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_brush_mix_palette"):
+            return
+
+        palette_cls = bpy.types.VIEW3D_PT_tools_grease_pencil_brush_mix_palette
+        if not hasattr(palette_cls, "poll") or palette_cls.poll(context):
+            palette_cls.draw(self, context)
+        else:
+            layout.label(text="Can't display this panel here!", icon="ERROR")
+
+# class DummyPanel:
+#     def __init__(self, layout):
+#         self.layout = layout
+
+
+
+# def palette_layout(layout, context):
+#     dummy_panel = DummyPanel(layout)
+#     if hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_brush_mix_palette"):
+#         if not hasattr(
+#             bpy.types.VIEW3D_PT_tools_grease_pencil_brush_mix_palette, "poll"
+#         ) or bpy.types.VIEW3D_PT_tools_grease_pencil_brush_mix_palette.poll(context):
+#             bpy.types.VIEW3D_PT_tools_grease_pencil_brush_mix_palette.draw(
+#                 dummy_panel, context
+#             )
+#         else:
+#             layout.label(text="Can't display this panel here!", icon="ERROR")
 
 
 # ## function to append in a menu
@@ -359,6 +450,9 @@ panel_classes = (
     STORYTOOLS_PT_drawings_ui,
     STORYTOOLS_PT_layers_ui,
     STORYTOOLS_PT_materials_ui,
+    STORYTOOLS_PT_brushes_ui, # Reference native panel
+    STORYTOOLS_PT_colors_ui, # Reference native panel
+    STORYTOOLS_PT_palette_ui, # Reference native panel
     STORYTOOLS_PT_tool_ui,
 )
 

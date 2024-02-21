@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.5.0
+
+- added: GP native panels for Brush, Colors and Palettes appended as subpanels (code from _Nacho de Andrés_)
+
 1.4.0
 
 - changed: UI use subpanels for ability to collapse elements individually
