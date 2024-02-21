@@ -21,18 +21,49 @@ def toggle_gizmo_buttons(self, _):
         bpy.utils.unregister_class(GZ_toolbar.STORYTOOLS_GGT_toolbar)
 
 def ui_in_sidebar_update(self, _):
-    from .panels import STORYTOOLS_PT_storytools_ui
-    has_panel = hasattr(bpy.types, STORYTOOLS_PT_storytools_ui.bl_idname)
-    if has_panel:
-        try:
-            bpy.utils.unregister_class(STORYTOOLS_PT_storytools_ui)
-        except:
-            pass
+    from .panels import (STORYTOOLS_PT_storytools_ui,
+                         STORYTOOLS_PT_camera_ui,
+                         STORYTOOLS_PT_drawings_ui,
+                         STORYTOOLS_PT_layers_ui,
+                         STORYTOOLS_PT_materials_ui,
+                         STORYTOOLS_PT_tool_ui,
+                         )
+    
+    cls_and_id = (
+        (STORYTOOLS_PT_storytools_ui, 'STORYTOOLS_PT_storytools_ui'),
+        (STORYTOOLS_PT_camera_ui, 'STORYTOOLS_PT_camera_ui'),
+        (STORYTOOLS_PT_drawings_ui, 'STORYTOOLS_PT_drawings_ui'),
+        (STORYTOOLS_PT_layers_ui, 'STORYTOOLS_PT_layers_ui'),
+        (STORYTOOLS_PT_materials_ui, 'STORYTOOLS_PT_materials_ui'),
+        (STORYTOOLS_PT_tool_ui, 'STORYTOOLS_PT_tool_ui'),
+    )
 
-    if self.show_sidebar_ui:
-        # STORYTOOLS_PT_storytools_ui.bl_space_type = self.panel_space_type
-        STORYTOOLS_PT_storytools_ui.bl_category = self.category.strip()
-        bpy.utils.register_class(STORYTOOLS_PT_storytools_ui)
+    ## loop to register
+    for cls, idname in cls_and_id: 
+        has_panel = hasattr(bpy.types, idname)
+        if has_panel:
+            try:
+                bpy.utils.unregister_class(cls)
+            except:
+                pass
+
+        if self.show_sidebar_ui:
+            # STORYTOOLS_PT_storytools_ui.bl_space_type = self.panel_space_type
+            cls.bl_category = self.category.strip()
+            bpy.utils.register_class(cls)
+
+    ## Old with single panel
+    # has_panel = hasattr(bpy.types, 'STORYTOOLS_PT_storytools_ui')
+    # if has_panel:
+    #     try:
+    #         bpy.utils.unregister_class(STORYTOOLS_PT_storytools_ui)
+    #     except:
+    #         pass
+
+    # if self.show_sidebar_ui:
+    #     # STORYTOOLS_PT_storytools_ui.bl_space_type = self.panel_space_type
+    #     STORYTOOLS_PT_storytools_ui.bl_category = self.category.strip()
+    #     bpy.utils.register_class(STORYTOOLS_PT_storytools_ui)
 
 class STORYTOOLS_prefs(bpy.types.AddonPreferences):
     bl_idname = __name__.split('.')[0] # or __package__

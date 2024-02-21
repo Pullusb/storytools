@@ -89,7 +89,7 @@ class STORYTOOLS_PGT_distances(PropertyGroup) :
     
     ## enum (with Icon)
     material_sync : EnumProperty(
-        name="Material Sync", description="Only jump to defined keyframe type", 
+        name="Material Sync", description="Define how to switch material when active layer is changed",
         default='INDIVIDUAL', options={'HIDDEN', 'SKIP_SAVE'},
         items=(
             ('INDIVIDUAL', 'Sync Materials', 'Sync material and layer per object', 0),
@@ -108,10 +108,6 @@ class STORYTOOLS_PGT_distances(PropertyGroup) :
         description="Show the focal length properties of every camera",
         default=True)
 
-    show_camera_panel : bpy.props.BoolProperty(
-        name='Cameras',
-        description="Show the camera panel",
-        default=True)
     
     ## GP Object properties
     show_gp_users : bpy.props.BoolProperty(
