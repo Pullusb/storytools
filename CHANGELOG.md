@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.6.0
+
+- added: long button under bottom bar to toggle it (design will probably cahnge)
+- changed: margin from border do not depend on UI scale anymore
+
 1.5.0
 
 - added: GP native panels for Brush, Colors and Palettes appended as subpanels (code from _Nacho de Andrés_)

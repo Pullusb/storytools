@@ -110,35 +110,35 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         ## --- Object
 
         self.object_gizmos = []
-        
+
         ## Object Pan
         self.gz_ob_pan = self.gizmos.new("GIZMO_GT_button_2d")
         set_gizmo_settings(self.gz_ob_pan, 'VIEW_PAN', show_drag=True)
-        props = self.gz_ob_pan.target_set_operator("storytools.object_pan") 
+        self.gz_ob_pan.target_set_operator("storytools.object_pan") 
         self.object_gizmos.append(self.gz_ob_pan)
         
         ## Object Depth
         self.gz_ob_depth = self.gizmos.new("GIZMO_GT_button_2d")
         set_gizmo_settings(self.gz_ob_depth, 'EMPTY_SINGLE_ARROW', show_drag=True) # 
-        props = self.gz_ob_depth.target_set_operator("storytools.object_depth_move")
+        self.gz_ob_depth.target_set_operator("storytools.object_depth_move")
         self.object_gizmos.append(self.gz_ob_depth)
 
         ## Object Scale
         self.gz_ob_scale = self.gizmos.new("GIZMO_GT_button_2d")
         set_gizmo_settings(self.gz_ob_scale, 'FULLSCREEN_ENTER', show_drag=True)
-        props = self.gz_ob_scale.target_set_operator("storytools.object_scale")
+        self.gz_ob_scale.target_set_operator("storytools.object_scale")
         self.object_gizmos.append(self.gz_ob_scale)
 
         ## Object Align to view
         self.gz_ob_align_to_view = self.gizmos.new("GIZMO_GT_button_2d")
         set_gizmo_settings(self.gz_ob_align_to_view, 'AXIS_FRONT')
-        props = self.gz_ob_align_to_view.target_set_operator("storytools.align_with_view")
+        self.gz_ob_align_to_view.target_set_operator("storytools.align_with_view")
         self.object_gizmos.append(self.gz_ob_align_to_view)
         
         ## Object key transform
         self.gz_key_ob = self.gizmos.new("GIZMO_GT_button_2d")
         set_gizmo_settings(self.gz_key_ob, 'DECORATE_KEYFRAME')
-        props = self.gz_key_ob.target_set_operator("storytools.object_key_transform")
+        self.gz_key_ob.target_set_operator("storytools.object_key_transform")
         self.object_gizmos.append(self.gz_key_ob)
 
 
@@ -149,31 +149,31 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         ## Camera Pan
         self.gz_cam_pan = self.gizmos.new("GIZMO_GT_button_2d")
         set_gizmo_settings(self.gz_cam_pan, 'VIEW_PAN', show_drag=True) # ARROW_LEFTRIGHT
-        props = self.gz_cam_pan.target_set_operator("storytools.camera_pan")
+        self.gz_cam_pan.target_set_operator("storytools.camera_pan")
         self.camera_gizmos.append(self.gz_cam_pan)
         
         ## Camera Depth
         self.gz_cam_depth = self.gizmos.new("GIZMO_GT_button_2d")
         set_gizmo_settings(self.gz_cam_depth, 'EMPTY_SINGLE_ARROW', show_drag=True)
-        props = self.gz_cam_depth.target_set_operator("storytools.camera_depth")
+        self.gz_cam_depth.target_set_operator("storytools.camera_depth")
         self.camera_gizmos.append(self.gz_cam_depth)
 
         # ## Camera Rotation
         # self.gz_cam_rot = self.gizmos.new("GIZMO_GT_button_2d")
         # set_gizmo_settings(self.gz_cam_rot, 'DRIVER_ROTATIONAL_DIFFERENCE', show_drag=True)
-        # props = self.gz_cam_rot.target_set_operator("storytools.camera_rotate")
+        # self.gz_cam_rot.target_set_operator("storytools.camera_rotate")
         # self.camera_gizmos.append(self.gz_cam_rot)
 
         ## Camera lock
         self.gz_lock_cam = self.gizmos.new("GIZMO_GT_button_2d")
         set_gizmo_settings(self.gz_lock_cam, 'OUTLINER_OB_CAMERA')
-        props = self.gz_lock_cam.target_set_operator("storytools.camera_lock_toggle")
+        self.gz_lock_cam.target_set_operator("storytools.camera_lock_toggle")
         self.camera_gizmos.append(self.gz_lock_cam)
 
         ## Camera key position
         self.gz_key_cam = self.gizmos.new("GIZMO_GT_button_2d")
         set_gizmo_settings(self.gz_key_cam, 'DECORATE_KEYFRAME')
-        props = self.gz_key_cam.target_set_operator("storytools.camera_key_transform")
+        self.gz_key_cam.target_set_operator("storytools.camera_key_transform")
         self.camera_gizmos.append(self.gz_key_cam)
 
 
@@ -213,23 +213,9 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
 
         ## Using only direct offset
         self.bar_width = (count - 1) * (gap_size * px_scale) + section_separator * px_scale
-        vertical_pos = prefs.toolbar_margin * px_scale        
+        vertical_pos = prefs.toolbar_margin # * px_scale
         left_pos = region.width / 2 - self.bar_width / 2
         next_pos = gap_size * px_scale
-
-        # ## Orangy
-        # obj_color = (0.6, 0.3, 0.2)
-        # obj_color_hl = (0.7, 0.4, 0.3)
-        # ## Blue
-        # cam_color = (0.2, 0.2, 0.6)
-        # cam_color_hl = (0.3, 0.3, 0.8)
-
-        # ## grey_light
-        # obj_color = (0.3, 0.3, 0.3)
-        # obj_color_hl = (0.4, 0.4, 0.4)
-        # ## Grey_dark
-        # cam_color = (0.1, 0.1, 0.1)
-        # cam_color_hl = (0.3, 0.3, 0.3)
 
         ## Prefs Object gizmo color
         obj_color = prefs.object_gz_color
@@ -288,14 +274,33 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
 
 ## Toolbar switcher
 
+## Square
+# dn = -30
+# up = 30
+
+# toggler_shape_verts = (
+#     (dn, dn), (up, dn), (up, up),
+#     (dn, dn), (dn, up), (up, up),
+#                 )
+
+# toggler_shape_verts_select = (
+#     (dn, dn), (up*2, dn), (up*2, up*2),
+#                 )
+
+x_l = -80
+x_r = 80
+y_d = -4
+y_u = 4
+
 toggler_shape_verts = (
-    (100, 100), (200, 100), (200, 200),
-    (100, 100), (100, 200), (200, 200),
+    (x_l, y_d), (x_r, y_d), (x_r, y_u),
+    (x_l, y_d), (x_r, y_u), (x_l, y_u),
                 )
 
-toggler_shape_verts_select = (
-    (100, 100), (200, 100), (150, 150),
-                )
+# toggler_shape_verts_select = (
+#     (x_l, y_d), (x_r, y_d), (x_r, y_u),
+#                 )
+
 
 ## Full WIP
 class VIEW3D_GT_toggler_shape_widget(Gizmo):
@@ -307,7 +312,10 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
     __slots__ = (
         "custom_shape",
         "custom_shape_select",
-        # "init_mouse_y",
+        "init_mouse_x",
+        "init_mouse_y",
+        "mx",
+        "my",
         # "init_value",
     )
 
@@ -318,44 +326,60 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
     def draw(self, context):
         # self._update_offset_matrix()
         self.draw_custom_shape(self.custom_shape)
+        # self.draw_preset_box(Matrix(), select_id=0)
 
-    def draw_select(self, context, select_id):
-        self.draw_custom_shape(self.custom_shape_select, select_id=select_id)
+    # def draw_select(self, context, select_id):
+    #     # self.draw_custom_shape(self.custom_shape)
+    #     self.draw_custom_shape(self.custom_shape_select, select_id=select_id)
+    #     return
 
     ## WARN: select_id is probably not what I think it is...
     def test_select(self, context, select_id):
-        # print('select_id: ', select_id)
         px_scale = context.preferences.system.ui_scale
+     
+        x_min = self.matrix_basis.to_translation().x + (x_l * px_scale)
+        x_max = self.matrix_basis.to_translation().x + (x_r * px_scale)
+        y_min = self.matrix_basis.to_translation().y + (y_d * px_scale)
+        y_max = self.matrix_basis.to_translation().y + (y_u * px_scale)
+        select = 1 if x_min < select_id[0] < x_max and y_min < select_id[1] < y_max else -1
 
-        s_min = 100 * px_scale 
-        s_max = 200 * px_scale
-        select = 1 if s_min < select_id[0] < s_max and s_min < select_id[1]*px_scale < s_max else -1
-        # print('select: ', select)
-        # self.draw_custom_shape(self.custom_shape, select_id=select_id)
         return select
 
     def setup(self):
         if not hasattr(self, "custom_shape"):
             self.custom_shape = self.new_custom_shape('TRIS', toggler_shape_verts)
-        if not hasattr(self, "custom_shape_select"):
-            self.custom_shape_select = self.new_custom_shape('TRIS', toggler_shape_verts_select)
-
-        # set_gizmo_settings(self, 'ADD', scale_basis=10, alpha=0.6)
+        # if not hasattr(self, "custom_shape_select"):
+        #     self.custom_shape_select = self.new_custom_shape('TRIS', toggler_shape_verts_select)
 
     def invoke(self, context, event):
-        # self.init_mouse_y = event.mouse_y
+        self.mx = self.init_mouse_x = event.mouse_x
+        self.my = self.init_mouse_y = event.mouse_y
         # self.init_value = self.target_get_value("offset")
-        settings = context.scene.storytools_settings
-        settings.show_session_toolbar = not settings.show_session_toolbar
+
         return {'RUNNING_MODAL'}
 
-    # def exit(self, context, cancel):
-    #     pass
-    #     # context.area.header_text_set(None)
-    #     # if cancel:
-    #     #     self.target_set_value("offset", self.init_value)
+    def exit(self, context, cancel):
+        ## Cancel if Has moved more than 5px
+        if abs(self.init_mouse_x - self.mx) > 10 or abs(self.init_mouse_y - self.my) > 10:
+            return
+
+        ## Cancel if out of square when release
+        # s_min = 100 * px_scale 
+        # s_max = 200 * px_scale
+        # ## need to pass min/max and select_id in a slot variable
+        # if not (s_min < select_id[0] < s_max and s_min < select_id[1] < s_max):
+        #     return
+
+        ## No moved much after click, trigger action
+        settings = context.scene.storytools_settings
+        settings.show_session_toolbar = not settings.show_session_toolbar
+        # context.area.header_text_set(None)
+        # if cancel:
+        #     self.target_set_value("offset", self.init_value)
 
     def modal(self, context, event, tweak):
+        self.mx = event.mouse_x
+        self.my = event.mouse_y
         ## TODO: Use modal to resize margin !
 
         # delta = (event.mouse_y - self.init_mouse_y) / 10.0
@@ -383,23 +407,27 @@ class STORYTOOLS_GGT_toolbar_switch(GizmoGroup):
 
     def setup(self, context):
         ## --- Toggle button
-        """
         self.gz_toggle_bar = self.gizmos.new("VIEW3D_GT_toggler_shape_widget")
         self.gz_toggle_bar.color = (0.0, 0.0, 0.0)
-        self.gz_toggle_bar.color_highlight = (0.5, 0.5, 0.9)
-        self.gz_toggle_bar.alpha = 0.7
+        self.gz_toggle_bar.color_highlight = (0.5, 0.5, 0.5)
+        self.gz_toggle_bar.alpha = 0.5
         self.gz_toggle_bar.alpha_highlight = 0.7
         self.gz_toggle_bar.scale_basis = 1
+
+        # self.gz_toggle_bar.use_draw_hover = True # only draw shape when hovering mouse
+        # self.gz_toggle_bar.use_draw_modal = True # dunno
+
         # self.gz_toggle_bar.show_drag = False # not exists
         # self.gz_toggle_bar.icon = # not exists
         # self.gz_toggle_bar.draw_options = {'BACKDROP', 'OUTLINE'} # not exists
+
+
         """
-
-
         ## Simple Single button_2d
         self.gz_toggle_bar = self.gizmos.new("GIZMO_GT_button_2d")
         set_gizmo_settings(self.gz_toggle_bar, 'ADD', scale_basis=10, alpha=0.6) # PLUS
         props = self.gz_toggle_bar.target_set_operator("storytools.toggle_bottom_bar")
+        """
 
     def draw_prepare(self, context):
         prefs = get_addon_prefs()
@@ -407,8 +435,14 @@ class STORYTOOLS_GGT_toolbar_switch(GizmoGroup):
         px_scale = context.preferences.system.ui_scale
 
         # show toggle:
-        # self.gz_toggle_bar.matrix_basis = Matrix.Translation((100, 6 * px_scale, 0))
-        self.gz_toggle_bar.matrix_basis = Matrix.Translation((400, 6 * px_scale, 0))
+        # self.gz_toggle_bar.matrix_basis = Matrix.Translation((400, 6 * px_scale, 0))
+
+        ## center
+        x_loc = context.region.width / 2
+        # y_loc = 70
+        y_loc = 2
+        self.gz_toggle_bar.matrix_basis = Matrix.Translation((x_loc, y_loc * px_scale, 0))
+        
 
     # def refresh(self, context):
     #     pass
@@ -430,7 +464,7 @@ class STORYTOOLS_OT_toggle_bottom_bar(bpy.types.Operator):
         return {"FINISHED"}
 
 classes=(
-    # VIEW3D_GT_toggler_shape_widget,
+    VIEW3D_GT_toggler_shape_widget,
     STORYTOOLS_OT_toggle_bottom_bar,
     STORYTOOLS_GGT_toolbar_switch,
     STORYTOOLS_GGT_toolbar,
