@@ -10,6 +10,7 @@ from bpy.types import (
     )
 
 from mathutils import Matrix, Vector
+from gpu_extras.batch import batch_for_shader
 from .fn import get_addon_prefs
 from . import fn
 
@@ -274,32 +275,30 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
 
 ## Toolbar switcher
 
-## Square
-# dn = -30
-# up = 30
+## Long bar
+# x_l = -300
+# x_r = 300
+# y_d = -4
+# y_u = 4
 
-# toggler_shape_verts = (
-#     (dn, dn), (up, dn), (up, up),
-#     (dn, dn), (dn, up), (up, up),
-#                 )
-
-# toggler_shape_verts_select = (
-#     (dn, dn), (up*2, dn), (up*2, up*2),
-#                 )
-
-x_l = -80
-x_r = 80
-y_d = -4
-y_u = 4
+x_l = -8
+x_r = 8
+y_d = -6
+y_u = 6
 
 toggler_shape_verts = (
     (x_l, y_d), (x_r, y_d), (x_r, y_u),
     (x_l, y_d), (x_r, y_u), (x_l, y_u),
                 )
 
-# toggler_shape_verts_select = (
-#     (x_l, y_d), (x_r, y_d), (x_r, y_u),
-#                 )
+up_arrow_verts = [
+    (4, -1), (0, 3), (0, 2),
+    (-4, -2), (0, 2), (-4, -1),
+    (4, -1), (0, 2), (4, -2),
+    (0, 2), (0, 3), (-4, -1),
+]
+
+vertical_flip_mat = fn.get_scale_matrix((1, -1, 1))
 
 
 ## Full WIP
@@ -311,7 +310,8 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
 
     __slots__ = (
         "custom_shape",
-        "custom_shape_select",
+        "arrow_shape",
+        "arrow_batch",
         "init_mouse_x",
         "init_mouse_y",
         "mx",
@@ -325,8 +325,12 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
 
     def draw(self, context):
         # self._update_offset_matrix()
+        self.color =  (0.2392, 0.2392, 0.2392) # non-gamma-corrected:(0.0466, 0.0466, 0.0466)
+        self.color_highlight = (0.27, 0.27, 0.27)
         self.draw_custom_shape(self.custom_shape)
-        # self.draw_preset_box(Matrix(), select_id=0)
+        
+        self.color_highlight = self.color = (0.5568, 0.5568, 0.5568) # non-gamma-corrected:(0.2705, 0.2705, 0.2705)
+        self.draw_custom_shape(self.arrow_shape)
 
     # def draw_select(self, context, select_id):
     #     # self.draw_custom_shape(self.custom_shape)
@@ -336,7 +340,6 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
     ## WARN: select_id is probably not what I think it is...
     def test_select(self, context, select_id):
         px_scale = context.preferences.system.ui_scale
-     
         x_min = self.matrix_basis.to_translation().x + (x_l * px_scale)
         x_max = self.matrix_basis.to_translation().x + (x_r * px_scale)
         y_min = self.matrix_basis.to_translation().y + (y_d * px_scale)
@@ -348,8 +351,13 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
     def setup(self):
         if not hasattr(self, "custom_shape"):
             self.custom_shape = self.new_custom_shape('TRIS', toggler_shape_verts)
-        # if not hasattr(self, "custom_shape_select"):
-        #     self.custom_shape_select = self.new_custom_shape('TRIS', toggler_shape_verts_select)
+
+        if not hasattr(self, "arrow_shape"):
+            self.arrow_shape = self.new_custom_shape('TRIS', up_arrow_verts)
+        
+        ## Keep default full alpha
+        # self.alpha = 1.0
+        # self.alpha_highlight = 1.0
 
     def invoke(self, context, event):
         self.mx = self.init_mouse_x = event.mouse_x
@@ -359,15 +367,16 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
         return {'RUNNING_MODAL'}
 
     def exit(self, context, cancel):
-        ## Cancel if Has moved more than 5px
+        ## Cancel if move above 10px
         if abs(self.init_mouse_x - self.mx) > 10 or abs(self.init_mouse_y - self.my) > 10:
             return
-
         ## Cancel if out of square when release
-        # s_min = 100 * px_scale 
-        # s_max = 200 * px_scale
-        # ## need to pass min/max and select_id in a slot variable
-        # if not (s_min < select_id[0] < s_max and s_min < select_id[1] < s_max):
+        # px_scale = context.preferences.system.ui_scale
+        # x_min = self.matrix_basis.to_translation().x + (x_l * px_scale)
+        # x_max = self.matrix_basis.to_translation().x + (x_r * px_scale)
+        # y_min = self.matrix_basis.to_translation().y + (y_d * px_scale)
+        # y_max = self.matrix_basis.to_translation().y + (y_u * px_scale)
+        # if x_min < self.mx < x_max and y_min < self.my < y_max:
         #     return
 
         ## No moved much after click, trigger action
@@ -392,7 +401,6 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
         # context.area.header_text_set("My Gizmo: %.4f" % value)
         return {'RUNNING_MODAL'}
 
-
 class STORYTOOLS_GGT_toolbar_switch(GizmoGroup):
     # bl_idname = "STORYTOOLS_GGT_toolbar"
     bl_label = "Story Tool Bar Switch"
@@ -408,19 +416,14 @@ class STORYTOOLS_GGT_toolbar_switch(GizmoGroup):
     def setup(self, context):
         ## --- Toggle button
         self.gz_toggle_bar = self.gizmos.new("VIEW3D_GT_toggler_shape_widget")
-        self.gz_toggle_bar.color = (0.0, 0.0, 0.0)
-        self.gz_toggle_bar.color_highlight = (0.5, 0.5, 0.5)
-        self.gz_toggle_bar.alpha = 0.5
-        self.gz_toggle_bar.alpha_highlight = 0.7
-        self.gz_toggle_bar.scale_basis = 1
 
+        self.gz_toggle_bar.scale_basis = 1
         # self.gz_toggle_bar.use_draw_hover = True # only draw shape when hovering mouse
         # self.gz_toggle_bar.use_draw_modal = True # dunno
 
         # self.gz_toggle_bar.show_drag = False # not exists
         # self.gz_toggle_bar.icon = # not exists
         # self.gz_toggle_bar.draw_options = {'BACKDROP', 'OUTLINE'} # not exists
-
 
         """
         ## Simple Single button_2d
@@ -438,15 +441,19 @@ class STORYTOOLS_GGT_toolbar_switch(GizmoGroup):
         # self.gz_toggle_bar.matrix_basis = Matrix.Translation((400, 6 * px_scale, 0))
 
         ## center
-        x_loc = context.region.width / 2
-        # y_loc = 70
-        y_loc = 2
-        self.gz_toggle_bar.matrix_basis = Matrix.Translation((x_loc, y_loc * px_scale, 0))
-        
+
+        sidebar = next((r for r in context.area.regions if r.type == 'UI'), None)
+        x_loc = context.region.width - sidebar.width - 40
+        y_loc = 4
+
+        mat = Matrix.Translation((x_loc, y_loc * px_scale, 0))
+        if context.scene.storytools_settings.show_session_toolbar:
+            mat = mat @ vertical_flip_mat
+
+        self.gz_toggle_bar.matrix_basis = mat
 
     # def refresh(self, context):
     #     pass
-
 
 
 class STORYTOOLS_OT_toggle_bottom_bar(bpy.types.Operator):
@@ -465,9 +472,9 @@ class STORYTOOLS_OT_toggle_bottom_bar(bpy.types.Operator):
 
 classes=(
     VIEW3D_GT_toggler_shape_widget,
-    STORYTOOLS_OT_toggle_bottom_bar,
     STORYTOOLS_GGT_toolbar_switch,
     STORYTOOLS_GGT_toolbar,
+    STORYTOOLS_OT_toggle_bottom_bar,
 )
 
 def register():

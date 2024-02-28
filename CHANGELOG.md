@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.6.1
+
+- changed: standard shape for bottom bar toggle
+
 1.6.0
 
 - added: long button under bottom bar to toggle it (design will probably cahnge)
