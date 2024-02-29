@@ -129,13 +129,13 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
     toolbar_backdrop_size : bpy.props.IntProperty(
         name='Icon Backdrop Size',
         description="Backdrop size of the toolbar icons (Blender gizmo buttons are around 14)",
-        default=24,
+        default=20,
         min=12, max=40)
 
     toolbar_gap_size : bpy.props.IntProperty(
         name='Button Distance',
         description="Gap size between buttons in toolbar icons",
-        default=62,
+        default=46,
         min=20, max=200)
 
     object_gz_color : bpy.props.FloatVectorProperty(

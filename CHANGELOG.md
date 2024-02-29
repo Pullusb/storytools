@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.6.2
+
+- changed: more compact bottom bar
+
 1.6.1
 
 - changed: standard shape for bottom bar toggle
