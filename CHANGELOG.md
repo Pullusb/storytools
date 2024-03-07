@@ -2,6 +2,13 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.7.0
+
+- added: Object rotate modal operator and gizmo
+    - Rotate active object on view axis by dragging left/right from gizmo
+    - Shift for precision rotation
+    - Ctrl to Snap on 15degrees angle from initial rotation
+
 1.6.2
 
 - changed: more compact bottom bar

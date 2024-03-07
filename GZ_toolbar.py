@@ -124,6 +124,12 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         self.gz_ob_depth.target_set_operator("storytools.object_depth_move")
         self.object_gizmos.append(self.gz_ob_depth)
 
+        ## Object Rotation
+        self.gz_ob_rotate = self.gizmos.new("GIZMO_GT_button_2d")
+        set_gizmo_settings(self.gz_ob_rotate, 'FILE_REFRESH', show_drag=True) # DRIVER_ROTATIONAL_DIFFERENCE
+        self.gz_ob_rotate.target_set_operator("storytools.object_rotate")
+        self.object_gizmos.append(self.gz_ob_rotate)
+        
         ## Object Scale
         self.gz_ob_scale = self.gizmos.new("GIZMO_GT_button_2d")
         set_gizmo_settings(self.gz_ob_scale, 'FULLSCREEN_ENTER', show_drag=True)

@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 import json
+import math
 from math import pi
 from pathlib import Path
 
@@ -26,6 +27,11 @@ def open_addon_prefs():
     bpy.context.preferences.active_section = 'ADDONS'
     bpy.ops.preferences.addon_expand(module=__package__)
     bpy.ops.screen.userpref_show('INVOKE_DEFAULT')
+
+
+def snap_to_step(value, step):
+    # return (value//step)*step # Also valid
+    return round(value / step) * step
 
 ## Vector
 
@@ -306,7 +312,7 @@ def create_brush(name, context=None):
 
     # context.scene.tool_settings.gpencil_paint.brush = brush
 
-
+## ---
 ## Animation
 
 def key_object(ob, loc=True, rot=True, scale=True, use_autokey=False, mode=None, options=set(), context=None):
