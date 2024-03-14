@@ -15,63 +15,52 @@ from .fn import get_addon_prefs
 from . import fn
 
 
-# class CAMERA_GGT_lock_gizmo(Gizmo):
-#     bl_idname = "CAMERA_GGT_lock_gizmo"
-#     bl_target_properties = (
-#         {"id": "lock_camera", "type": 'BOOLEAN'},
+
+## TESTS create a custom draw for 2d button
+# r = 5
+# button_shape_lines = [
+#     (r, -r), (r, r), (-r, r),
+#     (r, -r), (-r, r), (-r, -r),
+# ]
+
+# class VIEW3D_GT_button_widget(Gizmo):
+#     bl_idname = "VIEW3D_GT_button_widget"
+
+#     __slots__ = (
+#         "button_shape",
 #     )
 
 #     def draw(self, context):
-#         self.draw_icon('LOCK_VIEW_ON', color=(0.7, 0.7, 0.7))
+#         # self.color =  (0.2392, 0.2392, 0.2392) # non-gamma-corrected:(0.0466, 0.0466, 0.0466)
+#         # self.color_highlight = (0.27, 0.27, 0.27)
+#         self.draw_custom_shape(self.button_shape)
 
-#     def draw_select(self, context, select_id):
-#         self.draw_icon('LOCK_VIEW_ON', color=(1.0, 1.0, 1.0))
+#     # def test_select(self, context, select_id):
+#     #     pass
+
+#     def test_select(self, context, select_id):
+#             px_scale = context.preferences.system.ui_scale
+#             x_min = self.matrix_basis.to_translation().x + (r * px_scale)
+#             x_max = self.matrix_basis.to_translation().x + (r * px_scale)
+#             y_min = self.matrix_basis.to_translation().y + (r * px_scale)
+#             y_max = self.matrix_basis.to_translation().y + (r * px_scale)
+#             select = 1 if x_min < select_id[0] < x_max and y_min < select_id[1] < y_max else -1
+
+#             return select
+
+#     def setup(self):
+#         if not hasattr(self, "button_shape"):
+#             self.button_shape = self.new_custom_shape('TRIS', button_shape_lines)
 
 #     def invoke(self, context, event):
-#         context.space_data.lock_camera = not context.space_data.lock_camera
-#         return {'FINISHED'}
+#         return {'RUNNING_MODAL'}
 
-## prop tester
-# gz.use_draw_scale = True # already True
-# for att in ['group',
-#             'matrix_offset',
-#             'use_draw_value',
-#             'use_grab_cursor',
-#             'use_tooltip',
-#             'line_width']:
-#     print(att, getattr(gz, att))
+#     def exit(self, context, cancel):
+#         pass
 
-# alpha
-# alpha_highlight
-# bl_idname
-# color
-# color_highlight
-# group
-# hide
-# hide_keymap
-# hide_select
-# is_highlight
-# is_modal
-# line_width
-# matrix_basis
-# matrix_offset
-# matrix_space
-# matrix_world
-# properties
-# rna_type
-# scale_basis
-# select
-# select_bias
-# use_draw_hover
-# use_draw_modal
-# use_draw_offset_scale
-# use_draw_scale
-# use_draw_value
-# use_event_handle_all
-# use_grab_cursor
-# use_operator_tool_properties
-# use_select_background
-# use_tooltip
+#     def modal(self, context, event, tweak):
+#         return {'RUNNING_MODAL'}
+
 
 def set_gizmo_settings(gz, icon,
         color=(0.0, 0.0, 0.0),
@@ -114,8 +103,9 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
 
         ## Object Pan
         self.gz_ob_pan = self.gizmos.new("GIZMO_GT_button_2d")
+        # self.gz_ob_pan = self.gizmos.new("VIEW3D_GT_button_widget")
         set_gizmo_settings(self.gz_ob_pan, 'VIEW_PAN', show_drag=True)
-        self.gz_ob_pan.target_set_operator("storytools.object_pan") 
+        self.gz_ob_pan.target_set_operator("storytools.object_pan")
         self.object_gizmos.append(self.gz_ob_pan)
         
         ## Object Depth
@@ -183,6 +173,17 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         self.gz_key_cam.target_set_operator("storytools.camera_key_transform")
         self.camera_gizmos.append(self.gz_key_cam)
 
+        
+        ## --- Interaction
+        
+        self.interact_gizmos = []
+        
+        ## Lock view
+        self.gz_lock_view = self.gizmos.new("GIZMO_GT_button_2d")
+        set_gizmo_settings(self.gz_lock_view, 'LOCKVIEW_ON')
+        self.gz_lock_view.target_set_operator("storytools.lock_view")
+        self.interact_gizmos.append(self.gz_lock_view)
+
 
     def draw_prepare(self, context):
         prefs = get_addon_prefs()
@@ -216,62 +217,53 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         # vertical_pos = prefs.toolbar_margin * px_scale
         # left_pos = region.width / 2 - self.bar_width / 2 - icon_size / 2
         # next_pos = icon_size * px_scale + gap_size * px_scale
-        
 
         ## Using only direct offset
-        self.bar_width = (count - 1) * (gap_size * px_scale) + section_separator * px_scale
-        vertical_pos = prefs.toolbar_margin # * px_scale
+        self.bar_width = (count - 1) * (gap_size * px_scale) + (section_separator * 2) * px_scale
+        vertical_pos = prefs.toolbar_margin
         left_pos = region.width / 2 - self.bar_width / 2
         next_pos = gap_size * px_scale
 
         ## Prefs Object gizmo color
         obj_color = prefs.object_gz_color
         obj_color_hl = [i + 0.1 for i in obj_color]
+        
         ## Prefs Camera gizmo color
         cam_color = prefs.camera_gz_color
         cam_color_hl = [i + 0.1 for i in cam_color]
 
-        separator_flag = False
 
         for i, gz in enumerate(self.gizmos):
-            # if gz == self.gz_toggle_bar:
-            #     continue
             gz.scale_basis = backdrop_size
             if gz in self.object_gizmos:
                 gz.color = obj_color
                 gz.color_highlight = obj_color_hl
 
             if gz in self.camera_gizmos:
-                if separator_flag == False:
+                # if separator_flag == 0:
+                if gz == self.camera_gizmos[0]:
                     # Add separator
-                    separator_flag = True
                     left_pos += section_separator
-
                 gz.color = cam_color
                 gz.color_highlight = cam_color_hl
-    
+            
+            if gz in self.interact_gizmos:
+                if gz == self.interact_gizmos[0]:
+                    # Add separator
+                    left_pos += section_separator
+                gz.color = obj_color
+                gz.color_highlight = obj_color_hl
+
             ## Matrix world is readonly
             gz.matrix_basis = Matrix.Translation((left_pos + (i * next_pos), vertical_pos * px_scale, 0))
-            
-            # matrix_offset seem to affect only backdrop
-            # gz.matrix_offset = fn.compose_matrix(Vector((0,0,0)), Matrix().to_quaternion(), Vector((2,2,2)))
-            
-            # gz.scale_basis = 40 # same as tweaking matrix_basis scale
-            
-            ## changing matrix size does same thing as gz.scale_basis
-            # gz.matrix_basis = fn.compose_matrix(
-            #     Vector((left_pos + (i * next_pos), vertical_pos, 0)),
-            #     Matrix().to_quaternion(), # Matrix.Rotation(0, 4, 'X'),
-            #     Vector((1,1,1))
-            # )
-
-            # gz.matrix_basis = Matrix.Scale((1, 1, 1)) # takes at least 2 arguments (1 given)
-
-        ## ! Not working : self.gz_lock_cam.icon = 'LOCKVIEW_ON' if context.space_data.lock_camera else 'LOCKVIEW_OFF'
         
         ## Show color when out of cam view ? : context.space_data.region_3d.view_perspective != 'CAMERA'
         self.gz_lock_cam.color = (0.5, 0.1, 0.1) if context.space_data.lock_camera else cam_color
         self.gz_lock_cam.color_highlight = (0.7, 0.2, 0.2) if context.space_data.lock_camera else cam_color_hl
+
+        r3d = context.space_data.region_3d
+        self.gz_lock_view.color = (0.1, 0.1, 0.4) if r3d.lock_rotation else obj_color
+        self.gz_lock_view.color_highlight = (0.2, 0.2, 0.6) if r3d.lock_rotation else obj_color_hl
             
 
     # def refresh(self, context):
@@ -477,6 +469,7 @@ class STORYTOOLS_OT_toggle_bottom_bar(bpy.types.Operator):
         return {"FINISHED"}
 
 classes=(
+    # VIEW3D_GT_button_widget,
     VIEW3D_GT_toggler_shape_widget,
     STORYTOOLS_GGT_toolbar_switch,
     STORYTOOLS_GGT_toolbar,

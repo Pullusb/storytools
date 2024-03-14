@@ -2,6 +2,13 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+1.8.0
+
+- added: `Navigation Lock` (expose native toggle as gizmo button to lock orbit in active viewport)
+- added: Alternative shortcuts to use user's _orbits_ shortcuts as secondary _Pan_ during `Navigation Lock`.
+- fixed: Camera pan openGL locking lines (API changed in blender 4.0)
+ 
 1.7.0
 
 - added: Object rotate modal operator and gizmo

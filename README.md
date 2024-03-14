@@ -75,20 +75,76 @@ Camera Actions:
 Modals
 - Opt: For all modals, add icon warning if in autokey (same draw func call/stop for all) 
 
-- 
+## Ideas
+Change Objects canvas colors (very optional)
+Set different canvas grid color per object, at generation pick a new color 
+Or change it according to depth ? Refreshed when changing object from dedicated UI list
 
-Brush association
 
-## IDEAS
+---
 
-- set different canvas grid color per object or according to depth
-    - refreshed when changing object from dedicated UI list
+##Gizmo API tests
 
-- Set 1,2,3,4 buttons to brushes: Stroke, Fill, Negative Fill, Shadow
-    - Need to create custom brushes (import from a blend or create from scratch)
-    - Also need change to chosen layer (need to have association choice somewhere).
-    - 
+# prop tester
+gz.use_draw_scale = True # already True
+for att in ['group',
+            'matrix_offset',
+            'use_draw_value',
+            'use_grab_cursor',
+            'use_tooltip',
+            'line_width']:
+    print(att, getattr(gz, att))
 
-- Overview: obj/cam pan and depth move : Show corner minimap... (Big work!)
+alpha
+alpha_highlight
+bl_idname
+color
+color_highlight
+group
+hide
+hide_keymap
+hide_select
+is_highlight
+is_modal
+line_width
+matrix_basis
+matrix_offset
+matrix_space
+matrix_world
+properties
+rna_type
+scale_basis
+select
+select_bias
+use_draw_hover
+use_draw_modal
+use_draw_offset_scale
+use_draw_scale
+use_draw_value
+use_event_handle_all
+use_grab_cursor
+use_operator_tool_properties
+use_select_background
+use_tooltip
+
+
+
+## Note for gizmoGroup
+
+    # matrix_offset seem to affect only backdrop
+    # gz.matrix_offset = fn.compose_matrix(Vector((0,0,0)), Matrix().to_quaternion(), Vector((2,2,2)))
+    
+    # gz.scale_basis = 40 # same as tweaking matrix_basis scale
+    
+    ## changing matrix size does same thing as gz.scale_basis
+    # gz.matrix_basis = fn.compose_matrix(
+    #     Vector((left_pos + (i * next_pos), vertical_pos, 0)),
+    #     Matrix().to_quaternion(), # Matrix.Rotation(0, 4, 'X'),
+    #     Vector((1,1,1))
+    # )
+
+    # gz.matrix_basis = Matrix.Scale((1, 1, 1)) # takes at least 2 arguments (1 given)
+
+## ! Not working : self.gz_lock_cam.icon = 'LOCKVIEW_ON' if context.space_data.lock_camera else 'LOCKVIEW_OFF'
 
 -->
