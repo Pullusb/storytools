@@ -426,10 +426,10 @@ def register_keymaps():
                         if k.idname == VIEW3D_OT_locked_pan.bl_idname
                         and all(getattr(skmi, x) == getattr(k, x) for x in key_props)), None)
         if km_dup:
-            print(f'--> "{skmi.name} > {skmi.type} > {skmi.value}" shortcut already have a lock pan equivalent') # Dbg
+            # print(f'--> "{skmi.name} > {skmi.type} > {skmi.value}" shortcut already have a lock pan equivalent') # Dbg
             continue
         
-        print(f'>-> Create {skmi.name} > {skmi.type} > {skmi.value}" shortcut to lock pan') # Dbg
+        # print(f'>-> Create {skmi.name} > {skmi.type} > {skmi.value}" shortcut to lock pan') # Dbg
         ## Create duplicate
         km = addon.keymaps.new(name = "3D View", space_type = "VIEW_3D")
         kmi = km.keymap_items.new(
