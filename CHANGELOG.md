@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.8.1
+
+- fixed: margin when headers or asset shelf are at bottom
+- added: preference option to change color of active gizmo buttons
 
 1.8.0
 

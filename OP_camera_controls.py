@@ -355,7 +355,7 @@ class STORYTOOLS_OT_camera_key_transform(Operator):
 class STORYTOOLS_OT_lock_view(Operator):
     bl_idname = "storytools.lock_view"
     bl_label = 'Lock Current View'
-    bl_description = "Lock current viewport navigation"
+    bl_description = "Lock current viewport orbit navigation"
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):

@@ -62,6 +62,35 @@ from . import fn
 #         return {'RUNNING_MODAL'}
 
 
+def get_headers_bottom_width(context) -> int:
+    '''Return margin of bottom aligned headers
+    (Possible regions: HEADER, TOOL_HEADER, ASSET_SHELF, ASSET_SHELF_HEADER)
+    '''
+
+    bottom_margin = 0
+    ## asset shelf header should be only added only if shelf deployed
+    regions = context.area.regions
+    header = next((r for r in regions if r.type == 'HEADER'), None)
+    tool_header = next((r for r in regions if r.type == 'TOOL_HEADER'), None)
+    asset_shelf = next((r for r in regions if r.type == 'ASSET_SHELF'), None)
+
+    if header.alignment == 'BOTTOM':
+        bottom_margin += header.height
+    if tool_header.alignment == 'BOTTOM':
+        bottom_margin += tool_header.height
+    
+    if asset_shelf.height > 1:
+        ## header of asset shelf should only be added if shelf open
+        asset_shelf_header = next((r for r in regions if r.type == 'ASSET_SHELF_HEADER'), None)
+        bottom_margin += asset_shelf.height + asset_shelf_header.height
+
+    # for r in context.area.regions:
+    #     ## 'ASSET_SHELF_HEADER' is counted even when not visible
+    #     if r.alignment == 'BOTTOM' and r.type != 'ASSET_SHELF_HEADER':
+    #         bottom_margin += r.height
+    
+    return bottom_margin
+
 def set_gizmo_settings(gz, icon,
         color=(0.0, 0.0, 0.0),
         color_highlight=(0.5, 0.5, 0.5),
@@ -184,6 +213,13 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         self.gz_lock_view.target_set_operator("storytools.lock_view")
         self.interact_gizmos.append(self.gz_lock_view)
 
+        
+        ## Draw
+        self.gz_draw = self.gizmos.new("GIZMO_GT_button_2d")
+        set_gizmo_settings(self.gz_draw, 'GREASEPENCIL')
+        self.gz_draw.target_set_operator("storytools.object_draw")
+        self.interact_gizmos.append(self.gz_draw)
+
 
     def draw_prepare(self, context):
         prefs = get_addon_prefs()
@@ -220,7 +256,7 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
 
         ## Using only direct offset
         self.bar_width = (count - 1) * (gap_size * px_scale) + (section_separator * 2) * px_scale
-        vertical_pos = prefs.toolbar_margin
+        vertical_pos = prefs.toolbar_margin * px_scale + get_headers_bottom_width(context)
         left_pos = region.width / 2 - self.bar_width / 2
         next_pos = gap_size * px_scale
 
@@ -255,15 +291,21 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
                 gz.color_highlight = obj_color_hl
 
             ## Matrix world is readonly
-            gz.matrix_basis = Matrix.Translation((left_pos + (i * next_pos), vertical_pos * px_scale, 0))
+            gz.matrix_basis = Matrix.Translation((left_pos + (i * next_pos), vertical_pos, 0))
         
         ## Show color when out of cam view ? : context.space_data.region_3d.view_perspective != 'CAMERA'
         self.gz_lock_cam.color = (0.5, 0.1, 0.1) if context.space_data.lock_camera else cam_color
         self.gz_lock_cam.color_highlight = (0.7, 0.2, 0.2) if context.space_data.lock_camera else cam_color_hl
 
+        rgb_active = prefs.active_gz_color # (0.1, 0.1, 0.4)
+        rgb_active_higlight = (rgb_active[0] + 0.1, rgb_active[1] + 0.1, rgb_active[2] + 0.1)
         r3d = context.space_data.region_3d
-        self.gz_lock_view.color = (0.1, 0.1, 0.4) if r3d.lock_rotation else obj_color
-        self.gz_lock_view.color_highlight = (0.2, 0.2, 0.6) if r3d.lock_rotation else obj_color_hl
+        self.gz_lock_view.color = rgb_active if r3d.lock_rotation else obj_color
+        self.gz_lock_view.color_highlight = rgb_active_higlight if r3d.lock_rotation else obj_color_hl
+        
+        is_in_draw = context.mode == 'PAINT_GPENCIL'
+        self.gz_draw.color = rgb_active if is_in_draw else obj_color
+        self.gz_draw.color_highlight = rgb_active_higlight if is_in_draw else obj_color_hl
             
 
     # def refresh(self, context):
@@ -442,9 +484,10 @@ class STORYTOOLS_GGT_toolbar_switch(GizmoGroup):
 
         sidebar = next((r for r in context.area.regions if r.type == 'UI'), None)
         x_loc = context.region.width - sidebar.width - 40
-        y_loc = 4
+        
+        y_loc = 4 * px_scale + get_headers_bottom_width(context)
 
-        mat = Matrix.Translation((x_loc, y_loc * px_scale, 0))
+        mat = Matrix.Translation((x_loc, y_loc, 0))
         if context.scene.storytools_settings.show_session_toolbar:
             mat = mat @ vertical_flip_mat
 

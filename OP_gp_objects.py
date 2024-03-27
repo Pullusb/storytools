@@ -3,7 +3,7 @@ import bpy
 from math import pi, radians, degrees
 from mathutils import Vector, Matrix, Quaternion, Euler
 
-from bpy.types import Operator, Panel, PropertyGroup
+from bpy.types import Context, Event, Operator, Panel, PropertyGroup
 from bpy.props import CollectionProperty, PointerProperty
 
 from . import fn
@@ -456,6 +456,8 @@ class STORYTOOLS_OT_create_object(Operator):
         ## Create GP object
         # TODO bonus : maybe check if want to use same data as another drawing
 
+        ## Clean name
+        self.name = self.name.strip()
         gp = bpy.data.grease_pencils.new(self.name)
         ob_name = self.name
 
@@ -596,6 +598,55 @@ class STORYTOOLS_OT_visibility_toggle(Operator):
         # Set viewlayer visibility
         ob.hide_set(hide)
         return {"FINISHED"}
+
+class STORYTOOLS_OT_object_draw(Operator):
+    bl_idname = "storytools.object_draw"
+    bl_label = 'Object Draw'
+    bl_description = "Set draw mode\
+        \nEnter first GP object available\
+        \nIf no GP object exists, pop-up creation menu\
+        \n+Ctrl: Popup gp list"
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    # name : bpy.props.StringProperty()
+    def invoke(self, context, event):
+        self.ctrl = event.ctrl
+        return self.execute(context)
+
+    def execute(self, context):
+        ## Popup to select GP ? -> Pop panel with ctrl can miss-click, Need separate button
+        # if self.ctrl:
+        #     bpy.ops.wm.call_panel(name='STORYTOOLS_PT_drawings_ui', keep_open=True)
+        #     return {"FINISHED"}
+
+        ## If active object is a GP, go in draw mode or do nothing
+        if context.object and context.object.type == 'GPENCIL':
+            if context.mode != 'PAINT_GPENCIL':
+                bpy.ops.object.mode_set(mode='PAINT_GPENCIL')
+
+            return {"FINISHED"}
+
+        ## First GP object
+        # gp = next((o for o in context.scene.objects if o.type == 'GPENCIL'), None)
+        
+        ## First (visible) GP objects
+        gp = next((o for o in context.scene.objects if o.type == 'GPENCIL' if o.visible_get()), None)
+        if gp:
+            ## Set as active and select this gp object
+            context.view_layer.objects.active = gp
+            gp.select_set(True)
+            bpy.ops.object.mode_set(mode='PAINT_GPENCIL')
+            return {"FINISHED"}
+
+        else:
+            bpy.ops.storytools.create_object('INVOKE_DEFAULT')
+            
+        return {"FINISHED"}
+
 
 ## Property groups
 
@@ -784,6 +835,7 @@ STORYTOOLS_OT_object_pan,
 STORYTOOLS_OT_object_rotate,
 STORYTOOLS_OT_object_scale,
 STORYTOOLS_OT_object_depth_move,
+STORYTOOLS_OT_object_draw,
 STORYTOOLS_OT_visibility_toggle,
 STORYTOOLS_OT_object_key_transform,
 CUSTOM_object_collection, ## Test all bugged

@@ -150,6 +150,12 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         default=(0.1, 0.1, 0.1), min=0, max=1.0, step=3, precision=2,
         subtype='COLOR_GAMMA', size=3)
 
+    active_gz_color : bpy.props.FloatVectorProperty(
+        name="Active Buttons Color",
+        description="Color when state of the button is active",
+        default=(0.25, 0.43, 0.7), min=0, max=1.0, step=3, precision=2,
+        subtype='COLOR_GAMMA', size=3)
+
     # Update variables
     is_git_repo : BoolProperty(default=False)
     has_git : BoolProperty(default=False)
@@ -185,7 +191,8 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             tool_col.separator()
             tool_col.prop(self, 'object_gz_color')
             tool_col.prop(self, 'camera_gz_color')
-            
+            tool_col.prop(self, 'active_gz_color')
+
             tool_col.active = self.active_toolbar
 
             col.separator()
@@ -287,4 +294,4 @@ def register():
 
 def unregister():
     for cls in reversed(classes):
-        bpy.utils.unregister_class(cls)  
+        bpy.utils.unregister_class(cls)
