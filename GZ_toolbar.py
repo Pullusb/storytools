@@ -62,10 +62,12 @@ from . import fn
 #         return {'RUNNING_MODAL'}
 
 
-def get_headers_bottom_width(context) -> int:
+def get_headers_bottom_width(context, overlap=False) -> int:
     '''Return margin of bottom aligned headers
     (Possible regions: HEADER, TOOL_HEADER, ASSET_SHELF, ASSET_SHELF_HEADER)
     '''
+    if not context.preferences.system.use_region_overlap:
+        return 0
 
     bottom_margin = 0
     ## asset shelf header should be only added only if shelf deployed
@@ -80,9 +82,14 @@ def get_headers_bottom_width(context) -> int:
         bottom_margin += tool_header.height
     
     if asset_shelf.height > 1:
-        ## header of asset shelf should only be added if shelf open
-        asset_shelf_header = next((r for r in regions if r.type == 'ASSET_SHELF_HEADER'), None)
-        bottom_margin += asset_shelf.height + asset_shelf_header.height
+        
+        if not overlap:
+            ## Header of asset shelf should only be added if shelf open
+            asset_shelf_header = next((r for r in regions if r.type == 'ASSET_SHELF_HEADER'), None)
+            bottom_margin += asset_shelf.height + asset_shelf_header.height
+        else:
+            ## Only if toggle icon is centered
+            bottom_margin += asset_shelf.height
 
     # for r in context.area.regions:
     #     ## 'ASSET_SHELF_HEADER' is counted even when not visible
@@ -256,7 +263,7 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
 
         ## Using only direct offset
         self.bar_width = (count - 1) * (gap_size * px_scale) + (section_separator * 2) * px_scale
-        vertical_pos = prefs.toolbar_margin * px_scale + get_headers_bottom_width(context)
+        vertical_pos = prefs.toolbar_margin * px_scale + get_headers_bottom_width(context, overlap=False)
         left_pos = region.width / 2 - self.bar_width / 2
         next_pos = gap_size * px_scale
 
@@ -321,8 +328,10 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
 # y_d = -4
 # y_u = 4
 
-x_l = -8
-x_r = 8
+# x_l = -8
+# x_r = 8
+x_l = -10
+x_r = 10
 y_d = -6
 y_u = 6
 
@@ -341,7 +350,6 @@ up_arrow_verts = [
 vertical_flip_mat = fn.get_scale_matrix((1, -1, 1))
 
 
-## Full WIP
 class VIEW3D_GT_toggler_shape_widget(Gizmo):
     bl_idname = "VIEW3D_GT_toggler_shape_widget"
     # bl_target_properties = (
@@ -356,6 +364,8 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
         "init_mouse_y",
         "mx",
         "my",
+        "replace",
+        "init_margin",
         # "init_value",
     )
 
@@ -402,25 +412,41 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
     def invoke(self, context, event):
         self.mx = self.init_mouse_x = event.mouse_x
         self.my = self.init_mouse_y = event.mouse_y
+        self.replace = False
+        self.init_margin = get_addon_prefs().toolbar_margin
+        # print(event.value, event.type)
+        
         # self.init_value = self.target_get_value("offset")
 
         return {'RUNNING_MODAL'}
 
     def exit(self, context, cancel):
-        ## Cancel if move above 10px
+        ## Just cancel if move above 10px
         if abs(self.init_mouse_x - self.mx) > 10 or abs(self.init_mouse_y - self.my) > 10:
             return
-        ## Cancel if out of square when release
-        # px_scale = context.preferences.system.ui_scale
-        # x_min = self.matrix_basis.to_translation().x + (x_l * px_scale)
-        # x_max = self.matrix_basis.to_translation().x + (x_r * px_scale)
-        # y_min = self.matrix_basis.to_translation().y + (y_d * px_scale)
-        # y_max = self.matrix_basis.to_translation().y + (y_u * px_scale)
-        # if x_min < self.mx < x_max and y_min < self.my < y_max:
-        #     return
 
-        ## No moved much after click, trigger action
         settings = context.scene.storytools_settings
+
+        ## Replaced if dragged
+        # if self.replace:
+        #     prefs = get_addon_prefs()
+        #     if settings.show_session_toolbar:
+        #         # Toobar was visible
+        #         if prefs.toolbar_margin > 0:
+        #             # No hide, just finish replacing
+        #             return
+        #         else:
+        #             # Reset margin then hide
+        #             prefs.toolbar_margin = self.init_margin
+        #     else:
+        #         # Toolbar was invisible
+        #         if prefs.toolbar_margin <= 0:
+        #             # Keep invisible -> reset margin and leave
+        #             prefs.toolbar_margin = self.init_margin
+        #             return
+        ## /           
+                
+
         settings.show_session_toolbar = not settings.show_session_toolbar
         # context.area.header_text_set(None)
         # if cancel:
@@ -429,8 +455,25 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
     def modal(self, context, event, tweak):
         self.mx = event.mouse_x
         self.my = event.mouse_y
-        ## TODO: Use modal to resize margin !
 
+        ## Place when dragged
+        # settings = context.scene.storytools_settings
+        # offset = self.my - self.init_mouse_y
+        # if abs(offset) > 10:
+        #     # Trigger placement instead of toggle
+        #     self.replace = True
+
+        # if self.replace:
+        #     prefs = get_addon_prefs()
+        #     if settings.show_session_toolbar:
+        #         prefs.toolbar_margin = self.init_margin + offset
+        #     else:
+        #         prefs.toolbar_margin = offset
+        # context.area.tag_redraw()
+        ## /
+
+
+        ## Dragged opts
         # delta = (event.mouse_y - self.init_mouse_y) / 10.0
         # if 'SNAP' in tweak:
         #     delta = round(delta)
@@ -439,6 +482,7 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
         # value = self.init_value - delta
         # self.target_set_value("offset", value)
         # context.area.header_text_set("My Gizmo: %.4f" % value)
+
         return {'RUNNING_MODAL'}
 
 class STORYTOOLS_GGT_toolbar_switch(GizmoGroup):
@@ -480,12 +524,15 @@ class STORYTOOLS_GGT_toolbar_switch(GizmoGroup):
         # show toggle:
         # self.gz_toggle_bar.matrix_basis = Matrix.Translation((400, 6 * px_scale, 0))
 
-        ## center
-
-        sidebar = next((r for r in context.area.regions if r.type == 'UI'), None)
-        x_loc = context.region.width - sidebar.width - 40
         
-        y_loc = 4 * px_scale + get_headers_bottom_width(context)
+        ## Toggle right aligned (next to sidebar)
+        # sidebar = next((r for r in context.area.regions if r.type == 'UI'), None)
+        # x_loc = context.region.width - sidebar.width - 40
+        
+        ## Togge centered
+        x_loc = context.region.width / 2
+        
+        y_loc = 4 * px_scale + get_headers_bottom_width(context, overlap=True)
 
         mat = Matrix.Translation((x_loc, y_loc, 0))
         if context.scene.storytools_settings.show_session_toolbar:

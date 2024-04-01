@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.8.2
+
+- changed: centered toolbar switch
+- fixed: toolbar position with region overlap preferences off
+
 1.8.1
 
 - fixed: margin when headers or asset shelf are at bottom
