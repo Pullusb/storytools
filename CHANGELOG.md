@@ -40,7 +40,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 1.6.0
 
-- added: long button under bottom bar to toggle it (design will probably cahnge)
+- added: long button under bottom bar to toggle it (design will probably change)
 - changed: margin from border do not depend on UI scale anymore
 
 1.5.0

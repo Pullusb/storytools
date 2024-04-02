@@ -175,23 +175,32 @@ class STORYTOOLS_PT_focal_change_ui(Panel):
     def draw(self, context):
         layout = self.layout
         col = layout.column()
-        col.label(text='Lens:')
-        if context.scene.camera.data.lens_unit == 'FOV':
-            col.prop(context.scene.camera.data, "angle")
+        cam = context.scene.camera
+
+        if cam.data.type == 'ORTHO':
+            # col.label(text='Camera is Orthographic', icon='INFO')
+            col.prop(cam.data, 'ortho_scale')
         else:
-            col.prop(context.scene.camera.data, "lens")
-        col.prop(context.scene.storytools_settings, "show_focal", text='Show Lens')
+            # col.label(text='Lens:')
+            if cam.data.lens_unit == 'FOV':
+                col.prop(cam.data, "angle")
+            else:
+                col.prop(cam.data, "lens")
         
         col = layout.column(align=True)
+        
         row = col.row()
         row.label(text='Focal Length Presets:')
-        
         focal_list = (18, 21, 25, 28, 35, 40, 50, 85, 135, 200)
         for i, f in enumerate(focal_list):
             if i % 2 == 0:
                 row = col.row(align=True)
             row.operator('storytools.set_focal', text=f'{f} mm').lens = f
+        
+        col.active = cam.data.type != 'ORTHO'
 
+        col = layout.column()
+        col.prop(context.scene.storytools_settings, "show_focal", text='Show Lens')
 
 def camera_layout(layout, context):
     col = layout

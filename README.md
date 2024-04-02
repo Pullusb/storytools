@@ -49,12 +49,13 @@ When selecting a material, it "stick" to current active layer
 Action gizmo buttons to easily place object and camera
 All transform actions respect autokey
 
-> Note: currently not all actions respects autokey
+<!-- > Note: currently not all actions respects autokey -->
 
 Objects Actions:
 
 - Pan object
 - Move object forward/backward
+- Rotate object on camera view axis (Ctrl to snap on 15 degrees angles)
 - Scale object
 - Align object to camera: rotate object to have front axis face view (`-Y` direction)
 - key object tranform at current time (note: object, not GP frame)
