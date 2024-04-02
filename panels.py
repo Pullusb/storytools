@@ -3,7 +3,7 @@
 import bpy
 from bpy.types import Context, Panel, Menu
 from .fn import get_addon_prefs
-
+# from bl_ui.utils import PresetPanel
 
 class STORYTOOLS_PT_storytools_ui(Panel):
     bl_space_type = "VIEW_3D"
@@ -148,6 +148,50 @@ class STORYTOOLS_MT_gp_objects_list_options(Menu):
         layout.prop(settings, 'show_gp_parent')
         layout.prop(settings, 'show_gp_in_front')
         # layout.operator("...", icon="FILE_REFRESH", text="Refresh")
+""" 
+class STORYTOOLS_MT_focal_presets(Menu): 
+    bl_label = 'Camera Focal Display Presets' 
+    preset_subdir = 'camera/focal' 
+    preset_operator = 'script.execute_preset' 
+    draw = bpy.types.Menu.draw_preset
+
+class STORYTOOLS_PT_focal_presets(PresetPanel, Panel):
+    bl_label = 'Camera Focal Display Presets'
+    preset_subdir = 'camera/focal'
+    preset_operator = 'script.execute_preset'
+    preset_add_operator = 'camera.focal_preset_add'
+ """
+class STORYTOOLS_PT_focal_change_ui(Panel):
+    bl_label = 'Focal Panel'
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Storytools" # Gpencil
+    bl_options = {'INSTANCED'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.scene.camera
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        col.label(text='Lens:')
+        if context.scene.camera.data.lens_unit == 'FOV':
+            col.prop(context.scene.camera.data, "angle")
+        else:
+            col.prop(context.scene.camera.data, "lens")
+        col.prop(context.scene.storytools_settings, "show_focal", text='Show Lens')
+        
+        col = layout.column(align=True)
+        row = col.row()
+        row.label(text='Focal Length Presets:')
+        
+        focal_list = (18, 21, 25, 28, 35, 40, 50, 85, 135, 200)
+        for i, f in enumerate(focal_list):
+            if i % 2 == 0:
+                row = col.row(align=True)
+            row.operator('storytools.set_focal', text=f'{f} mm').lens = f
+
 
 def camera_layout(layout, context):
     col = layout
@@ -167,18 +211,19 @@ def camera_layout(layout, context):
     addcam.align='VIEW'
     addcam.location = context.space_data.region_3d.view_matrix.inverted().translation
 
-
-    col_lateral.prop(context.scene.storytools_settings, "show_focal", text='', icon='CONE')
+    ## Lens options
+    col_lateral.popover('STORYTOOLS_PT_focal_change_ui', text='', icon='DOWNARROW_HLT')
+    # col_lateral.prop(context.scene.storytools_settings, "show_focal", text='', icon='CONE')
     
+    ## ! can't call lens panel, (call context.camera in property)
+    # col_lateral.operator('wm.call_panel', text='', icon='TOOL_SETTINGS').name = 'DATA_PT_lens'
+
     if hasattr(bpy.types, 'GP_OT_draw_cam_switch'):
         if context.scene.camera and context.scene.camera.name == 'draw_cam':
             col_lateral.operator('gp.draw_cam_switch', text='', icon='LOOP_BACK')
             col_lateral.operator('gp.reset_cam_rot', text='', icon='DRIVER_ROTATIONAL_DIFFERENCE')
         elif context.scene.camera:
             col_lateral.operator('gp.draw_cam_switch', text='', icon='CON_CAMERASOLVER').cam_mode = 'draw'
-    
-    ## ! can't call lens panel, (call context.camera in property)
-    # col_lateral.operator('wm.call_panel', text='', icon='TOOL_SETTINGS').name = 'DATA_PT_lens'
 
     ## Parent toggle
     # if context.object:
@@ -412,6 +457,7 @@ class STORYTOOLS_PT_palette_ui(Panel):
         else:
             layout.label(text="Can't display this panel here!", icon="ERROR")
 
+
 # class DummyPanel:
 #     def __init__(self, layout):
 #         self.layout = layout
@@ -444,6 +490,9 @@ class STORYTOOLS_PT_palette_ui(Panel):
 #-# REGISTER
 
 panel_classes = (
+    # STORYTOOLS_MT_focal_presets,
+    # STORYTOOLS_PT_focal_presets,
+    STORYTOOLS_PT_focal_change_ui,
     STORYTOOLS_MT_gp_objects_list_options,
     STORYTOOLS_PT_storytools_ui,
     STORYTOOLS_PT_camera_ui,

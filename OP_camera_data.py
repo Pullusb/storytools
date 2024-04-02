@@ -1,9 +1,12 @@
 import bpy
+from pathlib import Path
 from bpy.types import Operator
 from mathutils import Vector
+# import shutil
 
 from bpy.types import Operator, Panel, PropertyGroup
 from bpy.props import CollectionProperty, PointerProperty
+# from bl_operators.presets import AddPresetBase
 
 from . import fn
 
@@ -113,7 +116,13 @@ class STORYTOOLS_UL_camera_list(bpy.types.UIList):
 
         ## show focal length
         if settings.show_focal:
-            row.prop(item.data, 'lens', text='', emboss=False)
+            if item.data.type == 'ORTHO':
+                row.prop(item.data, 'ortho_scale', text='', emboss=False)
+            else:
+                if item.data.lens_unit == 'FOV':
+                    row.prop(item.data, 'angle', text='', emboss=False)
+                else:
+                    row.prop(item.data, 'lens', text='', emboss=False)
 
         # if item.visible_get():
         #     # row.label(text='', icon='HIDE_OFF')
@@ -146,13 +155,61 @@ class STORYTOOLS_UL_camera_list(bpy.types.UIList):
 
         return flt_flags, flt_neworder
 
+class STORYTOOLS_OT_set_focal(Operator):
+    bl_idname = "storytools.set_focal"
+    bl_label = 'Set Focal'
+    bl_description = "Set focal on active camera"
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    lens : bpy.props.IntProperty(name='Focal')
+
+    @classmethod
+    def poll(cls, context):
+        return context.scene.camera
+
+    def execute(self, context):
+        context.scene.camera.data.lens = self.lens
+        return {"FINISHED"}
+
+""" # Custom Presets
+class STORYTOOLS_OT_add_focal_preset(AddPresetBase, Operator):
+    '''Add a Camera Focal Preset'''
+    bl_idname = "camera.focal_preset_add"
+    bl_label = "Add Camera Focal Preset"
+    preset_menu = "STORYTOOLS_MT_focal_presets"
+
+    # variable used for all preset values
+    preset_defines = [
+        "cam = bpy.context.scene.camera"
+    ]
+
+    # properties to store in the preset
+    preset_values = [
+        "cam.data.lens",
+    ]
+
+    # where to store the preset
+    preset_subdir = "camera/focal"
+ """
+
 classes=(
     # STORYTOOLS_OT_camera_change_focal,
     CUSTOM_camera_collection,
     STORYTOOLS_UL_camera_list,
+    STORYTOOLS_OT_set_focal,
+    # STORYTOOLS_OT_add_focal_preset,
 )
 
 def register(): 
+    ## For custom presets
+    # preset_path = Path(bpy.utils.preset_paths('')[0])
+    # focal_presets = preset_path / 'camera' / 'focal'
+    # bundled_presets = Path(__package__, 'presets', 'camera', 'focal')
+    # if not focal_presets.exists():
+    #     focal_presets.mkdir(parents=True, exist_ok=True)
+    #     for src_file in bundled_presets.iterdir():
+    #         shutil.copy2(src_file, focal_presets / src_file.name)
+
     for cls in classes:
         bpy.utils.register_class(cls)
     bpy.types.Scene.st_camera_props = bpy.props.PointerProperty(type=CUSTOM_camera_collection)
