@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.8.4
+
+- added: Depth visual hint when using `Forward/backward move` on object
+
 1.8.3
 
 - added: dropdown menu for camera settings with focal length tweak and presets (hardcoded for now)

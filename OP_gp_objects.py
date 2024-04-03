@@ -1,10 +1,13 @@
 import bpy
+import gpu
+
 # from .fn import get_addon_prefs
 from math import pi, radians, degrees
 from mathutils import Vector, Matrix, Quaternion, Euler
 
 from bpy.types import Context, Event, Operator, Panel, PropertyGroup
 from bpy.props import CollectionProperty, PointerProperty
+from gpu_extras.batch import batch_for_shader
 
 from . import fn
 from .fn import get_addon_prefs
@@ -38,6 +41,39 @@ from .constants import LAYERMAT_PREFIX
         #     self.ob = context.object
         #     self.init_world_loc = self.ob.matrix_world.to_translation()
 
+def draw_callback_wall(self, context):
+    ## Restrict to current viewport
+    if context.area != self.current_area:
+        return
+
+    shader = gpu.shader.from_builtin('UNIFORM_COLOR')
+
+    shader.bind()
+
+    previous_depth_test_value = gpu.state.depth_test_get()
+    # gpu.state.depth_mask_set(True)
+    gpu.state.blend_set('ALPHA')
+
+    ## Draw behind zone
+    gpu.state.depth_test_set('LESS')
+    # (0.88, 0.8, 0.35, 0.2) # Yellow
+    shader.uniform_float("color", (0.7, 0.2, 0.2, 0.25)) # Red
+    batch = batch_for_shader(shader, 'TRIS', {"pos": self.coords})
+    batch.draw(shader)
+
+    if context.space_data.region_3d.view_perspective == 'CAMERA':
+        ## Draw front zone (only in camera view to avoid flicking)
+        gpu.state.depth_test_set('GREATER')
+        shader.uniform_float("color", (0.2, 0.2, 0.8, 0.1)) # Blue
+        batch = batch_for_shader(shader, 'TRIS', {"pos": self.front_coords})
+        batch.draw(shader)
+
+
+    # Restore values
+    gpu.state.blend_set('NONE')
+    gpu.state.depth_test_set(previous_depth_test_value)
+    # gpu.state.depth_mask_set(False)
+
 class STORYTOOLS_OT_object_depth_move(Operator):
     bl_idname = "storytools.object_depth_move"
     bl_label = "Object Depth Move"
@@ -67,6 +103,8 @@ class STORYTOOLS_OT_object_depth_move(Operator):
             return {'CANCELLED'}
 
         self.cam_pos = self.cam.matrix_world.translation
+        self.view_vector = Vector((0,0,-1))
+        self.view_vector.rotate(self.cam.matrix_world)
         self.mode = 'distance'
 
         ## Consider all selected only in object mode
@@ -86,8 +124,6 @@ class STORYTOOLS_OT_object_depth_move(Operator):
         if self.cam.data.type == 'ORTHO':
             context.area.header_text_set(f'Move factor: 0.00')
             # distance is view vector based
-            self.view_vector = Vector((0,0,-1))
-            self.view_vector.rotate(self.cam.matrix_world)
         else:
             self.init_vecs = [o.matrix_world.translation - self.cam_pos for o in self.objects]
             self.init_dists = [v.length for v in self.init_vecs]
@@ -95,12 +131,18 @@ class STORYTOOLS_OT_object_depth_move(Operator):
                 f'Move factor: 0.00 | Mode: {self.mode} (M to switch) | Ctrl: Adjust scale | Shift: Slow')
         
         context.window.cursor_set("SCROLL_X")
+        
+        self.current_area = context.area # gpuDraw
+        self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_callback_wall, (self, context), 'WINDOW', 'POST_VIEW') # gpuDraw
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
     def stop(self, context):
         context.area.header_text_set(None)
         context.window.cursor_set("DEFAULT")
+        bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW') # gpuDraw
+        context.area.tag_redraw()
+        ## refresh all view if in all viewport
 
     def modal(self, context, event):
         if self.mode == 'distance':
@@ -143,6 +185,27 @@ class STORYTOOLS_OT_object_depth_move(Operator):
                         obj.scale = self.init_mats[i].to_scale() * dist_percentage
                     else:
                         obj.scale = self.init_mats[i].to_scale() # reset to initial size
+
+            ## Prepare coordinate for GPU draw
+            d = 1000
+            z_offset = 0.006
+            self.coords = [
+                Vector((-d,-d, -z_offset)),
+                Vector((d,-d, -z_offset)),
+                Vector((0, d, -z_offset)),
+            ]
+            for v in self.coords:
+                v.rotate(self.cam.matrix_world)
+                v += context.object.matrix_world.to_translation()
+            
+            self.front_coords = [
+                Vector((-d,-d, z_offset)),
+                Vector((d,-d, z_offset)),
+                Vector((0, d, z_offset)),
+            ]
+            for v in self.front_coords:
+                v.rotate(self.cam.matrix_world)
+                v += context.object.matrix_world.to_translation()
 
 
         if event.type in {'M'} and event.value == 'PRESS':
@@ -604,8 +667,7 @@ class STORYTOOLS_OT_object_draw(Operator):
     bl_label = 'Object Draw'
     bl_description = "Set draw mode\
         \nEnter first GP object available\
-        \nIf no GP object exists, pop-up creation menu\
-        \n+Ctrl: Popup gp list"
+        \nIf no GPencil object exists, pop-up creation menu"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     @classmethod
