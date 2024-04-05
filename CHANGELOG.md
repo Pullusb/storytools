@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.8.5
+
+- changed: Better and more standard precision mode for all transforms (keep relative position when swapping Shift key)
+
 1.8.4
 
 - added: Depth visual hint when using `Forward/backward move` on object
