@@ -270,21 +270,19 @@ class STORYTOOLS_OT_object_pan(Operator):
         ## move by vector (recompose matrix)
         self.ob.matrix_world.translation = self.init_world_loc + move_vec
 
-    def modal(self, context, event):
-        
+    def modal(self, context, event):    
         self.update_position(context, event)
-        
+
         if event.type == 'LEFTMOUSE': # and event.value == 'RELEASE'
             context.window.cursor_set("DEFAULT")
-            
             fn.key_object(self.ob, use_autokey=True)
-
             return {'FINISHED'}
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
             self.ob.location = self.init_pos
             context.window.cursor_set("DEFAULT")
             return {'CANCELLED'}
+
         return {'RUNNING_MODAL'}
     
     def execute(self, context):
@@ -308,6 +306,10 @@ class STORYTOOLS_OT_object_rotate(Operator):
             self.report({'ERROR'}, "Active object's rotation is locked")
             return {'CANCELLED'}
     
+        self.shift_pressed = event.shift
+        self.accumulated_rotation = 0
+        self.current_rotation = 0
+
         self.init_mat = self.ob.matrix_world.copy()
 
         self.view_vector = Vector((0,0,-1))
@@ -315,32 +317,36 @@ class STORYTOOLS_OT_object_rotate(Operator):
         self.view_vector.rotate(r3d.view_rotation) # r3d.view_matrix
 
         ## Snap on 15 degrees
-        self.snap_step = 0.2617993877991494 # result of radians(15)
+        self.snap_step = radians(15)
         self.init_mouse_x = event.mouse_x
 
         context.window.cursor_set("SCROLL_XY")
         context.window_manager.modal_handler_add(self)
-        # self.update_rotation(context, event)
         return {'RUNNING_MODAL'}
 
     def update_rotation(self, context, event):
-        ## Rotate on view vector according to mouse X translation
+        ## Adjust rotation speed according to precision mode
+        if event.shift != self.shift_pressed:
+            self.shift_pressed = event.shift
+            self.accumulated_rotation += self.current_rotation
+            self.init_mouse_x = event.mouse_x
+
+        ## Calcualte rotation from last reference point
+        multiplier = 0.01 if not event.shift else 0.001
         delta_x = event.mouse_x - self.init_mouse_x
+        self.current_rotation = delta_x * multiplier
+
+        ## Get final rotation
+        final_rotation = self.accumulated_rotation + self.current_rotation
         
-        multiplier = 0.01
-
-        ## Handle precision mode
-        if event.shift:
-            multiplier = 0.001
-
-        ## Add ctrl to snap on staright angles from init rotation
-        rotate_value = delta_x * multiplier
+        ## Angle snap
         if event.ctrl:
-            rotate_value = fn.snap_to_step(rotate_value, self.snap_step)
+            final_rotation = fn.snap_to_step(final_rotation, self.snap_step)
 
-        context.area.header_text_set(f'Rotation: {degrees(rotate_value):.2f}')
+        context.area.header_text_set(f'Rotation: {degrees(final_rotation):.2f}')
 
-        rot_matrix = Matrix.Rotation(rotate_value, 4, self.view_vector)
+        ## Rotate on view vector
+        rot_matrix = Matrix.Rotation(final_rotation, 4, self.view_vector)
 
         mat = self.init_mat.copy()
         mat.translation = Vector((0,0,0))
@@ -361,9 +367,10 @@ class STORYTOOLS_OT_object_rotate(Operator):
             context.window.cursor_set("DEFAULT")
             return {'CANCELLED'}
         return {'RUNNING_MODAL'}
-    
+
     def execute(self, context):
         return {"FINISHED"}
+
 
 class STORYTOOLS_OT_object_scale(Operator):
     bl_idname = "storytools.object_scale"
