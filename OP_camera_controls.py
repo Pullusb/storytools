@@ -26,6 +26,11 @@ class STORYTOOLS_OT_camera_depth(Operator):
 
         self.init_pos = self.cam.location.copy()
         self.init_mouse_x = event.mouse_x
+        
+        self.shift_pressed = event.shift
+        self.current_delta = 0
+        self.cumulated_delta = 0
+
         context.window.cursor_set("SCROLL_X")
         context.window_manager.modal_handler_add(self)
         
@@ -34,18 +39,21 @@ class STORYTOOLS_OT_camera_depth(Operator):
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
-        # Shift precision move
         fac = 0.01 if event.shift else 0.1
-        delta = event.mouse_x - self.init_mouse_x
-        # self.cam.scale = self.init_pos * (1 + delta * fac)
-        move_val = delta * fac
+        if event.shift != self.shift_pressed:
+            self.shift_pressed = event.shift
+            self.cumulated_delta += self.current_delta
+            self.init_mouse_x = event.mouse_x
+
+        self.current_delta = (event.mouse_x - self.init_mouse_x) * fac
+
+        move_val = self.cumulated_delta + self.current_delta
+
         self.cam.matrix_world.translation = self.init_pos + self.cam_forward_vec * move_val
         
         if event.type == 'LEFTMOUSE':
             context.window.cursor_set("DEFAULT")
-            
             fn.key_object(self.cam, scale=False, use_autokey=True)
-
             return {'FINISHED'}
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
@@ -90,7 +98,7 @@ class STORYTOOLS_OT_camera_pan(Operator):
     bl_label = 'Object Pan Translate'
     bl_description = "Pan Camera, X/Y to lock on axis\
                     \n+ Ctrl autolock on major Axis\
-                    \n+ Shift Slower move"
+                    \n+ Shift Precision mode"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     @classmethod
@@ -150,7 +158,11 @@ class STORYTOOLS_OT_camera_pan(Operator):
             ## redo panel changes crash (probably cause of the mix)
             self.ob = self.cam # need to assign 'ob' variable
             return context.window_manager.invoke_props_dialog(self)
-            
+
+        self.shift_pressed = event.shift
+        self.cumulated_delta = Vector((0, 0))
+        self.current_delta = Vector((0, 0))
+
         self.final_lock = self.lock = None
         self.init_pos = self.cam.location.copy() # to restore if cancelled
         self.init_mouse = Vector((event.mouse_x, event.mouse_y))
@@ -179,8 +191,13 @@ class STORYTOOLS_OT_camera_pan(Operator):
         
         ## Slower with shift
         fac = 0.01 if event.shift else 0.1
+        if event.shift != self.shift_pressed:
+            self.shift_pressed = event.shift
+            self.cumulated_delta += self.current_delta
+            self.init_mouse = Vector((event.mouse_x, event.mouse_y))
 
-        move_2d = mouse_co - self.init_mouse
+        self.current_delta = (mouse_co - self.init_mouse) * fac
+        move_2d = self.cumulated_delta + self.current_delta
         
         # Ctrl: override lock to "major" direction
         if event.ctrl:
@@ -191,17 +208,16 @@ class STORYTOOLS_OT_camera_pan(Operator):
 
         move_vec = Vector((0,0,0))
         if not lock or lock == 'X': 
-            move_vec += self.local_x * (move_2d.x * fac)
+            move_vec += self.local_x * (move_2d.x)
         if not lock or lock == 'Y': 
-            move_vec += self.local_y * (move_2d.y * fac)
+            move_vec += self.local_y * (move_2d.y)
 
         self.final_lock = lock
         # set location
         self.cam.location = self.init_pos + move_vec
         
         ## set header text (optional)
-        local_move = move_2d * fac
-        self.lock_text = f'Camera Pan X: {local_move.x:.3f}, Y: {local_move.y:.3f}'
+        self.lock_text = f'Camera Pan X: {move_2d.x:.3f}, Y: {move_2d.y:.3f}'
         self.lock_text += f' | Lock Axis {lock}' if lock else ''
         context.area.header_text_set(self.lock_text)
 

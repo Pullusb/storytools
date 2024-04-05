@@ -78,7 +78,8 @@ class STORYTOOLS_OT_object_depth_move(Operator):
     bl_idname = "storytools.object_depth_move"
     bl_label = "Object Depth Move"
     bl_description = "Move object Forward/backward (Slide left-right)\
-                    \n+ Ctrl : Adjust Scale (Retain same size in camera framing)"
+                    \n+ Ctrl : Adjust Scale (Retain same size in camera framing)\
+                    \n+ Shift : Precision mode"
     bl_options = {"REGISTER", "INTERNAL", "UNDO"}
 
     @classmethod
@@ -93,7 +94,6 @@ class STORYTOOLS_OT_object_depth_move(Operator):
         # return context.object and context.object.type != 'CAMERA'
 
     def invoke(self, context, event):
-        self.init_mouse_x = event.mouse_x
         self.cam = bpy.context.scene.camera
         if not self.cam:
             self.report({'ERROR'}, 'No active camera')
@@ -101,6 +101,11 @@ class STORYTOOLS_OT_object_depth_move(Operator):
         if any(context.object.lock_location):
             self.report({'ERROR'}, "Active object's location is locked")
             return {'CANCELLED'}
+        
+        self.init_mouse_x = event.mouse_x
+        self.shift_pressed = event.shift
+        self.delta = 0
+        self.cumulated_delta = 0
 
         self.cam_pos = self.cam.matrix_world.translation
         self.view_vector = Vector((0,0,-1))
@@ -128,7 +133,7 @@ class STORYTOOLS_OT_object_depth_move(Operator):
             self.init_vecs = [o.matrix_world.translation - self.cam_pos for o in self.objects]
             self.init_dists = [v.length for v in self.init_vecs]
             context.area.header_text_set(
-                f'Move factor: 0.00 | Mode: {self.mode} (M to switch) | Ctrl: Adjust scale | Shift: Slow')
+                f'Move factor: 0.00 | Mode: {self.mode} (M to switch) | Ctrl: Adjust Scale | Shift: Precision')
         
         context.window.cursor_set("SCROLL_X")
         
@@ -146,17 +151,21 @@ class STORYTOOLS_OT_object_depth_move(Operator):
 
     def modal(self, context, event):
         if self.mode == 'distance':
-            factor = 0.1
-            if event.shift:
-                factor = 0.01
+            factor = 0.1 if not event.shift else 0.01
         else:
             # Smaller factor for proportional dist
-            factor = 0.01
-            if event.shift:
-                factor = 0.001
+            factor = 0.01 if not event.shift else 0.001
+
+        if event.shift != self.shift_pressed:
+            self.shift_pressed = event.shift
+            self.cumulated_delta += self.delta
+            self.init_mouse_x = event.mouse_x
 
         if event.type in {'MOUSEMOVE'}:
-            diff = (event.mouse_x - self.init_mouse_x) * factor
+            # diff = (event.mouse_x - self.init_mouse_x) * factor
+
+            self.delta = (event.mouse_x - self.init_mouse_x) * factor
+            diff = self.cumulated_delta + self.delta
 
             if self.cam.data.type == 'ORTHO':
                 # just push in view vector direction
@@ -232,7 +241,8 @@ class STORYTOOLS_OT_object_depth_move(Operator):
 class STORYTOOLS_OT_object_pan(Operator):
     bl_idname = "storytools.object_pan"
     bl_label = 'Object Pan Translate'
-    bl_description = "Translate active object"
+    bl_description = "Translate active object\
+                    \n+ Shift : Precision mode"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     @classmethod
@@ -245,15 +255,16 @@ class STORYTOOLS_OT_object_pan(Operator):
         if any(context.object.lock_location):
             self.report({'ERROR'}, "Active object's location is locked")
             return {'CANCELLED'}
-    
+
+        self.shift_pressed = event.shift
+        self.cumulated_translate = Vector((0, 0, 0))
+        self.current_translate = Vector((0, 0, 0))
         self.init_world_loc = self.ob.matrix_world.to_translation()
 
         self.init_pos = self.ob.location.copy() # to restore if cancelled
-        self.init_mouse_x = event.mouse_x
-        self.init_mouse_y = event.mouse_y
-        self.init_mouse = Vector((event.mouse_x, event.mouse_y))
-
-        self.init_vector = fn.region_to_location(self.init_mouse, self.init_world_loc)
+        
+        init_mouse = Vector((event.mouse_x, event.mouse_y))
+        self.init_vector = fn.region_to_location(init_mouse, self.init_world_loc)
 
         context.window.cursor_set("SCROLL_XY")
         context.window_manager.modal_handler_add(self)
@@ -262,12 +273,20 @@ class STORYTOOLS_OT_object_pan(Operator):
 
     def update_position(self, context, event):
         mouse_co = Vector((event.mouse_x, event.mouse_y))
-        # delta_x = event.mouse_x - self.init_mouse_x
-        # context.object.location = self.init_pos * (1 + delta_x * 0.01)
-        vec = fn.region_to_location(mouse_co, self.init_world_loc)
-        move_vec = vec - self.init_vector
-        
-        ## move by vector (recompose matrix)
+
+        ## Handle precision mode
+        multiplier = 1 if not event.shift else 0.1
+        if event.shift != self.shift_pressed:
+            self.shift_pressed = event.shift
+            self.cumulated_translate += self.current_translate
+            self.init_vector = fn.region_to_location(mouse_co, self.init_world_loc)
+
+        current_loc = fn.region_to_location(mouse_co, self.init_world_loc)
+        self.current_translate = (current_loc - self.init_vector) * multiplier
+
+        move_vec = self.current_translate + self.cumulated_translate
+
+        ## Set new position
         self.ob.matrix_world.translation = self.init_world_loc + move_vec
 
     def modal(self, context, event):    
@@ -293,7 +312,7 @@ class STORYTOOLS_OT_object_rotate(Operator):
     bl_label = 'Object Rotate'
     bl_description = "Rotate active object on camera axis\
                     \n+ Ctrl : Snap on 15 degrees angles\
-                    \n+ Shift : Precision rotation"
+                    \n+ Shift : Precision mode"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     @classmethod
@@ -307,8 +326,8 @@ class STORYTOOLS_OT_object_rotate(Operator):
             return {'CANCELLED'}
     
         self.shift_pressed = event.shift
-        self.accumulated_rotation = 0
-        self.current_rotation = 0
+        self.cumulated_delta = 0
+        self.current_delta = 0
 
         self.init_mat = self.ob.matrix_world.copy()
 
@@ -328,16 +347,15 @@ class STORYTOOLS_OT_object_rotate(Operator):
         ## Adjust rotation speed according to precision mode
         if event.shift != self.shift_pressed:
             self.shift_pressed = event.shift
-            self.accumulated_rotation += self.current_rotation
+            self.cumulated_delta += self.current_delta
             self.init_mouse_x = event.mouse_x
 
         ## Calcualte rotation from last reference point
         multiplier = 0.01 if not event.shift else 0.001
-        delta_x = event.mouse_x - self.init_mouse_x
-        self.current_rotation = delta_x * multiplier
+        self.current_delta = (event.mouse_x - self.init_mouse_x) * multiplier
 
         ## Get final rotation
-        final_rotation = self.accumulated_rotation + self.current_rotation
+        final_rotation = self.cumulated_delta + self.current_delta
         
         ## Angle snap
         if event.ctrl:
@@ -375,7 +393,8 @@ class STORYTOOLS_OT_object_rotate(Operator):
 class STORYTOOLS_OT_object_scale(Operator):
     bl_idname = "storytools.object_scale"
     bl_label = 'Object Scale'
-    bl_description = "Scale object by going left-right"
+    bl_description = "Scale object by going left-right\
+                    \n+ Shift : Precision mode"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     @classmethod
@@ -388,14 +407,32 @@ class STORYTOOLS_OT_object_scale(Operator):
             return {'CANCELLED'}
         self.init_scale = context.object.scale.copy()
         self.init_mouse_x = event.mouse_x
+
+        self.shift_pressed = event.shift
+        self.current_delta = 0
+        self.cumulated_delta = 0
+
         context.window.cursor_set("SCROLL_X")
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
-        delta = event.mouse_x - self.init_mouse_x
-        context.object.scale = self.init_scale * (1 + delta * 0.01)
-        
+        multiplier = 0.01 if not event.shift else 0.001
+        if event.shift != self.shift_pressed:
+            self.shift_pressed = event.shift
+            self.cumulated_delta += self.current_delta
+            self.init_mouse_x = event.mouse_x
+
+        self.current_delta = (event.mouse_x - self.init_mouse_x) * multiplier
+
+        scale_offset = self.cumulated_delta + self.current_delta
+
+        ## Mutliply by initial scale
+        context.object.scale = self.init_scale * (1 + scale_offset)
+
+        ## Add to initial scale (Less usable with bigger scales)
+        # context.object.scale = self.init_scale + Vector([scale_offset]*3)
+
         if event.type == 'LEFTMOUSE':
             context.window.cursor_set("DEFAULT")
 
@@ -413,12 +450,6 @@ class STORYTOOLS_OT_object_scale(Operator):
             return {'CANCELLED'}
         
         return {'RUNNING_MODAL'}
-    
-    # def execute(self, context):
-    #     with context.temp_override(selected_objects=[context.object]):
-    #         bpy.ops.transform.resize('INVOKE_DEFAULT')
-    #     bpy.ops.transform.resize('INVOKE_DEFAULT')
-    #     return {"FINISHED"}
 
 ## Create object
 
