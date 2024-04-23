@@ -4,12 +4,14 @@ import gpu
 # from .fn import get_addon_prefs
 from math import pi, radians, degrees
 from mathutils import Vector, Matrix, Quaternion, Euler
+from mathutils.geometry import intersect_line_plane
 
 from bpy.types import Context, Event, Operator, Panel, PropertyGroup
 from bpy.props import CollectionProperty, PointerProperty
 from gpu_extras.batch import batch_for_shader
 
 from . import fn
+from . import draw
 from .fn import get_addon_prefs
 from .constants import LAYERMAT_PREFIX
 
@@ -115,6 +117,8 @@ class STORYTOOLS_OT_object_depth_move(Operator):
         ## Consider all selected only in object mode
         if context.mode == 'OBJECT':
             self.objects = [o for o in context.selected_objects if o.type != 'CAMERA']
+            if context.object.type != 'CAMERA' and context.object not in self.objects:
+                self.objects.append(context.object)
         else:
             self.objects = [context.object]
 
@@ -223,7 +227,7 @@ class STORYTOOLS_OT_object_depth_move(Operator):
 
         # cancel on release
         if event.type in {'LEFTMOUSE'}: # and event.value == 'PRESS'
-            self.stop(context)
+            draw.stop_callback(self, context)
             ## Key objects
             for o in self.objects:
                 fn.key_object(o, use_autokey=True)
@@ -232,7 +236,7 @@ class STORYTOOLS_OT_object_depth_move(Operator):
         if event.type in {'RIGHTMOUSE', 'ESC'} and event.value == 'PRESS':
             for i, obj in enumerate(self.objects):
                 obj.matrix_world = self.init_mats[i]
-            self.stop(context)
+            draw.stop_callback(self, context)
             return {"CANCELLED"}
 
         return {"RUNNING_MODAL"}
@@ -256,19 +260,35 @@ class STORYTOOLS_OT_object_pan(Operator):
             self.report({'ERROR'}, "Active object's location is locked")
             return {'CANCELLED'}
 
+        self.final_lock = self.lock = None
         self.shift_pressed = event.shift
         self.cumulated_translate = Vector((0, 0, 0))
         self.current_translate = Vector((0, 0, 0))
         self.init_world_loc = self.ob.matrix_world.to_translation()
 
         self.init_pos = self.ob.location.copy() # to restore if cancelled
-        
-        init_mouse = Vector((event.mouse_x, event.mouse_y))
-        self.init_vector = fn.region_to_location(init_mouse, self.init_world_loc)
 
+        ## Axis Lock
+        # view_matrix = context.space_data.region_3d.view_matrix
+        # self.local_x = view_matrix.to_quaternion() @ Vector((1,0,0))
+        # self.local_y = view_matrix.to_quaternion() @ Vector((0,1,0))
+        view_rotation = context.space_data.region_3d.view_rotation
+        self.local_x = view_rotation @ Vector((1,0,0))
+        self.local_y = view_rotation @ Vector((0,1,0))
+        self.lock_x_coords = [self.init_world_loc + self.local_x * 10000, 
+                              self.init_world_loc + self.local_x * -10000]
+        self.lock_y_coords = [self.init_world_loc + self.local_y * 10000, 
+                              self.init_world_loc + self.local_y * -10000]
+
+        self.init_mouse = Vector((event.mouse_x, event.mouse_y))
+        self.init_vector = fn.region_to_location(self.init_mouse, self.init_world_loc)
+
+        self.update_position(context, event)
+
+        args = (self, context)
+        self._handle = bpy.types.SpaceView3D.draw_handler_add(draw.lock_axis_draw_callback, args, 'WINDOW', 'POST_VIEW')
         context.window.cursor_set("SCROLL_XY")
         context.window_manager.modal_handler_add(self)
-        self.update_position(context, event)
         return {'RUNNING_MODAL'}
 
     def update_position(self, context, event):
@@ -286,24 +306,50 @@ class STORYTOOLS_OT_object_pan(Operator):
 
         move_vec = self.current_translate + self.cumulated_translate
 
+        lock = self.lock
+        ## Override lock with ctrl auto-axis lock if pressed
+        if event.ctrl:
+            move_2d = mouse_co - self.init_mouse
+            if abs(move_2d.x) >= abs(move_2d.y):
+                lock = 'X'
+            else:
+                lock = 'Y'
+
+        new_loc = self.init_world_loc + move_vec
+        
+        if lock:
+            ## Use intersect line plane on object origin and cam X-Z plane
+            if lock == 'X':
+                plane_no = context.space_data.region_3d.view_rotation @ Vector((0,1,0))
+            if lock == 'Y':
+                plane_no = context.space_data.region_3d.view_rotation @ Vector((1,0,0))
+            locked_pos = intersect_line_plane(new_loc, new_loc + plane_no, self.init_world_loc, plane_no)
+            if locked_pos is not None:
+                new_loc = locked_pos
+
+        self.final_lock = lock
+
         ## Set new position
-        self.ob.matrix_world.translation = self.init_world_loc + move_vec
+        self.ob.matrix_world.translation = new_loc
 
     def modal(self, context, event):    
         self.update_position(context, event)
 
+        if event.type in ('X','Y') and event.value == 'PRESS':
+            self.lock = event.type if self.lock != event.type else None
+
         if event.type == 'LEFTMOUSE': # and event.value == 'RELEASE'
-            context.window.cursor_set("DEFAULT")
+            draw.stop_callback(self, context)
             fn.key_object(self.ob, use_autokey=True)
             return {'FINISHED'}
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
             self.ob.location = self.init_pos
-            context.window.cursor_set("DEFAULT")
+            draw.stop_callback(self, context)
             return {'CANCELLED'}
 
         return {'RUNNING_MODAL'}
-    
+
     def execute(self, context):
         return {"FINISHED"}
 

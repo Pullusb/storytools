@@ -7,6 +7,7 @@ from gpu_extras.batch import batch_for_shader
 from bpy.app.handlers import persistent
 
 from . import fn
+from . import draw
 
 class STORYTOOLS_OT_camera_depth(Operator):
     bl_idname = "storytools.camera_depth"
@@ -63,36 +64,6 @@ class STORYTOOLS_OT_camera_depth(Operator):
         
         return {'RUNNING_MODAL'}
 
-''' ## ops based version, only valid in object mode
-class STORYTOOLS_OT_camera_pan(Operator):
-    bl_idname = "storytools.camera_pan"
-    bl_label = 'Pan Camera'
-    bl_description = "Pan camera view"
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    @classmethod
-    def poll(cls, context):
-        return context.scene.camera
-
-    def invoke(self, context, event):
-        ## Ctrl:incremental step, shift: Precision
-        ## need to use only at triggering time...
-        self.constraint_axis = (False, False, False)
-        if event.ctrl: 
-            self.constraint_axis = (True, False, False)
-        elif event.shift:
-            self.constraint_axis = (False, True, False)
-        return self.execute(context)
-
-    def execute(self, context):
-        ## !!! Work only in object mode
-        orientation = 'VIEW'
-        with context.temp_override(selected_objects=[context.scene.camera]):
-            bpy.ops.transform.translate('INVOKE_DEFAULT',
-                orient_type=orientation, constraint_axis=self.constraint_axis)        
-        return {"FINISHED"}
-'''
-
 class STORYTOOLS_OT_camera_pan(Operator):
     bl_idname = "storytools.camera_pan"
     bl_label = 'Object Pan Translate'
@@ -104,48 +75,6 @@ class STORYTOOLS_OT_camera_pan(Operator):
     @classmethod
     def poll(cls, context):
         return context.scene.camera
-
-    def cam_pan_draw_callback(self, context):
-        # Draw lock lines
-        if not self.final_lock:
-            return
-        if self.final_lock == 'X':
-            coords = self.lock_x_coords
-            color = (1, 0, 0, 0.15)
-        elif self.final_lock == 'Y':
-            coords = self.lock_y_coords
-            color = (0, 1, 0, 0.15)
-        else:
-            return
-        
-        gpu.state.blend_set('ALPHA')
-        gpu.state.line_width_set(2)
-
-        if bpy.app.version <= (3,6,0):
-            shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-        else:
-            shader = gpu.shader.from_builtin('UNIFORM_COLOR')
-
-        batch = batch_for_shader(shader, 'LINES', {"pos": coords})
-        shader.uniform_float("color", color)
-        batch.draw(shader)
-
-        gpu.state.line_width_set(1)
-        gpu.state.blend_set('NONE')
-
-    
-    # def execute(self, context):
-    #     context.area.tag_redraw()
-    #     # return {"CANCELLED"}
-    #     ## Button disappear on OK click
-    #     ## Crash when using redo
-    #     ## Need to lauch a sub-ops with it's own draw
-    #     return {"FINISHED"}
-
-    # def draw(self, context):
-    #     layout = self.layout
-    #     layout.label(text='Camera location is locked')
-    #     ob_lock_location_cam_draw_panel(self, context)
 
     def invoke(self, context, event):
         self.cam = context.scene.camera
@@ -178,9 +107,9 @@ class STORYTOOLS_OT_camera_pan(Operator):
         self.lock_x_coords = [center + self.local_x * 10000, center + self.local_x * -10000]
         self.lock_y_coords = [center + self.local_y * 10000, center + self.local_y * -10000]
         wm = context.window_manager
-        # args = (self, context)
-        args = (context,)
-        self._handle = bpy.types.SpaceView3D.draw_handler_add(self.cam_pan_draw_callback, args, 'WINDOW', 'POST_VIEW')
+
+        args = (self, context)
+        self._handle = bpy.types.SpaceView3D.draw_handler_add(draw.lock_axis_draw_callback, args, 'WINDOW', 'POST_VIEW')
 
         wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
@@ -194,7 +123,7 @@ class STORYTOOLS_OT_camera_pan(Operator):
         if event.shift != self.shift_pressed:
             self.shift_pressed = event.shift
             self.cumulated_delta += self.current_delta
-            self.init_mouse = Vector((event.mouse_x, event.mouse_y))
+            self.init_mouse = mouse_co
 
         self.current_delta = (mouse_co - self.init_mouse) * fac
         move_2d = self.cumulated_delta + self.current_delta
@@ -232,23 +161,15 @@ class STORYTOOLS_OT_camera_pan(Operator):
             
             fn.key_object(self.cam, scale=False, use_autokey=True)
 
-            self.stop(context)
+            draw.stop_callback(self, context)
             return {'FINISHED'}
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
             self.cam.location = self.init_pos
-            self.stop(context)
+            draw.stop_callback(self, context)
             return {'CANCELLED'}
         
         return {'RUNNING_MODAL'}
-    
-    def stop(self, context):
-        # remove draw handler and text set
-        context.area.header_text_set(None) # reset header
-        context.window.cursor_set("DEFAULT")
-        bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
-        context.area.tag_redraw()
-
 
 # Not really needed, already in Grease pencil tools
 class STORYTOOLS_OT_camera_rotate(Operator):

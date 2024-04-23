@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.8.6
+
+- added: object pan-move lock axis, with `Ctrl` to autolock on direction, same as camera pan
+
 1.8.5
 
 - changed: Better and more standard precision mode for all transforms (keep relative position when swapping Shift key)

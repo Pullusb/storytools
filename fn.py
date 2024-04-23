@@ -1,12 +1,13 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
+import bpy
 import json
 import math
+import numpy as np
+
 from math import pi
 from pathlib import Path
 
-import bpy
-import numpy as np
 from bpy_extras import view3d_utils
 from mathutils import Matrix, Vector, geometry
 
