@@ -48,6 +48,7 @@ def draw_callback_wall(self, context):
     if context.area != self.current_area:
         return
 
+    prefs = get_addon_prefs()
     shader = gpu.shader.from_builtin('UNIFORM_COLOR')
 
     shader.bind()
@@ -58,15 +59,14 @@ def draw_callback_wall(self, context):
 
     ## Draw behind zone
     gpu.state.depth_test_set('LESS')
-    # (0.88, 0.8, 0.35, 0.2) # Yellow
-    shader.uniform_float("color", (0.7, 0.2, 0.2, 0.25)) # Red
+    shader.uniform_float("color", prefs.visual_hint_end_color)
     batch = batch_for_shader(shader, 'TRIS', {"pos": self.coords})
     batch.draw(shader)
 
     if context.space_data.region_3d.view_perspective == 'CAMERA':
         ## Draw front zone (only in camera view to avoid flicking)
         gpu.state.depth_test_set('GREATER')
-        shader.uniform_float("color", (0.2, 0.2, 0.8, 0.1)) # Blue
+        shader.uniform_float("color", prefs.visual_hint_start_color)
         batch = batch_for_shader(shader, 'TRIS', {"pos": self.front_coords})
         batch.draw(shader)
 
@@ -142,7 +142,8 @@ class STORYTOOLS_OT_object_depth_move(Operator):
         context.window.cursor_set("SCROLL_X")
         
         self.current_area = context.area # gpuDraw
-        self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_callback_wall, (self, context), 'WINDOW', 'POST_VIEW') # gpuDraw
+        if get_addon_prefs().use_visual_hint:
+            self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_callback_wall, (self, context), 'WINDOW', 'POST_VIEW') # gpuDraw
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
@@ -245,7 +246,8 @@ class STORYTOOLS_OT_object_depth_move(Operator):
 class STORYTOOLS_OT_object_pan(Operator):
     bl_idname = "storytools.object_pan"
     bl_label = 'Object Pan Translate'
-    bl_description = "Translate active object\
+    bl_description = "Translate active object, X/Y to lock on axis\
+                    \n+ Ctrl : autolock on major axis\
                     \n+ Shift : Precision mode"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 

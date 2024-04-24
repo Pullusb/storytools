@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.8.7
+
+- added: choice to use depth move visual hint colors and color personnalisation in preferences
+
 1.8.6
 
 - added: object pan-move lock axis, with `Ctrl` to autolock on direction, same as camera pan

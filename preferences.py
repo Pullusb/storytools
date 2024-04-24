@@ -8,7 +8,9 @@ from bpy.props import (FloatProperty,
                         EnumProperty,
                         StringProperty,
                         IntProperty,
-                        PointerProperty)
+                        PointerProperty,
+                        FloatVectorProperty)
+
 from .fn import get_addon_prefs, open_addon_prefs, draw_kmi_custom
 
 def toggle_gizmo_buttons(self, _):
@@ -94,67 +96,86 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
     #     ('SETTINGS', 'Settings', 'Various settings', 2),
     #     ),
 
-    show_sidebar_ui: bpy.props.BoolProperty(
+    show_sidebar_ui: BoolProperty(
         name="Enable Sidebar Panel",
         description="Show Storytools Sidebar UI",
         default=True,
         update=ui_in_sidebar_update,
     )
 
-    default_edit_line_opacity : bpy.props.FloatProperty(
+    default_edit_line_opacity : FloatProperty(
         name='Default Edit Line Opacity',
         description="Edit line opacity for newly created objects\
             \nSome users prefer to set it to 0 (show only selected line in edit mode)\
             \nBlender default is 0.5",
         default=0.2, min=0.0, max=1.0)
 
-    active_toolbar : bpy.props.BoolProperty(
+    active_toolbar : BoolProperty(
         name='Enable Bottom Toolbar',
         description="Show viewport bottom toolbar with gizmo buttons",
         default=True, update=toggle_gizmo_buttons)
 
-    toolbar_margin : bpy.props.IntProperty(
+    toolbar_margin : IntProperty(
         name='Toolbar margin',
         description="Space margin between viewport and bottom tool bar Gizmo buttons",
         default=36,
         soft_min=-100, soft_max=500,
         min=-1000, max=1000)
     
-    # toolbar_icon_bounds : bpy.props.IntProperty(
+    # toolbar_icon_bounds : IntProperty(
     #     name='Icon bounds',
     #     description="Bounds of the toolbar icons",
     #     default=34,
     #     min=0, max=100)
     
-    toolbar_backdrop_size : bpy.props.IntProperty(
+    toolbar_backdrop_size : IntProperty(
         name='Icon Backdrop Size',
         description="Backdrop size of the toolbar icons (Blender gizmo buttons are around 14)",
         default=20,
         min=12, max=40)
 
-    toolbar_gap_size : bpy.props.IntProperty(
+    toolbar_gap_size : IntProperty(
         name='Button Distance',
         description="Gap size between buttons in toolbar icons",
         default=46,
         min=20, max=200)
 
-    object_gz_color : bpy.props.FloatVectorProperty(
+    object_gz_color : FloatVectorProperty(
         name="Object Buttons Color",
         description="Object buttons gizmo backdrop color",
         default=(0.3, 0.3, 0.3), min=0, max=1.0, step=3, precision=2,
         subtype='COLOR_GAMMA', size=3)
 
-    camera_gz_color : bpy.props.FloatVectorProperty(
+    camera_gz_color : FloatVectorProperty(
         name="Camera Buttons Color",
         description="Camera buttons gizmo backdrop color",
         default=(0.1, 0.1, 0.1), min=0, max=1.0, step=3, precision=2,
         subtype='COLOR_GAMMA', size=3)
 
-    active_gz_color : bpy.props.FloatVectorProperty(
+    active_gz_color : FloatVectorProperty(
         name="Active Buttons Color",
         description="Color when state of the button is active",
         default=(0.25, 0.43, 0.7), min=0, max=1.0, step=3, precision=2,
         subtype='COLOR_GAMMA', size=3)
+
+    ## Distance overlay color
+    use_visual_hint: BoolProperty(
+        name="Depth Move Use Visual Hint",
+        description="Show colored visual hint when using depth move",
+        default=True)
+
+    # (0.2, 0.2, 0.8, 0.1) # Blue
+    visual_hint_start_color : FloatVectorProperty(
+        name="Visual Hint Start Color", subtype='COLOR_GAMMA', size=4,
+        default=(0.2, 0.2, 0.8, 0.15), min=0.0, max=1.0,
+        description="Color of the near plane visual hint when using Depth move")
+    
+    # (0.88, 0.8, 0.35, 0.2) # Yellow
+    # (0.7, 0.2, 0.2, 0.22) # Red
+    visual_hint_end_color : FloatVectorProperty(
+        name="Visual Hint End Color", subtype='COLOR_GAMMA', size=4,
+        default=(0.7, 0.2, 0.2, 0.22), min=0.0, max=1.0,
+        description="Color of the far plane visual hint when using Depth move")
 
     # Update variables
     is_git_repo : BoolProperty(default=False)
@@ -194,6 +215,15 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             tool_col.prop(self, 'active_gz_color')
 
             tool_col.active = self.active_toolbar
+
+            col.separator()
+            col.label(text='Tools Settings:', icon='MESH_CIRCLE')
+            # col.label(text='Move In Depth', icon='EMPTY_SINGLE_ARROW')
+            col.prop(self, 'use_visual_hint', text='Move Object Visual Hints')
+            subcol = col.column(align=True)
+            subcol.prop(self, 'visual_hint_start_color', text='Near Color')
+            subcol.prop(self, 'visual_hint_end_color', text='Far Color')
+            subcol.active = self.use_visual_hint
 
             col.separator()
             col.label(text='Object Settings:', icon='GREASEPENCIL')
@@ -240,9 +270,9 @@ class STORYTOOLS_OT_restore_keymap_item(bpy.types.Operator):
     def poll(cls, context):
         return True
     
-    km_name : bpy.props.StringProperty()
-    # kmi_name : bpy.props.StringProperty()
-    kmi_id : bpy.props.IntProperty()
+    km_name : StringProperty()
+    # kmi_name : StringProperty()
+    kmi_id : IntProperty()
 
     def execute(self, context):
         km = bpy.context.window_manager.keyconfigs.user.keymaps.get(self.km_name)

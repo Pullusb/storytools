@@ -37,7 +37,8 @@ def stop_callback(self, context):
     # Remove draw handler and text set
     context.area.header_text_set(None) # Reset header
     context.window.cursor_set("DEFAULT")
-    bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
+    if hasattr(self, '_handle'):
+        bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
     context.area.tag_redraw()
 
 
