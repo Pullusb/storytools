@@ -944,7 +944,9 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
     
         helper_funcs = bpy.types.UI_UL_list
 
-        flt_flags = [self.bitflag_filter_item if o.type == 'GPENCIL' else 0 for o in objs]
+        flt_flags = [self.bitflag_filter_item if o.type == 'GPENCIL' 
+                     and not o.name.startswith('.') else 0 for o in objs]
+
         ## By name
         # flt_flags = helper_funcs.filter_items_by_name(self.filter_name, self.bitflag_filter_item, objs, "name", reverse=False)
 

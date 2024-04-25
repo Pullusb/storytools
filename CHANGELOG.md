@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - changed: add first keyframe on current frame when creating object (as native behavior)
 - fixed: add undo step at draw object creation
 - fixed: refresh all viewport areas when toggling toolbar
+- fixed: prevent listing GP drawing object prefixed with a dot
 
 1.8.7
 
