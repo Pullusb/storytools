@@ -2,6 +2,12 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.8.8
+
+- added: add a "fill_mask" holdout material in default palette 
+- changed: set autolock on newly created GP object
+- fixed: add undo step at draw object creation
+
 1.8.7
 
 - added: choice to use depth move visual hint colors and color personnalisation in preferences
