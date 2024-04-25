@@ -445,12 +445,13 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
         #             prefs.toolbar_margin = self.init_margin
         #             return
         ## /           
-                
 
         settings.show_session_toolbar = not settings.show_session_toolbar
-        # context.area.header_text_set(None)
-        # if cancel:
-        #     self.target_set_value("offset", self.init_value)
+
+        ## Refresh all 3D areas
+        for area in context.screen.areas:
+            if area.type == 'VIEW_3D':
+                area.tag_redraw()
 
     def modal(self, context, event, tweak):
         self.mx = event.mouse_x
