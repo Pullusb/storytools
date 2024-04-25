@@ -513,7 +513,7 @@ class STORYTOOLS_OT_create_object(Operator):
     bl_idname = "storytools.create_object"
     bl_label = "Create New Drawing"
     bl_description = "Create a new grease pencil object"
-    bl_options = {"REGISTER"} # , "INTERNAL"
+    bl_options = {"REGISTER", "UNDO"} # , "INTERNAL"
 
     name : bpy.props.StringProperty(
         name='Name',
