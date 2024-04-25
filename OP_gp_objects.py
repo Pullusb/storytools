@@ -644,7 +644,8 @@ class STORYTOOLS_OT_create_object(Operator):
         # fn.load_palette(path_to_palette)
 
         fn.load_default_palette(ob=ob)
-        gp.edit_line_color[3] = prefs.default_edit_line_opacity # 0.2 # Bl default is 0.5
+        gp.edit_line_color[3] = prefs.default_edit_line_opacity # Bl default is 0.5
+        gp.use_autolock_layers = True
         
         for l_name in reversed(['Sketch', 'Line', 'Color']):
             layer = gp.layers.new(l_name)
