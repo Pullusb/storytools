@@ -649,8 +649,7 @@ class STORYTOOLS_OT_create_object(Operator):
         
         for l_name in reversed(['Sketch', 'Line', 'Color']):
             layer = gp.layers.new(l_name)
-            # CHOICE: new frame creation -> Usual default is frame_current
-            layer.frames.new(context.scene.frame_start)
+            layer.frames.new(context.scene.frame_current)
             layer.use_lights = False # Can be a project prefs
         
             ## Set default association

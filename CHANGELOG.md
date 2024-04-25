@@ -6,6 +6,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - added: add a "fill_mask" holdout material in default palette 
 - changed: set autolock on newly created GP object
+- changed: add first keyframe on current frame when creating object (as native behavior)
 - fixed: add undo step at draw object creation
 
 1.8.7
