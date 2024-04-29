@@ -81,7 +81,8 @@ class STORYTOOLS_OT_object_depth_move(Operator):
     bl_label = "Object Depth Move"
     bl_description = "Move object Forward/backward (Slide left-right)\
                     \n+ Ctrl : Adjust Scale (Retain same size in camera framing)\
-                    \n+ Shift : Precision mode"
+                    \n+ Shift : Precision mode\
+                    \n+ Alt : Constraint on horizontal plane"
     bl_options = {"REGISTER", "INTERNAL", "UNDO"}
 
     @classmethod
@@ -192,6 +193,11 @@ class STORYTOOLS_OT_object_depth_move(Operator):
                         ## move with proportional factor from individual distance vector to camera
                         new_vec = self.init_vecs[i] + (self.init_vecs[i] * diff)
 
+                    if event.alt: # Lock Z position 
+                        new_pos = self.cam_pos + new_vec
+                        new_pos.z = self.init_mats[i].to_translation().z
+                        new_vec = new_pos - self.cam_pos
+
                     obj.matrix_world.translation = self.cam_pos + new_vec
                     
                     if event.ctrl: # Adjust scale only if Ctrl is pressed
@@ -248,7 +254,8 @@ class STORYTOOLS_OT_object_pan(Operator):
     bl_label = 'Object Pan Translate'
     bl_description = "Translate active object, X/Y to lock on axis\
                     \n+ Ctrl : autolock on major axis\
-                    \n+ Shift : Precision mode"
+                    \n+ Shift : Precision mode\
+                    \n+ Alt : Constraint on horizontal plane"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     @classmethod
@@ -330,6 +337,9 @@ class STORYTOOLS_OT_object_pan(Operator):
                 new_loc = locked_pos
 
         self.final_lock = lock
+
+        if event.alt: # Lock initial Z position 
+            new_loc.z = self.init_world_loc.z
 
         ## Set new position
         self.ob.matrix_world.translation = new_loc

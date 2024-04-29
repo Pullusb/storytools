@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.8.9
+
+- added: `Translate` and `Depth` moves, pressing `Alt` lock Z world, can help placing on ground
+
 1.8.8
 
 - added: add a "fill_mask" holdout material in default palette 
