@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.8.10
+
+- changed: draw button swap between object and draw mode when a GP is active
+
 1.8.9
 
 - added: `Translate` and `Depth` moves, pressing `Alt` lock Z world, can help placing on ground

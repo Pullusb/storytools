@@ -761,7 +761,7 @@ class STORYTOOLS_OT_visibility_toggle(Operator):
 class STORYTOOLS_OT_object_draw(Operator):
     bl_idname = "storytools.object_draw"
     bl_label = 'Object Draw'
-    bl_description = "Set draw mode\
+    bl_description = "Switch between drwa mode and object mode\
         \nEnter first GP object available\
         \nIf no GPencil object exists, pop-up creation menu"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
@@ -785,6 +785,8 @@ class STORYTOOLS_OT_object_draw(Operator):
         if context.object and context.object.type == 'GPENCIL':
             if context.mode != 'PAINT_GPENCIL':
                 bpy.ops.object.mode_set(mode='PAINT_GPENCIL')
+            else:
+                bpy.ops.object.mode_set(mode='OBJECT')
 
             return {"FINISHED"}
 
