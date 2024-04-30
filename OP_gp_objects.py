@@ -2,6 +2,7 @@ import bpy
 import gpu
 
 # from .fn import get_addon_prefs
+from time import time
 from math import pi, radians, degrees
 from mathutils import Vector, Matrix, Quaternion, Euler
 from mathutils.geometry import intersect_line_plane
@@ -373,14 +374,57 @@ class STORYTOOLS_OT_object_rotate(Operator):
                     \n+ Shift : Precision mode"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
+    camera : bpy.props.BoolProperty(default=False, options={'SKIP_SAVE'})
+
+    # @classmethod
+    # def poll(cls, context):
+    #     return context.object
+    
     @classmethod
-    def poll(cls, context):
-        return context.object
+    def description(self, context, properties):
+        if properties.camera:
+            return "Rotate Camera\
+                    \n+ Ctrl : Snap on 15 degrees angles\
+                    \n+ Shift : Precision mode"
+
+        return "Rotate active object on camera axis\
+                    \n+ Ctrl : Snap on 15 degrees angles\
+                    \n+ Shift : Precision mode"
+
+    def reset_rotation(self, context):
+        aim = context.space_data.region_3d.view_rotation @ Vector((0.0, 0.0, 1.0)) # view vector
+        # aim = self.ob.matrix_world.to_quaternion() @ Vector((0.0, 0.0, 1.0)) # view vector
+        z_up_quat = aim.to_track_quat('Z','Y') # track Z, up Y
+        q = self.ob.matrix_world.to_quaternion() # store current rotation
+
+        if self.ob.parent:
+            q = self.ob.parent.matrix_world.inverted().to_quaternion() @ q
+            cam_quat = self.ob.parent.matrix_world.inverted().to_quaternion() @ z_up_quat
+        else:
+            cam_quat = z_up_quat
+        self.ob.rotation_euler = cam_quat.to_euler('XYZ')
+
+        # get diff angle (might be better way to get view axis rot diff)
+        diff_angle = q.rotation_difference(cam_quat).to_euler('ZXY').z
+        # print('diff_angle: ', math.degrees(diff_angle))
+        # set_cam_view_offset_from_angle(context, diff_angle)
+        
+        # self.ob.rotation_euler.z += diff_angle
+        self.ob.rotation_euler.rotate_axis("Z", diff_angle)
 
     def invoke(self, context, event):
-        self.ob = context.object
-        if any(context.object.lock_rotation):
-            self.report({'ERROR'}, "Active object's rotation is locked")
+        if self.camera:
+            self.ob = context.scene.camera
+        else:
+            self.ob = context.object
+        
+        if not self.ob:
+            mess = "No active object"
+            self.report({'ERROR'}, mess)
+            return {'CANCELLED'}
+            
+        if any(self.ob.lock_rotation):
+            self.report({'ERROR'}, "Rotation is locked !")
             return {'CANCELLED'}
     
         self.shift_pressed = event.shift
@@ -396,6 +440,16 @@ class STORYTOOLS_OT_object_rotate(Operator):
         ## Snap on 15 degrees
         self.snap_step = radians(15)
         self.init_mouse_x = event.mouse_x
+        
+        ## Check previous time to detect double click
+        # if event.alt: # Alt not accessible
+
+        # if (last_rotate_call_time := context.window_manager.get('last_rotate_call_time')):
+        #     if time() - last_rotate_call_time < 0.25:
+        #         print('Reset rotation')
+        #         self.reset_rotation(context)
+        #         fn.key_object(self.ob, use_autokey=True)
+        #         return {'FINISHED'}
 
         context.window.cursor_set("SCROLL_XY")
         context.window_manager.modal_handler_add(self)
@@ -430,11 +484,12 @@ class STORYTOOLS_OT_object_rotate(Operator):
         mat.translation = self.init_mat.translation
         self.ob.matrix_world = mat
 
-    def modal(self, context, event):        
+    def modal(self, context, event): 
         self.update_rotation(context, event)
         if event.type == 'LEFTMOUSE':
             context.window.cursor_set("DEFAULT")
             fn.key_object(self.ob, use_autokey=True)
+            context.window_manager['last_rotate_call_time'] = time()
             return {'FINISHED'}
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:

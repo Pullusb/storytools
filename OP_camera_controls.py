@@ -12,7 +12,8 @@ from . import draw
 class STORYTOOLS_OT_camera_depth(Operator):
     bl_idname = "storytools.camera_depth"
     bl_label = 'Camera Depth Move'
-    bl_description = "Move Camera Depth (forward and backward)"
+    bl_description = "Move Camera Depth (forward and backward)\
+        \n+ Alt : Lock Z axis movements"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     @classmethod
@@ -50,7 +51,11 @@ class STORYTOOLS_OT_camera_depth(Operator):
 
         move_val = self.cumulated_delta + self.current_delta
 
-        self.cam.matrix_world.translation = self.init_pos + self.cam_forward_vec * move_val
+        new_position = self.init_pos + self.cam_forward_vec * move_val
+        if event.alt:
+            new_position.z = self.init_pos.z
+
+        self.cam.matrix_world.translation = new_position
         
         if event.type == 'LEFTMOUSE':
             context.window.cursor_set("DEFAULT")
@@ -215,9 +220,10 @@ class STORYTOOLS_OT_camera_rotate(Operator):
 
             return {"FINISHED"}
         
-        orientation = 'VIEW'
-        with context.temp_override(selected_objects=[context.scene.camera]):
-            bpy.ops.transform.rotate('INVOKE_DEFAULT', orient_axis='Z') # orient_type='VIEW'
+        print('Not implemented ')
+        # orientation = 'VIEW'
+        # with context.temp_override(selected_objects=[context.scene.camera]):
+        #     bpy.ops.transform.rotate('INVOKE_DEFAULT', orient_axis='Z') # orient_type='VIEW'
         return {"FINISHED"}
 
 class STORYTOOLS_OT_attach_toggle(Operator):

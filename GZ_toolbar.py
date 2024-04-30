@@ -191,11 +191,12 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         self.gz_cam_depth.target_set_operator("storytools.camera_depth")
         self.camera_gizmos.append(self.gz_cam_depth)
 
-        # ## Camera Rotation
-        # self.gz_cam_rot = self.gizmos.new("GIZMO_GT_button_2d")
-        # set_gizmo_settings(self.gz_cam_rot, 'DRIVER_ROTATIONAL_DIFFERENCE', show_drag=True)
-        # self.gz_cam_rot.target_set_operator("storytools.camera_rotate")
-        # self.camera_gizmos.append(self.gz_cam_rot)
+        ## Camera Rotation
+        self.gz_cam_rot = self.gizmos.new("GIZMO_GT_button_2d")
+        set_gizmo_settings(self.gz_cam_rot, 'FILE_REFRESH', show_drag=True)
+        op = self.gz_cam_rot.target_set_operator("storytools.object_rotate")
+        op.camera = True
+        self.camera_gizmos.append(self.gz_cam_rot)
 
         ## Camera lock
         self.gz_lock_cam = self.gizmos.new("GIZMO_GT_button_2d")

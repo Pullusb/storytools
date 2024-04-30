@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.8.11
+
+- added: `Camera Depth move` + `Alt` to lock Z axis
+- added: Camera rotation gizmo
+
 1.8.10
 
 - changed: draw button swap between object and draw mode when a GP is active
