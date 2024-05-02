@@ -394,10 +394,13 @@ class STORYTOOLS_OT_object_rotate(Operator):
                     \n+ Shift : Precision mode"
 
     def reset_rotation(self, context):
-        aim = context.space_data.region_3d.view_rotation @ Vector((0.0, 0.0, 1.0)) # view vector
+        r3d = context.space_data.region_3d
+        aim = r3d.view_rotation @ Vector((0.0, 0.0, 1.0)) # view vector
         # aim = self.ob.matrix_world.to_quaternion() @ Vector((0.0, 0.0, 1.0)) # view vector
         z_up_quat = aim.to_track_quat('Z','Y') # track Z, up Y
-        context.space_data.region_3d.view_rotation = z_up_quat
+        if r3d.view_perspective != 'CAMERA':
+            r3d.view_rotation = z_up_quat
+            return
 
         q = self.ob.matrix_world.to_quaternion() # store current rotation
 
@@ -735,32 +738,54 @@ class STORYTOOLS_OT_align_with_view(Operator):
     bl_idname = "storytools.align_with_view"
     bl_label = "Align With View"
     bl_description = "Align object with view\
-        \nCtrl + Click align but keep object Z axis pointing up"
+        \n+ Ctrl : Also set object Z axis pointing up\
+        \n+ Shift : Bring in front of camera"
     bl_options = {"REGISTER", "UNDO"} # "INTERNAL"
 
     @classmethod
     def poll(cls, context):
         return context.object
 
-    keep_z_up : bpy.props.BoolProperty(name='Keep Z Up', default=False)
+    # keep_z_up : bpy.props.BoolProperty(name='Keep Z Up', default=False)
+
+    distance_to_view : bpy.props.FloatProperty(
+        name='Distance', min=0.1, default=8.0)
 
     def invoke(self, context, event):
         self.keep_z_up = event.ctrl
+        self.bring_in_view = event.shift
         return self.execute(context)
 
     def execute(self, context):
         r3d = context.space_data.region_3d            
         
-        for ob in context.selected_objects:
-            
-            ## Handle  camera object
-            if ob.type == 'CAMERA':
-                continue
-            ## skip active camera if selected and IN cam view
-            # if context.scene.camera \
-            #     and ob == context.scene.camera \
-            #     and context.space_data.region_3d.view_perspective == 'CAMERA':
-            #     continue
+        pool = [o for o in context.selected_objects if o.type != 'CAMERA']
+        if not pool:
+            self.report({'WARNING'}, 'No compatible object for alignment in selection')
+            return {'CANCELLED'}
+
+        # pool_size = len(pool)
+
+        if self.bring_in_view:
+            Z_up_vec = Vector((0.0, 0.0, -self.distance_to_view))
+            aim = r3d.view_rotation @ Z_up_vec
+            view_origin = r3d.view_matrix.inverted().to_translation()
+            new_loc = view_origin + aim
+            # if pool_size > 1:
+            #     ## Compute origin position and offset
+            #     intersect_line_plane(view_origin, new_loc, new_loc, aim)
+            #     fn.get_cam_frame_world(scene)
+
+        for ob in pool:
+            if self.bring_in_view:
+                # TODO if multiple objects, spread origins on a line ?
+                Z_up_vec = Vector((0.0, 0.0, -self.distance_to_view))
+                dist = r3d.view_rotation @ Z_up_vec
+                new_loc = r3d.view_matrix.inverted().to_translation() + dist
+                ob.matrix_world.translation = new_loc
+                ## Skip orientation if keep_z_up
+                if not self.keep_z_up:
+                    continue
 
             if self.keep_z_up:
                 ## Align to view but keep world Up
@@ -768,7 +793,7 @@ class STORYTOOLS_OT_align_with_view(Operator):
                 aim = r3d.view_rotation @ Z_up_vec
                 # Track Up
                 ref_matrix = aim.to_track_quat('Z','Y').to_matrix().to_4x4()
-            
+
             else:
                 ## Aligned to view Matrix
                 ref_matrix = r3d.view_matrix.inverted()
@@ -777,7 +802,6 @@ class STORYTOOLS_OT_align_with_view(Operator):
             fn.assign_rotation_from_ref_matrix(ob, ref_matrix, rot_90=ob.type != 'FONT')
 
         return {"FINISHED"}
-
 
 ## ---
 ## Object Property groups and UIlist

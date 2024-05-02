@@ -5,6 +5,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 1.8.12
 
 - added: `Camera rotation` reset using double click on gizmo button
+- added: `Shift + Click` on `Align-to-view` bring objects in front of camera
 
 1.8.11
 
