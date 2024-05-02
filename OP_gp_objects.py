@@ -1,5 +1,6 @@
 import bpy
 import gpu
+import math
 
 # from .fn import get_addon_prefs
 from time import time
@@ -385,7 +386,8 @@ class STORYTOOLS_OT_object_rotate(Operator):
         if properties.camera:
             return "Rotate Camera\
                     \n+ Ctrl : Snap on 15 degrees angles\
-                    \n+ Shift : Precision mode"
+                    \n+ Shift : Precision mode\
+                    \nDouble click : reset rotation"
 
         return "Rotate active object on camera axis\
                     \n+ Ctrl : Snap on 15 degrees angles\
@@ -395,6 +397,8 @@ class STORYTOOLS_OT_object_rotate(Operator):
         aim = context.space_data.region_3d.view_rotation @ Vector((0.0, 0.0, 1.0)) # view vector
         # aim = self.ob.matrix_world.to_quaternion() @ Vector((0.0, 0.0, 1.0)) # view vector
         z_up_quat = aim.to_track_quat('Z','Y') # track Z, up Y
+        context.space_data.region_3d.view_rotation = z_up_quat
+
         q = self.ob.matrix_world.to_quaternion() # store current rotation
 
         if self.ob.parent:
@@ -404,13 +408,9 @@ class STORYTOOLS_OT_object_rotate(Operator):
             cam_quat = z_up_quat
         self.ob.rotation_euler = cam_quat.to_euler('XYZ')
 
-        # get diff angle (might be better way to get view axis rot diff)
-        diff_angle = q.rotation_difference(cam_quat).to_euler('ZXY').z
-        # print('diff_angle: ', math.degrees(diff_angle))
-        # set_cam_view_offset_from_angle(context, diff_angle)
-        
-        # self.ob.rotation_euler.z += diff_angle
-        self.ob.rotation_euler.rotate_axis("Z", diff_angle)
+        ## Set view position in cam as in GP tools rotate canvas ?
+        # diff_angle = q.rotation_difference(cam_quat).to_euler('ZXY').z        
+        # # self.set_cam_view_offset_from_angle(context, diff_angle)
 
     def invoke(self, context, event):
         if self.camera:
@@ -444,12 +444,11 @@ class STORYTOOLS_OT_object_rotate(Operator):
         ## Check previous time to detect double click
         # if event.alt: # Alt not accessible
 
-        # if (last_rotate_call_time := context.window_manager.get('last_rotate_call_time')):
-        #     if time() - last_rotate_call_time < 0.25:
-        #         print('Reset rotation')
-        #         self.reset_rotation(context)
-        #         fn.key_object(self.ob, use_autokey=True)
-        #         return {'FINISHED'}
+        if self.camera and (last_rotate_call_time := context.window_manager.get('last_rotate_call_time')):
+            if time() - last_rotate_call_time < 0.25:
+                self.reset_rotation(context)
+                fn.key_object(self.ob, use_autokey=True)
+                return {'FINISHED'}
 
         context.window.cursor_set("SCROLL_XY")
         context.window_manager.modal_handler_add(self)
@@ -489,7 +488,8 @@ class STORYTOOLS_OT_object_rotate(Operator):
         if event.type == 'LEFTMOUSE':
             context.window.cursor_set("DEFAULT")
             fn.key_object(self.ob, use_autokey=True)
-            context.window_manager['last_rotate_call_time'] = time()
+            if self.camera:
+                context.window_manager['last_rotate_call_time'] = time()
             return {'FINISHED'}
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:

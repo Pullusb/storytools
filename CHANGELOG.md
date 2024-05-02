@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.8.12
+
+- added: `Camera rotation` reset using double click on gizmo button
+
 1.8.11
 
 - added: `Camera Depth move` + `Alt` to lock Z axis
