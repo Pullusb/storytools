@@ -2,6 +2,12 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.10.0
+
+- added: new alternate behavior on `Cam lock to view` switch gizmo, to control view in cam:
+  - `Ctrl` : Fit view to camera bounds (SBB state)
+  - `Shift` : Zoom 1:1 (full resolution)
+
 1.9.0
 
 - added: `Align-to-view` has a better redo panel and `bring objects in view` handle multi object (based on origin)

@@ -216,12 +216,40 @@ class STORYTOOLS_OT_camera_lock_toggle(Operator):
     bl_idname = "storytools.camera_lock_toggle"
     bl_label = 'Toggle Lock Camera To View'
     bl_description = "In Camera view: Toggle 'lock camera to view' (active viewport)\
-        \nIn free view: Go to camera"
+        \nIn free view: Go to camera\
+        \n+ Ctrl : Center and resize view to fit camera bounds\
+        \n+ Shift : Match view zoom to render resolution"
     bl_options = {'REGISTER', 'INTERNAL'}
 
+
+    # Ctrl : Fit viewport to camera frame bounds
+
+    def invoke(self, context, event):
+        self.fit_viewport = event.ctrl
+        self.zoom_full_res = event.shift
+        
+        return self.execute(context)
+
     def execute(self, context):
+        go_to_cam = False
+        
         if context.space_data.region_3d.view_perspective != 'CAMERA':
             context.space_data.region_3d.view_perspective = 'CAMERA'
+            go_to_cam = True
+
+        if self.fit_viewport:
+            bpy.ops.view3d.view_center_camera()
+            ## Dezoom slightly to let frame enter view
+            r3d = bpy.context.space_data.region_3d
+            r3d.view_camera_zoom += r3d.view_camera_zoom * -0.03
+            ## TODO: Custom view_fit that consider all toolbars
+            return {"FINISHED"}
+
+        if self.zoom_full_res:
+            bpy.ops.view3d.zoom_camera_1_to_1()
+            return {"FINISHED"}
+
+        if go_to_cam:
             return {"FINISHED"}
 
         ## Toggle lock only if in camera view 
