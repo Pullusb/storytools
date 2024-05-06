@@ -37,12 +37,12 @@ def snap_to_step(value, step):
 ## Vector
 
 def location_to_region(worldcoords) -> Vector:
-    ''' return 2d location '''
+    '''return 2d location'''
     return view3d_utils.location_3d_to_region_2d(
         bpy.context.region, bpy.context.space_data.region_3d, worldcoords)
 
 def region_to_location(viewcoords, depthcoords) -> Vector:
-    ''' return normalized 3d vector '''
+    '''return normalized 3d vector'''
     return view3d_utils.region_2d_to_location_3d(
         bpy.context.region, bpy.context.space_data.region_3d, viewcoords, depthcoords)
 

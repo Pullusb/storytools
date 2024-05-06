@@ -457,6 +457,9 @@ class STORYTOOLS_OT_object_rotate(Operator):
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
+    # def draw(self, context):
+    #     return
+
     def update_rotation(self, context, event):
         ## Adjust rotation speed according to precision mode
         if event.shift != self.shift_pressed:
@@ -493,6 +496,10 @@ class STORYTOOLS_OT_object_rotate(Operator):
             fn.key_object(self.ob, use_autokey=True)
             if self.camera:
                 context.window_manager['last_rotate_call_time'] = time()
+                if self.init_mat == self.ob.matrix_world:
+                    ## Avoid undo stack push if there was on moves
+                    return {'CANCELLED'}
+
             return {'FINISHED'}
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
@@ -746,15 +753,34 @@ class STORYTOOLS_OT_align_with_view(Operator):
     def poll(cls, context):
         return context.object
 
-    # keep_z_up : bpy.props.BoolProperty(name='Keep Z Up', default=False)
+    align : bpy.props.BoolProperty(name='Align with view', default=True, options={'SKIP_SAVE'})
+    keep_z_up : bpy.props.BoolProperty(name='Keep Z Up', default=False, options={'SKIP_SAVE'})
+    bring_in_view : bpy.props.BoolProperty(name='Bring In View', default=False, options={'SKIP_SAVE'})
+    margin_ratio : bpy.props.FloatProperty(name='Margin', default=0.4, min=0.0, max=0.95, step=0.1, options={'SKIP_SAVE'})
 
     distance_to_view : bpy.props.FloatProperty(
         name='Distance', min=0.1, default=8.0)
+
 
     def invoke(self, context, event):
         self.keep_z_up = event.ctrl
         self.bring_in_view = event.shift
         return self.execute(context)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, 'align')
+        
+        row = layout.row()
+        row.prop(self, 'keep_z_up')
+        row.enabled = self.align
+
+        layout.prop(self, 'bring_in_view')
+
+        row = layout.row()
+        row.prop(self, 'distance_to_view')
+        row.prop(self, 'margin_ratio')
+        row.enabled = self.bring_in_view
 
     def execute(self, context):
         r3d = context.space_data.region_3d            
@@ -764,33 +790,73 @@ class STORYTOOLS_OT_align_with_view(Operator):
             self.report({'WARNING'}, 'No compatible object for alignment in selection')
             return {'CANCELLED'}
 
-        # pool_size = len(pool)
+        ## Sort by name ?
+        pool_size = len(pool)
 
         if self.bring_in_view:
-            Z_up_vec = Vector((0.0, 0.0, -self.distance_to_view))
-            aim = r3d.view_rotation @ Z_up_vec
+            z_vec = Vector((0.0, 0.0, -self.distance_to_view))
+            aim = r3d.view_rotation @ z_vec
             view_origin = r3d.view_matrix.inverted().to_translation()
             new_loc = view_origin + aim
-            # if pool_size > 1:
-            #     ## Compute origin position and offset
-            #     intersect_line_plane(view_origin, new_loc, new_loc, aim)
-            #     fn.get_cam_frame_world(scene)
 
-        for ob in pool:
+            ## when in view, use region to location
+            if pool_size > 1:
+                if context.space_data.region_3d.view_perspective == 'CAMERA':
+                    scn = context.scene
+                    cam = scn.camera
+                    ## Find final camera frame vectors at given distance (local space)
+                    if cam.data.type == 'ORTHO':
+                        cam_frame = [Vector((c.x, c.y, -self.distance_to_view)) for c in cam.data.view_frame(scene=scn)]
+                    else:
+                        cam_frame = [intersect_line_plane(Vector(), c, z_vec, z_vec) for c in cam.data.view_frame(scene=scn)]
+
+                    ## Find mid-height border
+                    r = (cam_frame[0] + cam_frame[1]) / 2
+                    l = (cam_frame[2] + cam_frame[3]) / 2
+                    
+                    w = r.x - l.x # same as (r - l).length
+                    context.scene.cursor.location = r
+                    margins = w * self.margin_ratio
+                    chunk_width = (w - margins) / (pool_size - 1)
+
+                    ## Calc poisition per object world space
+                    # context.scene.cursor.location = Vector((l.x + chunk_width * pool_size - margins, l.y, l.z))# Dbg
+                    locations = [cam.matrix_world @ Vector((l.x + (margins / 2) + i * chunk_width, l.y, l.z) )
+                                 for i in range(pool_size)]
+
+                else:
+                    ## Free View
+                    toolbar_width = next((r.width for r in context.area.regions if r.type == 'TOOLS'), 0)
+                    sidebar_width = next((r.width for r in context.area.regions if r.type == 'UI'), 0)
+                    locations = []
+                    h = context.region.height / 2
+                    # Remove some margin
+                    w = context.region.width - toolbar_width - sidebar_width
+                    margins = w * self.margin_ratio
+                    chunk_width = (w - margins) / (pool_size - 1)
+                    # context.scene.cursor.location = fn.region_to_location(Vector((context.region.width, h)), new_loc) # Dbg
+                    for i in range(pool_size):
+                        width_loc = toolbar_width + (margins / 2) + i * chunk_width
+                        region_coord = Vector((width_loc, h))
+                        locations.append(fn.region_to_location(region_coord, new_loc))
+
+            else:
+                locations = [new_loc]
+                ## Compute origin position and offset
+                # intersect_line_plane(view_origin, new_loc, new_loc, aim)
+                # fn.get_cam_frame_world(scene)
+
+        for i, ob in enumerate(pool):
             if self.bring_in_view:
-                # TODO if multiple objects, spread origins on a line ?
-                Z_up_vec = Vector((0.0, 0.0, -self.distance_to_view))
-                dist = r3d.view_rotation @ Z_up_vec
-                new_loc = r3d.view_matrix.inverted().to_translation() + dist
-                ob.matrix_world.translation = new_loc
-                ## Skip orientation if keep_z_up
-                if not self.keep_z_up:
-                    continue
+                ob.matrix_world.translation = locations[i]
+
+            if not self.align:
+                continue
 
             if self.keep_z_up:
                 ## Align to view but keep world Up
-                Z_up_vec = Vector((0.0, 0.0, 1.0))
-                aim = r3d.view_rotation @ Z_up_vec
+                z_vec = Vector((0.0, 0.0, 1.0))
+                aim = r3d.view_rotation @ z_vec
                 # Track Up
                 ref_matrix = aim.to_track_quat('Z','Y').to_matrix().to_4x4()
 

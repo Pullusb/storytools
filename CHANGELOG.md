@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.9.0
+
+- added: `Align-to-view` has a better redo panel and `bring objects in view` handle multi object (based on origin)
+
 1.8.12
 
 - added: `Camera rotation` reset using double click on gizmo button
