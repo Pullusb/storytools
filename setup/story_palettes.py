@@ -3,13 +3,13 @@
 import bpy
 # import json
 # from pathlib import Path
-from .fn import get_addon_prefs
-from . import fn
+from .. import fn
 
 class STORYTOOLS_OT_load_default_palette(bpy.types.Operator):
     bl_idname = "storytools.load_default_palette"
     bl_label = "Load basic palette"
-    bl_description = "Load a material palette on the current GP object\nif material name already exists in scene it will uses these"
+    bl_description = "Load a material palette on the current GP object\
+        \nif material name already exists in scene it will uses these"
     bl_options = {"REGISTER", "INTERNAL"}
 
     # path_to_pal : bpy.props.StringProperty(name="paht to palette", description="path to the palette", default="")
@@ -34,7 +34,7 @@ class STORYTOOLS_OT_load_default_palette(bpy.types.Operator):
                 line.name = 'line'
 
         # load json
-        # pfp = Path(bpy.path.abspath(get_addon_prefs().palette_path))
+        # pfp = Path(bpy.path.abspath(fn.get_addon_prefs().palette_path))
         
         """
         pfp = Path(__file__).parent / 'palettes'

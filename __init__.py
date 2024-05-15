@@ -4,7 +4,7 @@ bl_info = {
     "name": "Storytools - Storyboard Tools",
     "description": "Set of tools for Storyboarding",
     "author": "Samuel Bernou",
-    "version": (1, 10, 0),
+    "version": (1, 10, 1),
     "blender": (3, 3, 0),
     "location": "View3D",
     "warning": "",
@@ -14,31 +14,29 @@ bl_info = {
 
 import bpy
 
-from . import OP_git_update
 from . import properties
 from . import preferences
-from . import OP_story_palettes
-from . import OP_camera_controls
-from . import OP_camera_data
-from . import OP_gp_objects
-from . import GZ_toolbar
-from . import OP_workspace_setup
+from . import setup
+from . import camera_ops
+from . import object_ops
+from . import gizmos_objects
+from . import gizmos_camera
+from . import gizmo_toolbar
 from . import handles
 from . import panels
 from . import keymaps
 from .fn import get_addon_prefs
 
 modules = (
-    OP_git_update,
+    setup,
     properties,
     preferences,
-    OP_story_palettes,
-    OP_gp_objects,
-    OP_camera_controls,
-    OP_camera_data,
+    camera_ops,
     handles,
-    GZ_toolbar,
-    OP_workspace_setup,
+    object_ops,
+    gizmos_objects,
+    gizmos_camera,
+    gizmo_toolbar,
     panels,
     keymaps,
 )

@@ -201,7 +201,7 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         ## Camera lock
         self.gz_lock_cam = self.gizmos.new("GIZMO_GT_button_2d")
         set_gizmo_settings(self.gz_lock_cam, 'OUTLINER_OB_CAMERA')
-        self.gz_lock_cam.target_set_operator("storytools.camera_lock_toggle")
+        self.gz_lock_cam.target_set_operator("storytools.lock_camera_to_view_toggle")
         self.camera_gizmos.append(self.gz_lock_cam)
 
         ## Camera key position
@@ -546,7 +546,7 @@ class STORYTOOLS_GGT_toolbar_switch(GizmoGroup):
     #     pass
 
 
-class STORYTOOLS_OT_toggle_bottom_bar(bpy.types.Operator):
+class STORYTOOLS_OT_toggle_bottom_bar(Operator):
     bl_idname = "storytools.toggle_bottom_bar"
     bl_label = 'Toggle Bottom Bar'
     bl_description = "Toggle Storytools Bar"

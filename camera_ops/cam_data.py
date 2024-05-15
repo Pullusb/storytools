@@ -8,7 +8,7 @@ from bpy.types import Operator, Panel, PropertyGroup
 from bpy.props import CollectionProperty, PointerProperty
 # from bl_operators.presets import AddPresetBase
 
-from . import fn
+from .. import fn
 
 
 # class STORYTOOLS_OT_camera_change_focal(Operator):

@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.10.1
+
+- changed: code refactor
+
 1.10.0
 
 - added: new alternate behavior on `Cam lock to view` switch gizmo, to control view in cam:

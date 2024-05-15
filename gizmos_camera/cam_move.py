@@ -6,8 +6,8 @@ from mathutils import Vector
 from gpu_extras.batch import batch_for_shader
 from bpy.app.handlers import persistent
 
-from . import fn
-from . import draw
+from .. import fn
+from .. import draw
 
 class STORYTOOLS_OT_camera_depth(Operator):
     bl_idname = "storytools.camera_depth"
@@ -176,44 +176,9 @@ class STORYTOOLS_OT_camera_pan(Operator):
         
         return {'RUNNING_MODAL'}
 
-class STORYTOOLS_OT_attach_toggle(Operator):
-    bl_idname = "storytools.attach_toggle"
-    bl_label = "Attach Toggle"
-    bl_description = "Parent / Unparent object to active Camera"
-    bl_options = {"REGISTER", "UNDO"}
 
-    @classmethod
-    def poll(cls, context):
-        return context.object
-
-    def execute(self, context):
-        if not context.object:
-            self.report({'ERROR'}, 'No active object')
-            return {"CANCELLED"}
-        
-        if context.object == context.scene.camera:
-            self.report({'ERROR'}, 'The active object is the camera')
-            return {"CANCELLED"}
-
-        mat = context.object.matrix_world.copy()
-        if context.object.parent == context.scene.camera:
-            # unparent
-            context.object.parent = None # remove parent
-
-        elif not context.object.parent:
-            # parent
-            context.object.parent = context.scene.camera # remove parent
-
-        context.object.matrix_world = mat
-
-        ## TODO: dynamic parent ? maybe need to double the key (custom keying)
-        fn.key_object(context.object, use_autokey=True)
-
-        return {"FINISHED"}
-
-
-class STORYTOOLS_OT_camera_lock_toggle(Operator):
-    bl_idname = "storytools.camera_lock_toggle"
+class STORYTOOLS_OT_lock_camera_to_view_toggle(Operator):
+    bl_idname = "storytools.lock_camera_to_view_toggle"
     bl_label = 'Toggle Lock Camera To View'
     bl_description = "In Camera view: Toggle 'lock camera to view' (active viewport)\
         \nIn free view: Go to camera\
@@ -377,11 +342,10 @@ def set_lockpan_km(dummy):
     register_keymaps()
 
 classes=(
-    STORYTOOLS_OT_attach_toggle,
     STORYTOOLS_OT_camera_pan,
     STORYTOOLS_OT_camera_depth,
-    STORYTOOLS_OT_camera_lock_toggle,
     STORYTOOLS_OT_camera_key_transform,
+    STORYTOOLS_OT_lock_camera_to_view_toggle,
     STORYTOOLS_OT_lock_view,
     VIEW3D_OT_locked_pan,
 )

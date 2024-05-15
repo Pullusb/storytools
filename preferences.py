@@ -14,13 +14,13 @@ from bpy.props import (FloatProperty,
 from .fn import get_addon_prefs, open_addon_prefs, draw_kmi_custom
 
 def toggle_gizmo_buttons(self, _):
-    from . import GZ_toolbar
+    from . import gizmo_toolbar
     if self.active_toolbar:
-        bpy.utils.register_class(GZ_toolbar.STORYTOOLS_GGT_toolbar)
+        bpy.utils.register_class(gizmo_toolbar.STORYTOOLS_GGT_toolbar)
         # Force active when user tick the box
         bpy.context.scene.storytools_settings.show_session_toolbar = True 
     else:
-        bpy.utils.unregister_class(GZ_toolbar.STORYTOOLS_GGT_toolbar)
+        bpy.utils.unregister_class(gizmo_toolbar.STORYTOOLS_GGT_toolbar)
 
 def ui_in_sidebar_update(self, _):
     from .panels import (STORYTOOLS_PT_storytools_ui,
