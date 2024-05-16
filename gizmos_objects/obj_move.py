@@ -279,9 +279,11 @@ class STORYTOOLS_OT_object_pan(Operator):
         # view_matrix = context.space_data.region_3d.view_matrix
         # self.local_x = view_matrix.to_quaternion() @ Vector((1,0,0))
         # self.local_y = view_matrix.to_quaternion() @ Vector((0,1,0))
-        view_rotation = context.space_data.region_3d.view_rotation
-        self.local_x = view_rotation @ Vector((1,0,0))
-        self.local_y = view_rotation @ Vector((0,1,0))
+        self.view_rotation = context.space_data.region_3d.view_rotation.copy()
+        self.view_no = Vector((0,0,-1))
+        self.view_no.rotate(self.view_rotation)
+        self.local_x = self.view_rotation @ Vector((1,0,0))
+        self.local_y = self.view_rotation @ Vector((0,1,0))
         self.lock_x_coords = [self.init_world_loc + self.local_x * 10000, 
                               self.init_world_loc + self.local_x * -10000]
         self.lock_y_coords = [self.init_world_loc + self.local_y * 10000, 
@@ -307,8 +309,17 @@ class STORYTOOLS_OT_object_pan(Operator):
             self.shift_pressed = event.shift
             self.cumulated_translate += self.current_translate
             self.init_vector = fn.region_to_location(mouse_co, self.init_world_loc)
+            ## Broken with track to target
+            # mouse_co_world = fn.region_to_location(mouse_co, self.init_world_loc)
+            # origin = context.space_data.region_3d.view_matrix.inverted().to_translation()
+            # self.init_vector = intersect_line_plane(origin, mouse_co_world, self.init_world_loc, self.view_no)
 
         current_loc = fn.region_to_location(mouse_co, self.init_world_loc)
+        ## TODO Need a method for moving track to target
+        # mouse_co_world = fn.region_to_location(mouse_co, self.init_world_loc)
+        # origin = context.space_data.region_3d.view_matrix.inverted().to_translation()
+        # current_loc = intersect_line_plane(origin, mouse_co_world, self.init_world_loc, self.view_no)
+
         self.current_translate = (current_loc - self.init_vector) * multiplier
 
         move_vec = self.current_translate + self.cumulated_translate
@@ -327,9 +338,9 @@ class STORYTOOLS_OT_object_pan(Operator):
         if lock:
             ## Use intersect line plane on object origin and cam X-Z plane
             if lock == 'X':
-                plane_no = context.space_data.region_3d.view_rotation @ Vector((0,1,0))
+                plane_no = self.view_rotation @ Vector((0,1,0))
             if lock == 'Y':
-                plane_no = context.space_data.region_3d.view_rotation @ Vector((1,0,0))
+                plane_no = self.view_rotation @ Vector((1,0,0))
             locked_pos = intersect_line_plane(new_loc, new_loc + plane_no, self.init_world_loc, plane_no)
             if locked_pos is not None:
                 new_loc = locked_pos

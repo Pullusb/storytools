@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.11.0
+
+- added: Easy track to constraints from camera menu
+
 1.10.1
 
 - changed: code refactor

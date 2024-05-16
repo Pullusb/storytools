@@ -201,6 +201,34 @@ class STORYTOOLS_PT_focal_change_ui(Panel):
 
         col = layout.column()
         col.prop(context.scene.storytools_settings, "show_focal", text='Show Lens')
+        
+        col.separator()
+        col.label(text='Track To Constraint:')
+        ## Track To Constraints
+        col = layout.column(align=True)
+        existing_constraints = [c for c in cam.constraints if c.type in ('TRACK_TO', 'DAMPED_TRACK', 'LOCKED_TRACK')]
+        if not existing_constraints:
+            col.operator('storytools.add_track_to_constraint', text='Add Track To Target')
+            emptys = [o for o in context.selected_objects if o.type == 'EMPTY']
+            if emptys:
+                col.label(text=f'Selected empty "{emptys[0].name}"', icon='INFO')
+                col.label(text=f'will be used as track target', icon='BLANK1')
+                # col.label(text=f'Deselect all empties to create a new one', icon='INFO')
+        else:
+            for const in existing_constraints:
+                box = col.box()
+                colbox = box.column(align=True)
+                colbox.prop(const, 'influence')
+                colbox.prop(const, 'target')
+                if const.target and const.target.type == 'EMPTY':
+                    colbox.separator()
+                    colbox.label(text='Target Display:')
+                    colbox.prop(const.target, 'empty_display_type', text='')
+                    colbox.prop(const.target, 'empty_display_size')
+
+            col.separator()
+            col.operator('storytools.add_track_to_constraint', text='Remove Track To constraints', icon='X').remove = True
+
 
 def camera_layout(layout, context):
     col = layout
