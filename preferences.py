@@ -74,7 +74,7 @@ def ui_in_sidebar_update(self, _):
     #     bpy.utils.register_class(STORYTOOLS_PT_storytools_ui)
 
 class STORYTOOLS_prefs(bpy.types.AddonPreferences):
-    bl_idname = __name__.split('.')[0] # or __package__
+    bl_idname = __package__
 
     category : StringProperty(
             name="Category",

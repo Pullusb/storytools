@@ -1,4 +1,6 @@
-from . import (cam_move)
+from . import (
+    cam_move,
+    )
 
 modules = (
     cam_move,
