@@ -39,15 +39,28 @@ class STORYTOOLS_OT_create_camera(Operator):
         layout.use_property_split = True
         layout.prop(self, 'name')
 
-        layout.prop(self, 'create_marker')
-        if len(bpy.data.cameras):
-            layout.label(text='There are camera markers in scene', icon='INFO')
-
         layout.prop(self, 'make_active')
-
         if context.space_data.region_3d.view_perspective == 'CAMERA':
-            layout.label(text='Already in camera view', icon='INFO')
-            layout.label(text='New camera will be at same place and same focal', icon='BLANK1')
+            col = layout.column(align=True)
+            col.label(text='Already in camera view', icon='INFO')
+            col.label(text='New camera will be at same place and same focal', icon='BLANK1')
+        
+        row =  layout.row()
+
+        row.prop(self, 'create_marker')
+        info = row.operator('storytools.info_note', text='', icon='QUESTION', emboss=False)
+        info.title = 'Camera Marker Creation'
+        info.text = 'This will bind camera to a new marker at current frame\
+            \nA camera-bound marker changes the active camera when playhead is at marker position\
+            \nMarkers behave like keys,they can be selected/renamed/moved/deleted in timeline editors'
+        if any(m.camera for m in context.scene.timeline_markers):
+            layout.label(text='There are camera markers in scene', icon='INFO')
+            # layout.label(text='A camera marker', icon='BLANK1')
+        else:
+            if self.create_marker:
+                col = layout.column(align=True)
+                col.label(text='Add new marker and bind camera at current frame', icon='INFO')
+
 
     def execute(self, context):
         already_in_cam = context.space_data.region_3d.view_perspective == 'CAMERA'
@@ -85,6 +98,9 @@ class STORYTOOLS_OT_create_camera(Operator):
         if self.make_active:
             scn.camera = cam
         
+        if self.create_marker:
+            m = scn.timeline_markers.new(name=f'F_{scn.frame_current}', frame=scn.frame_current)
+            m.camera = cam
         self.report({'INFO'}, f'{cam.name} Created')
         return {"FINISHED"}
 

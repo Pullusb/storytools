@@ -1,9 +1,11 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 import bpy
-from bpy.types import Context, Panel, Menu
+from bpy.types import Operator, Panel, Menu
 from .fn import get_addon_prefs
 # from bl_ui.utils import PresetPanel
+
+from . import fn
 
 class STORYTOOLS_PT_storytools_ui(Panel):
     bl_space_type = "VIEW_3D"
@@ -89,6 +91,10 @@ class STORYTOOLS_PT_drawings_ui(Panel):
     bl_label = "Drawings"
     bl_parent_id = "STORYTOOLS_PT_storytools_ui" # as_subpanel
 
+    def draw_header_preset(self, context):
+        layout = self.layout
+        layout.prop(context.space_data.overlay, "use_gpencil_grid", text='', icon='MESH_GRID')
+
     def draw(self, context):
         col = self.layout.column()
         object_layout(col, context)
@@ -103,6 +109,12 @@ class STORYTOOLS_PT_layers_ui(Panel):
     @classmethod
     def poll(cls, context):
         return context.object and context.object.type == 'GPENCIL'
+
+    # def draw_header_preset(self, context):
+    #     layout = self.layout
+    #     icon = 'LOCKED' if context.object.data.use_autolock_layers else 'DECORATE_UNLOCKED'
+    #     layout.prop(context.object.data, 'use_autolock_layers', text='', icon=icon)
+    #     # layout.prop(context.object.data, 'use_autolock_layers')
 
     def draw(self, context):
         col = self.layout.column()
@@ -242,11 +254,12 @@ def camera_layout(layout, context):
     col_lateral = row.column(align=True)
     # col_lateral.operator('storytools.create_camera', icon='ADD', text='') # 'PLUS'
     
-    ## Using native ops (Do not pass active) TODO: create a dedicated operator (With invoke settings)
-    addcam = col_lateral.operator('object.add', icon='ADD', text='')
-    addcam.type='CAMERA'
-    addcam.align='VIEW'
-    addcam.location = context.space_data.region_3d.view_matrix.inverted().translation
+    col_lateral.operator('storytools.create_camera', icon='ADD', text='')
+    ## Using native operator (need to be in object mode)
+    # addcam = col_lateral.operator('object.add', icon='ADD', text='')
+    # addcam.type='CAMERA'
+    # addcam.align='VIEW'
+    # addcam.location = context.space_data.region_3d.view_matrix.inverted().translation
 
     ## Lens options
     col_lateral.popover('STORYTOOLS_PT_focal_change_ui', text='', icon='DOWNARROW_HLT')
@@ -292,9 +305,12 @@ def object_layout(layout, context):
     else:
         col_lateral.operator('storytools.attach_toggle', text='', icon='LINKED') # Attach To Camera
     
-    col_lateral.prop(context.space_data.overlay, "use_gpencil_grid", text='', icon='MESH_GRID')
-    if get_addon_prefs().active_toolbar:
-        col_lateral.prop(context.scene.storytools_settings, "show_session_toolbar", text='', icon='STATUSBAR')
+    ## GP Grid toggle (now in header)
+    # col_lateral.prop(context.space_data.overlay, "use_gpencil_grid", text='', icon='MESH_GRID')
+    
+    ## Toobar toggle (now have it's own overlay)
+    # if get_addon_prefs().active_toolbar:
+    #     col_lateral.prop(context.scene.storytools_settings, "show_session_toolbar", text='', icon='STATUSBAR')
     
     col_lateral.menu("STORYTOOLS_MT_gp_objects_list_options", icon='DOWNARROW_HLT', text='')
 
@@ -495,6 +511,27 @@ class STORYTOOLS_PT_palette_ui(Panel):
             layout.label(text="Can't display this panel here!", icon="ERROR")
 
 
+class STORYTOOLS_OT_info_note(Operator):
+    bl_idname = "storytools.info_note"
+    bl_label = "Info Note"
+    bl_description = "Info Note"
+    bl_options = {"REGISTER", "INTERNAL"}
+
+    text : bpy.props.StringProperty(default='', options={'SKIP_SAVE'})
+    title : bpy.props.StringProperty(default='Help', options={'SKIP_SAVE'})
+    icon : bpy.props.StringProperty(default='INFO', options={'SKIP_SAVE'})
+
+    @classmethod
+    def description(self, context, properties):
+        return properties.text
+
+    def execute(self, context):
+        ## Split text in list of lines
+        lines = self.text.split('\n')
+        fn.show_message_box(_message=lines, _title=self.title, _icon=self.icon)
+        return {"FINISHED"}
+
+
 # class DummyPanel:
 #     def __init__(self, layout):
 #         self.layout = layout
@@ -529,6 +566,7 @@ class STORYTOOLS_PT_palette_ui(Panel):
 panel_classes = (
     # STORYTOOLS_MT_focal_presets,
     # STORYTOOLS_PT_focal_presets,
+    STORYTOOLS_OT_info_note,
     STORYTOOLS_PT_focal_change_ui,
     STORYTOOLS_MT_gp_objects_list_options,
     STORYTOOLS_PT_storytools_ui,

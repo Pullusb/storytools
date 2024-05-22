@@ -2,6 +2,15 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.12.0
+
+- added: Custom Camera creation operator
+    - choose if new is active (may be removed in future version)
+    - choose to add a camera-bound timeline marker
+- changed: UI:
+    - show GP grid in Layer header
+    - removed button to toggle bottom bar (have it's own button)
+
 1.11.0
 
 - added: Easy track to constraints from camera menu
