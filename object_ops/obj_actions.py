@@ -278,25 +278,33 @@ def update_object_change(self, context):
     ## TODO optional: Option to stop mode sync ?
     ## Set in same mode as previous object
     if context.scene.tool_settings.lock_object_mode:
+        context.scene.tool_settings.lock_object_mode = False
+        ## Error changing mode if in draw mode then hidden
         if context.mode != 'OBJECT':
             mode_swap = True
+            
             bpy.ops.object.mode_set(mode='OBJECT')
 
-        # set active
+        ## Set active
         context.view_layer.objects.active = ob
 
-        ## keep same mode accross objects
-        if mode_swap and prev_mode is not None:
+        ## Keep same mode accross objects
+        if not ob.hide_viewport and mode_swap and prev_mode is not None:
             bpy.ops.object.mode_set(mode=prev_mode)
+
+        context.scene.tool_settings.lock_object_mode = True
             
     else:
-        ## keep same mode accross objects
+        ## Keep same mode accross objects
         context.view_layer.objects.active = ob
-        if context.mode != prev_mode is not None:
+        if not ob.hide_viewport and prev_mode is not None and context.mode != prev_mode:
             bpy.ops.object.mode_set(mode=prev_mode)
 
     for o in [o for o in context.scene.objects if o.type == 'GPENCIL']:
         o.select_set(o == ob) # select only active (when not in object mode)
+    
+    # if not ob.visible_get():
+    #     print('Object is hidden!')
 
 
 class CUSTOM_object_collection(PropertyGroup):
@@ -347,11 +355,23 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
         settings = context.scene.storytools_settings
         row = layout.row()
         if item == context.view_layer.objects.active:
-            icon = 'GREASEPENCIL'
+            # EDIT_GPENCIL, SCULPT_GPENCIL, WEIGHT_GPENCIL, VERTEX_GPENCIL
+
+            if context.mode == 'OBJECT':
+                icon = 'OBJECT_DATA'
+            elif context.mode == 'WEIGHT_GPENCIL':
+                icon = 'MOD_VERTEX_WEIGHT'
+            elif context.mode == 'SCULPT_GPENCIL':
+                icon = 'SCULPTMODE_HLT'
+            elif context.mode == 'EDIT_GPENCIL':
+                icon = 'EDITMODE_HLT'
+            else:
+                icon = 'GREASEPENCIL'
         else:
             icon = 'OUTLINER_OB_GREASEPENCIL'
-        row.prop(item, 'name', icon=icon, text='',emboss=False)
-        # row.prop(item, 'name', text='',emboss=False)
+        name_row = row.row()
+        name_row.prop(item, 'name', icon=icon, text='',emboss=False)
+        name_row.active = item.visible_get()
 
         if settings.show_gp_users:
             if item.data.users > 1:
@@ -405,7 +425,7 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
     
         helper_funcs = bpy.types.UI_UL_list
 
-        flt_flags = [self.bitflag_filter_item if o.type == 'GPENCIL' 
+        flt_flags = [self.bitflag_filter_item if o.type == 'GPENCIL'
                      and not o.name.startswith('.') else 0 for o in objs]
 
         ## By name

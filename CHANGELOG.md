@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.12.1
+
+- fixed: bug when active object is hidden
+- added: UI button to select camera target
+
 1.12.0
 
 - added: Custom Camera creation operator

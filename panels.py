@@ -110,6 +110,7 @@ class STORYTOOLS_PT_layers_ui(Panel):
     def poll(cls, context):
         return context.object and context.object.type == 'GPENCIL'
 
+    ## Add autolock value
     # def draw_header_preset(self, context):
     #     layout = self.layout
     #     icon = 'LOCKED' if context.object.data.use_autolock_layers else 'DECORATE_UNLOCKED'
@@ -232,6 +233,7 @@ class STORYTOOLS_PT_focal_change_ui(Panel):
                 colbox = box.column(align=True)
                 colbox.prop(const, 'influence')
                 colbox.prop(const, 'target')
+                colbox.operator('storytools.make_active_and_select', text='Select Target', icon='RESTRICT_SELECT_OFF').name = const.target.name
                 if const.target and const.target.type == 'EMPTY':
                     colbox.separator()
                     colbox.label(text='Target Display:')

@@ -76,7 +76,54 @@ class STORYTOOLS_OT_add_track_to_constraint(Operator):
         return {"FINISHED"}
 
 
-classes = (STORYTOOLS_OT_add_track_to_constraint,)
+class STORYTOOLS_OT_make_active_and_select(Operator):
+    bl_idname = "storytools.make_active_and_select"
+    bl_label = "Select Passed Object"
+    bl_description = "Make active and select an object"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.scene.camera
+
+    name : bpy.props.StringProperty(name='Name', default='', options={'SKIP_SAVE'},
+                                    description='Object name to select in object mode')
+    
+    mode : bpy.props.StringProperty(name='Mode', default='OBJECT', options={'SKIP_SAVE'},
+                                    description='Mode object should set')
+
+    def execute(self, context):
+        if not (obj := context.scene.objects.get(self.name)):
+            self.report({'WARNING'}, f'No "{self.name}" object to select')
+            return {'CANCELLED'}
+        if context.mode != 'OBJECT':
+            ## Error changing mode if in draw mode then hidden
+            hide_flag = False
+            if context.object.hide_viewport:
+                hide_flag = True
+                context.object.hide_viewport = False
+            bpy.ops.object.mode_set(mode='OBJECT')
+            if hide_flag:
+                context.object.hide_viewport = True
+        
+        ## Select only target
+        for o in context.scene.objects:
+            o.select_set(o == obj)
+
+        ## Make target active
+        context.view_layer.objects.active = obj
+        ## Make target visible
+        if not obj.visible_get():
+            obj.hide_set(False)
+            obj.hide_viewport = False
+
+        return {"FINISHED"}
+
+
+classes = (
+    STORYTOOLS_OT_add_track_to_constraint,
+    STORYTOOLS_OT_make_active_and_select,
+)
 
 def register(): 
     for cls in classes:
