@@ -113,6 +113,21 @@ def get_cam_frame_world_center(cam, scene=None):
     # return np.sum(frame, axis=0) / 4
     return np.add.reduce(frame) / 4
 
+def replace_rotation_matrix(M1, M2):
+    '''Replace rotation component of matrix 1 with matrix 2
+    return a new matrix
+    '''
+    # Convert Blender matrices to numpy arrays
+    M1_np = np.array(M1)
+    M2_np = np.array(M2)
+    # Extract the rotation components (upper 3x3 part)
+    R2 = M2_np[:3, :3]
+    # Replace the rotation part of M1 with R2
+    M1_np[:3, :3] = R2
+    # Convert back to Blender Matrix
+    M1_new = Matrix(M1_np.tolist())
+    return M1_new
+
 def rotate_by_90_degrees(ob, axis='X', negative=True):
     angle = pi/2
     if negative:
@@ -170,6 +185,20 @@ def assign_rotation_from_ref_matrix(obj, ref_mat, rot_90=True):
 
     return new_mat
 
+
+def get_view_orientation_from_matrix(view_matrix):
+    '''Get orientation from view_matrix'''
+    r = lambda x: round(x, 2)
+    view_rot = view_matrix.to_euler()
+
+    orientation_dict = {(0.0, 0.0, 0.0) : 'TOP',
+                        (r(math.pi), 0.0, 0.0) : 'BOTTOM',
+                        (r(-math.pi/2), 0.0, 0.0) : 'FRONT',
+                        (r(math.pi/2), 0.0, r(-math.pi)) : 'BACK',
+                        (r(-math.pi/2), r(math.pi/2), 0.0) : 'LEFT',
+                        (r(-math.pi/2), r(-math.pi/2), 0.0) : 'RIGHT'}
+
+    return orientation_dict.get(tuple(map(r, view_rot)), 'UNDEFINED')
 
 ## Object
 
@@ -439,6 +468,24 @@ def show_message_box(_message = "", _title = "Message Box", _icon = 'INFO'):
         _message = [_message]
     bpy.context.window_manager.popup_menu(draw, title = _title, icon = _icon)
 
+
+def is_minimap_viewport(context=None):
+    ## check if locked
+    if not context.region_data.lock_rotation:
+        return False
+    
+    ## check if looking down
+    euler_view = context.region_data.view_matrix.to_euler()
+    if euler_view[1] != 0.0 or euler_view[1] != 0.0:
+        return False
+    
+    ## Check if ortho view
+    if context.region_data.view_perspective != 'ORTHO':
+        return False
+    
+    ## TODO : additional check with view settings combination to identify map viewport
+
+    return True
 
 ## keymap UI
 

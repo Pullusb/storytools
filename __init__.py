@@ -4,7 +4,7 @@ bl_info = {
     "name": "Storytools - Storyboard Tools",
     "description": "Set of tools for Storyboarding",
     "author": "Samuel Bernou",
-    "version": (1, 12, 1),
+    "version": (1, 12, 2),
     "blender": (3, 3, 0),
     "location": "View3D",
     "warning": "",
@@ -22,6 +22,7 @@ from . import object_ops
 from . import gizmos_objects
 from . import gizmos_camera
 from . import gizmo_toolbar
+from . import map
 from . import handles
 from . import panels
 from . import keymaps
@@ -37,6 +38,7 @@ modules = (
     gizmos_objects,
     gizmos_camera,
     gizmo_toolbar,
+    # map,
     panels,
     keymaps,
 )

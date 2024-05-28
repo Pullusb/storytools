@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.12.2
+
+- changed: GP list do not show linked datablock infos by default (can be activated in drop down menu)
+
 1.12.1
 
 - fixed: bug when active object is hidden

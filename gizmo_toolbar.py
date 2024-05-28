@@ -388,14 +388,13 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
     #     self.draw_custom_shape(self.custom_shape_select, select_id=select_id)
     #     return
 
-    ## WARN: select_id is probably not what I think it is...
-    def test_select(self, context, select_id):
+    def test_select(self, context, location):
         px_scale = context.preferences.system.ui_scale
         x_min = self.matrix_basis.to_translation().x + (x_l * px_scale)
         x_max = self.matrix_basis.to_translation().x + (x_r * px_scale)
         y_min = self.matrix_basis.to_translation().y + (y_d * px_scale)
         y_max = self.matrix_basis.to_translation().y + (y_u * px_scale)
-        select = 1 if x_min < select_id[0] < x_max and y_min < select_id[1] < y_max else -1
+        select = 1 if x_min < location[0] < x_max and y_min < location[1] < y_max else -1
 
         return select
 
@@ -416,9 +415,7 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
         self.replace = False
         self.init_margin = get_addon_prefs().toolbar_margin
         # print(event.value, event.type)
-        
         # self.init_value = self.target_get_value("offset")
-
         return {'RUNNING_MODAL'}
 
     def exit(self, context, cancel):

@@ -113,7 +113,7 @@ class STORYTOOLS_PGT_distances(PropertyGroup) :
     show_gp_users : bpy.props.BoolProperty(
         name='Show Linked Data Toggle',
         description="Show object user data when object has multiple user (when object have multiple users)",
-        default=True)
+        default=False)
     
     show_gp_parent : bpy.props.BoolProperty(
         name='Show Parent Info',
