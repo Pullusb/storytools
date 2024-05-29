@@ -5,7 +5,7 @@ import json
 import math
 import numpy as np
 
-from math import pi
+from math import pi, cos, sin
 from pathlib import Path
 
 from bpy_extras import view3d_utils
@@ -470,10 +470,19 @@ def show_message_box(_message = "", _title = "Message Box", _icon = 'INFO'):
 
 
 def is_minimap_viewport(context=None):
+
+    ## check if in quad view
+    # if context.space_data.region_quadviews:
+    #     return False
+
+    ## specific combination to identify as map viewport (Arbitrary)
+    if context.space_data.show_object_viewport_lattice or context.space_data.show_object_viewport_light_probe:
+        return False
+
     ## check if locked
     if not context.region_data.lock_rotation:
         return False
-    
+
     ## check if looking down
     euler_view = context.region_data.view_matrix.to_euler()
     if euler_view[1] != 0.0 or euler_view[1] != 0.0:
@@ -486,6 +495,15 @@ def is_minimap_viewport(context=None):
     ## TODO : additional check with view settings combination to identify map viewport
 
     return True
+
+def circle_2d(x, y, radius, segments):
+    coords = []
+    m = (1.0 / (segments - 1)) * (pi * 2)
+    for p in range(segments):
+        p1 = x + cos(m * p) * radius
+        p2 = y + sin(m * p) * radius
+        coords.append((p1, p2))
+    return coords
 
 ## keymap UI
 

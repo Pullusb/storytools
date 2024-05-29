@@ -81,6 +81,21 @@ Change Objects canvas colors (very optional)
 Set different canvas grid color per object, at generation pick a new color 
 Or change it according to depth ? Refreshed when changing object from dedicated UI list
 
+## Map
+
+#### TODO
+- [ ] Set 2D openGL draw instead of 3D
+- [ ] Hide storytoolbar in map
+- [ ] Find a way to enable/disable map mode, should be available in both
+- [ ] opt: Custom Gizmo ? Rotate object (same), rotate/orbit camera (? orbit need point)
+
+## Custom actions: Map Select could be overriden by custom action (while letting most of usual action valid)
+pro:
+    - allow to swap selection whatever the mode
+    - would allow custom action on specific zone. like pointing camera at something.
+cons:
+    - Break default click action from blender
+
 
 ---
 

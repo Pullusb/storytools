@@ -104,15 +104,16 @@ def frame_objects(context, target):
     # fn.empty_at(down_left, name='DL', size=0.2)
     # fn.empty_at(top_right, name='TR', size=0.2)
 
-
     width = sorted_x[-1].x - sorted_x[0].x
     height = sorted_y[-1].y - sorted_y[0].y
-    # print('width: ', width)
-    # print('height: ', height)
+    val = width if width > height else height
     
+    # if (down_left.xy - top_right.xy).length < 1.0:
+    val = max(val, 2.0) # Clamp to 2.0 as minimum value
+
     ## Set center and view distance 
-    context.region_data.view_location.xy = global_bbox_center.xy        
-    context.region_data.view_distance = width if width > height else height
+    context.region_data.view_location.xy = global_bbox_center.xy
+    context.region_data.view_distance = val
 
     if context.region_data.view_location.z < top_right.z:
         context.region_data.view_location.z = top_right.z + 0.2
@@ -146,27 +147,34 @@ class STORYTOOLS_OT_setup_minimap_viewport(Operator):
 
         euler_view = context.region_data.view_matrix.to_euler()
         if euler_view[1] != 0.0 or euler_view[1] != 0.0:
-            # bpy.ops.view3d.view_axis(type='TOP', align_active=True, relative=True)
+            ## ops has incorrect context
+            # bpy.ops.view3d.view_axis(type='TOP', align_active=True, relative=True) 
+            ## manual view set
             context.region_data.view_rotation = Quaternion()
-        
+            ## Also frame GP and cam
             frame_objects(context, target='ALL')
 
         ## Lock view
-        context.region_data.lock_rotation = True
+        context.region_data.lock_rotation = True # map_val
 
-        overlay = context.space_data.overlay
+        space_data = bpy.context.space_data
+        overlay = space_data.overlay
 
         ## Completely disable overlays ? 
-        ## Users may want to have some. + some object selectable might need overlay for selection through)
-        bpy.context.space_data.overlay.show_overlays = True
+        ## - Users may want to have some.
+        ## - And some object selectability might be needed overlay for selection)
+        ## For now let's do with overlays
+
+        space_data.overlay.show_overlays = True
 
         ## If overlay are enabled:
         ## Viewport settings
         # Optional
-        overlay.show_floor = False
+        ## Might be disturbing not having the floor and axis...
+        overlay.show_floor = True
+        overlay.show_axis_y = True
+        overlay.show_axis_x = True
         overlay.show_axis_z = False
-        overlay.show_axis_y = False
-        overlay.show_axis_x = False
 
         # Mandatory
         overlay.show_annotation = False
@@ -178,14 +186,34 @@ class STORYTOOLS_OT_setup_minimap_viewport(Operator):
         overlay.show_outline_selected = False
         overlay.show_viewer_attribute = False
         overlay.show_relationship_lines = False
+        
         overlay.show_outline_selected = True # Keep selection overlay
-
+        overlay.show_object_origins_all = True # Show all object origin
         overlay.show_extras = True # Needed to show camera (and lights)
 
         ## Gizmos
-        bpy.context.space_data.show_gizmo_navigate = False
-        ## Do not show navigate
-        # bpy.context.space_data.show_gizmo_object_translate = True # ?
+        space_data.show_gizmo = True
+        space_data.show_gizmo_context = True
+        space_data.show_gizmo_tool = True
+        space_data.show_gizmo_object_translate = True # Hide translate ? 
+
+        ## Remove top right corner navigation Gizmos
+        space_data.show_gizmo_navigate = False
+
+        ## Visibility filter special combination (serve to identify viewport as minimap)
+        space_data.show_object_viewport_lattice = False # map_val
+        space_data.show_object_viewport_light_probe = False # map_val
+
+
+        ## Hide UI elements and stuffs
+        space_data.show_region_ui = False
+        space_data.show_region_tool_header = False
+        space_data.show_region_toolbar = False
+
+        ## - ! - hiding this one mean it cannot be used for customizing view (can be done with new gyzmo set)
+        ## - BUT, also had user visual customization... kinda risky.
+        space_data.show_region_header = False
+
         return {"FINISHED"}
 
 class STORYTOOLS_OT_disable_minimap_viewport(Operator):
@@ -195,23 +223,66 @@ class STORYTOOLS_OT_disable_minimap_viewport(Operator):
     bl_options = {"REGISTER", "INTERNAL"}
 
     def execute(self, context):
-        context.region_data.lock_rotation = False
-        
+        context.region_data.lock_rotation = False # map_val
+        space_data = bpy.context.space_data
+        space_data.show_object_viewport_lattice = True # map_val
+        space_data.show_object_viewport_light_probe = True # map_val
 
+        ## Ensure header gets back
+        space_data.show_region_header = True
         # context.region_data.view_perspective = 'ORTHO'
+
         return {"FINISHED"}
+
+
+### Keymap Click operator
+## Override clicks with poll on whole minimap viewport (?)
+
+class STORYTOOLS_OT_minimap_lc(Operator):
+    bl_idname = "storytools.minimap_lc"
+    bl_label = "Minimap Click"
+    bl_description = "Minimap only click event"
+    bl_options = {"REGISTER", "INTERNAL"}
+    
+    @classmethod
+    def poll(cls, context):
+        return fn.is_minimap_viewport(context)
+
+    def execute(self, context):
+        print('Left click !')
+        return {"FINISHED"}
+
+
+addon_keymaps = []
+
+def register_keymap():
+    kc = bpy.context.window_manager.keyconfigs.addon
+    if kc is None:
+        return
+    km = kc.keymaps.new(name = "3D View", space_type = "VIEW_3D")
+    kmi = km.keymap_items.new('storytools.minimap_lc', type='LEFTMOUSE', value='CLICK')
+    # kmi.properties.select_mode = 'Sketch Draw'
+    addon_keymaps.append((km, kmi))
+
+def unregister_keymap():
+    for km, kmi in addon_keymaps:
+        km.keymap_items.remove(kmi)    
+    addon_keymaps.clear()
 
 classes=(
 STORYTOOLS_OT_select_map_object,
 STORYTOOLS_OT_map_frame_objects,
 STORYTOOLS_OT_setup_minimap_viewport,
 STORYTOOLS_OT_disable_minimap_viewport,
+STORYTOOLS_OT_minimap_lc,
 )
 
-def register(): 
+def register():
     for cls in classes:
         bpy.utils.register_class(cls)
+    # register_keymap()
 
 def unregister():
+    # unregister_keymap()
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
