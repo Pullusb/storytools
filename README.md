@@ -87,6 +87,7 @@ Or change it according to depth ? Refreshed when changing object from dedicated 
 - [ ] Set 2D openGL draw instead of 3D
 - [ ] Hide storytoolbar in map
 - [ ] Find a way to enable/disable map mode, should be available in both
+- [ ] Create a nav gyzmo for the minimzp
 - [ ] opt: Custom Gizmo ? Rotate object (same), rotate/orbit camera (? orbit need point)
 
 ## Custom actions: Map Select could be overriden by custom action (while letting most of usual action valid)

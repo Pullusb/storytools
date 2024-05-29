@@ -109,50 +109,49 @@ def draw_map_callback_2d():
         loc = mat.to_translation()
         gpu.state.line_width_set(1.0)
 
-
         right = (frame[0] + frame[1]) / 2
         left = (frame[2] + frame[3]) / 2
-        cam_tri = [loc, left, right]
+        # cam_tri = [loc, left, right]
 
         near_clip_point = mat @ Vector((0,0,-cam.data.clip_start))
         far_clip_point = mat @ Vector((0,0,-cam.data.clip_end))
         orient = Vector((0,0,1))
         orient.rotate(mat)
 
+        ## Redefined left right (interchangeably) by taking most distants point to center in 2d space for the cone
+        ## (/!\ Does not work when perfecly looking up/down...)
+        # center_2d = fn.location_to_region(sum(frame, start=Vector()) / 4)
+        # frame_region = [(fn.location_to_region(v), v) for v in frame]
+        # frame_region.sort(key=lambda x: (x[0] - center_2d).length)
+        # left, right = frame_region[-2][1], frame_region[-1][1] # Keep second element of the last two pair
+
+        # View cone with clipping display
         if cam.data.type == 'ORTHO':
             cam_view = [
                 # Left
-                intersect_line_plane(left, left + orient, near_clip_point, orient),
-                intersect_line_plane(left, left + orient, far_clip_point, orient),
+                fn.location_to_region(intersect_line_plane(left, left + orient, near_clip_point, orient)),
+                fn.location_to_region(intersect_line_plane(left, left + orient, far_clip_point, orient)),
                 # Right
-                intersect_line_plane(right, right + orient, near_clip_point, orient),
-                intersect_line_plane(right, right + orient, far_clip_point, orient),
+                fn.location_to_region(intersect_line_plane(right, right + orient, near_clip_point, orient)),
+                fn.location_to_region(intersect_line_plane(right, right + orient, far_clip_point, orient)),
             ]
-        else:
-            ###  Cone Coors
-
-            ## Basic view cone
-            # cam_view = [
-            #     loc, extrapolate_points_by_length(loc, right, 2000),
-            #     loc, extrapolate_points_by_length(loc, left, 2000)
-            # ]
-            
-            # View cone with clipping display
+        else:            
             cam_view = [
                 # Left
-                intersect_line_plane(loc, left, near_clip_point, orient),
-                intersect_line_plane(loc, left, far_clip_point, orient),
+                fn.location_to_region(intersect_line_plane(loc, left, near_clip_point, orient)),
+                fn.location_to_region(intersect_line_plane(loc, left, far_clip_point, orient)),
                 # Right
-                intersect_line_plane(loc, right, near_clip_point, orient),
-                intersect_line_plane(loc, right, far_clip_point, orient),
+                fn.location_to_region(intersect_line_plane(loc, right, near_clip_point, orient)),
+                fn.location_to_region(intersect_line_plane(loc, right, far_clip_point, orient)),
             ]
-            # TODO : rotate or project on world z orientation, (at least get get largest cone from view if rotated)
 
         # Add perpenticular lines 
         cam_view.append(cam_view[0])
         cam_view.append(cam_view[2])
         cam_view.append(cam_view[1])
         cam_view.append(cam_view[3])
+
+        ## TODO : Trace cam Tri         
 
         cam_lines = batch_for_shader(shader_uniform, 'LINES', {"pos": cam_view})
         shader_uniform.bind()
