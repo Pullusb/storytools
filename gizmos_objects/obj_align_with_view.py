@@ -2,6 +2,7 @@ import bpy
 from mathutils.geometry import intersect_line_plane
 
 from bpy.types import Operator
+from mathutils import Vector
 
 from .. import fn
 
