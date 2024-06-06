@@ -11,69 +11,20 @@ from bpy.types import (
 
 from mathutils import Matrix, Vector
 from gpu_extras.batch import batch_for_shader
-from .fn import get_addon_prefs
-from . import fn
+from ..fn import get_addon_prefs
+from .. import fn
 
 
-
-## TESTS create a custom draw for 2d button
-# r = 5
-# button_shape_lines = [
-#     (r, -r), (r, r), (-r, r),
-#     (r, -r), (-r, r), (-r, -r),
-# ]
-
-# class VIEW3D_GT_button_widget(Gizmo):
-#     bl_idname = "VIEW3D_GT_button_widget"
-
-#     __slots__ = (
-#         "button_shape",
-#     )
-
-#     def draw(self, context):
-#         # self.color =  (0.2392, 0.2392, 0.2392) # non-gamma-corrected:(0.0466, 0.0466, 0.0466)
-#         # self.color_highlight = (0.27, 0.27, 0.27)
-#         self.draw_custom_shape(self.button_shape)
-
-#     # def test_select(self, context, select_id):
-#     #     pass
-
-#     def test_select(self, context, select_id):
-#             px_scale = context.preferences.system.ui_scale
-#             x_min = self.matrix_basis.to_translation().x + (r * px_scale)
-#             x_max = self.matrix_basis.to_translation().x + (r * px_scale)
-#             y_min = self.matrix_basis.to_translation().y + (r * px_scale)
-#             y_max = self.matrix_basis.to_translation().y + (r * px_scale)
-#             select = 1 if x_min < select_id[0] < x_max and y_min < select_id[1] < y_max else -1
-
-#             return select
-
-#     def setup(self):
-#         if not hasattr(self, "button_shape"):
-#             self.button_shape = self.new_custom_shape('TRIS', button_shape_lines)
-
-#     def invoke(self, context, event):
-#         return {'RUNNING_MODAL'}
-
-#     def exit(self, context, cancel):
-#         pass
-
-#     def modal(self, context, event, tweak):
-#         return {'RUNNING_MODAL'}
-
-class STORYTOOLS_GGT_toolbar(GizmoGroup):
-    # bl_idname = "STORYTOOLS_GGT_toolbar"
-    bl_label = "Story Tool Bar"
+class STORYTOOLS_GGT_map_toolbar(GizmoGroup):
+    # bl_idname = "STORYTOOLS_GGT_map_toolbar"
+    bl_label = "Story Map Bar"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'WINDOW'
-    bl_options = {'PERSISTENT', 'SCALE'} # SHOW_MODAL_ALL ? 
+    bl_options = {'PERSISTENT', 'SCALE'}
 
     @classmethod
     def poll(cls, context):
-        ## To only show in camera
-        # return context.space_data.region_3d.view_perspective == 'CAMERA'
-        # return True
-        return not fn.is_minimap_viewport(context)
+        return fn.is_minimap_viewport(context)
 
     def setup(self, context):
         ## --- Object
@@ -82,7 +33,6 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
 
         ## Object Pan
         self.gz_ob_pan = self.gizmos.new("GIZMO_GT_button_2d")
-        # self.gz_ob_pan = self.gizmos.new("VIEW3D_GT_button_widget")
         fn.set_gizmo_settings(self.gz_ob_pan, 'VIEW_PAN', show_drag=True)
         self.gz_ob_pan.target_set_operator("storytools.object_pan")
         self.object_gizmos.append(self.gz_ob_pan)
@@ -104,12 +54,6 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         fn.set_gizmo_settings(self.gz_ob_scale, 'FULLSCREEN_ENTER', show_drag=True)
         self.gz_ob_scale.target_set_operator("storytools.object_scale")
         self.object_gizmos.append(self.gz_ob_scale)
-
-        ## Object Align to view
-        self.gz_ob_align_to_view = self.gizmos.new("GIZMO_GT_button_2d")
-        fn.set_gizmo_settings(self.gz_ob_align_to_view, 'AXIS_FRONT')
-        self.gz_ob_align_to_view.target_set_operator("storytools.align_with_view")
-        self.object_gizmos.append(self.gz_ob_align_to_view)
         
         ## Object key transform
         self.gz_key_ob = self.gizmos.new("GIZMO_GT_button_2d")
@@ -296,9 +240,6 @@ vertical_flip_mat = fn.get_scale_matrix((1, -1, 1))
 
 class VIEW3D_GT_toggler_shape_widget(Gizmo):
     bl_idname = "VIEW3D_GT_toggler_shape_widget"
-    # bl_target_properties = (
-    #     {"id": "offset", "type": 'FLOAT', "array_length": 1},
-    # )
 
     __slots__ = (
         "custom_shape",
@@ -313,23 +254,13 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
         # "init_value",
     )
 
-    # def _update_offset_matrix(self):
-    #     # offset behind the light
-    #     self.matrix_offset.col[3][2] = self.target_get_value("offset") / -10.0
-
     def draw(self, context):
-        # self._update_offset_matrix()
-        self.color =  (0.2392, 0.2392, 0.2392) # non-gamma-corrected:(0.0466, 0.0466, 0.0466)
+        self.color =  (0.2392, 0.2392, 0.2392)
         self.color_highlight = (0.27, 0.27, 0.27)
         self.draw_custom_shape(self.custom_shape)
         
-        self.color_highlight = self.color = (0.5568, 0.5568, 0.5568) # non-gamma-corrected:(0.2705, 0.2705, 0.2705)
+        self.color_highlight = self.color = (0.5568, 0.5568, 0.5568)
         self.draw_custom_shape(self.arrow_shape)
-
-    # def draw_select(self, context, select_id):
-    #     # self.draw_custom_shape(self.custom_shape)
-    #     self.draw_custom_shape(self.custom_shape_select, select_id=select_id)
-    #     return
 
     def test_select(self, context, location):
         px_scale = context.preferences.system.ui_scale
@@ -347,29 +278,13 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
 
         if not hasattr(self, "arrow_shape"):
             self.arrow_shape = self.new_custom_shape('TRIS', up_arrow_verts)
-        
-        ## Keep default full alpha
-        # self.alpha = 1.0
-        # self.alpha_highlight = 1.0
 
     def invoke(self, context, event):
         self.mx = self.init_mouse_x = event.mouse_x
         self.my = self.init_mouse_y = event.mouse_y
         self.replace = False
         self.init_margin = get_addon_prefs().toolbar_margin
-        # print(event.value, event.type)
-        # self.init_value = self.target_get_value("offset")
-
-        # if self.target_set_operator:
-        #     context.window_manager.gizmo_operator_context = 'INVOKE_DEFAULT'
-        #     return self.target_set_operator.invoke(context, event)
-
         return {'RUNNING_MODAL'}
-
-    # def execute(self, context):
-    #     print('test')
-    #     return {'FINISHED'}
-
 
     def exit(self, context, cancel):
         ## Just cancel if move above 10px
@@ -377,11 +292,6 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
             return
 
         settings = context.scene.storytools_settings
-        # print('self.target_set_operator: ', self.target_set_operator)
-        # print(dir(self))
-        # if self.target_set_operator:
-        #     # self.gizmo_operator_context = 'EXEC_DEFAULT'
-        #     return self.target_set_operator.execute(context)
 
         ## Replaced if dragged
         # if self.replace:
@@ -400,7 +310,7 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
         #             # Keep invisible -> reset margin and leave
         #             prefs.toolbar_margin = self.init_margin
         #             return
-        ## /
+        ## /           
 
         settings.show_session_toolbar = not settings.show_session_toolbar
 
@@ -409,40 +319,12 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
             if area.type == 'VIEW_3D':
                 area.tag_redraw()
 
-
     def modal(self, context, event, tweak):
         self.mx = event.mouse_x
         self.my = event.mouse_y
-
-        ## Place when dragged
-        # settings = context.scene.storytools_settings
-        # offset = self.my - self.init_mouse_y
-        # if abs(offset) > 10:
-        #     # Trigger placement instead of toggle
-        #     self.replace = True
-
-        # if self.replace:
-        #     prefs = get_addon_prefs()
-        #     if settings.show_session_toolbar:
-        #         prefs.toolbar_margin = self.init_margin + offset
-        #     else:
-        #         prefs.toolbar_margin = offset
-        # context.area.tag_redraw()
-        ## /
-
-
-        ## Dragged opts
-        # delta = (event.mouse_y - self.init_mouse_y) / 10.0
-        # if 'SNAP' in tweak:
-        #     delta = round(delta)
-        # if 'PRECISE' in tweak:
-        #     delta /= 10.0
-        # value = self.init_value - delta
-        # self.target_set_value("offset", value)
-        # context.area.header_text_set("My Gizmo: %.4f" % value)
         return {'RUNNING_MODAL'}
 
-class STORYTOOLS_GGT_toolbar_switch(GizmoGroup):
+class STORYTOOLS_GGT_map_toolbar_switch(GizmoGroup):
     # bl_idname = "STORYTOOLS_GGT_toolbar"
     bl_label = "Story Tool Bar Switch"
     bl_space_type = 'VIEW_3D'
@@ -457,10 +339,8 @@ class STORYTOOLS_GGT_toolbar_switch(GizmoGroup):
     def setup(self, context):
         ## --- Toggle button
         self.gz_toggle_bar = self.gizmos.new("VIEW3D_GT_toggler_shape_widget")
-        # props = self.gz_toggle_bar.target_set_operator("storytools.toggle_bottom_bar")
-        # props.prop_name = 'show_session_toolbar'
+        # self.gz_toggle_bar.target_set_operator("storytools.toggle_bottom_bar")
         self.gz_toggle_bar.scale_basis = 1
-
         # self.gz_toggle_bar.use_draw_hover = True # only draw shape when hovering mouse
         # self.gz_toggle_bar.use_draw_modal = True # dunno
 
@@ -507,15 +387,10 @@ class STORYTOOLS_OT_toggle_bottom_bar(Operator):
     bl_idname = "storytools.toggle_bottom_bar"
     bl_label = 'Toggle Bottom Bar'
     bl_description = "Toggle Storytools Bar"
-    bl_options = {'REGISTER'} # , 'INTERNAL'
-
-    prop_name : bpy.props.StringProperty(default='show_session_toolbar')
+    bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):
-        # print('-- switch toolbar --')
-        # print('prop_name: ', self.prop_name)
         settings = context.scene.storytools_settings
-        # setattr(settings, self.prop_name, not getattr(settings, self.prop_name))
         settings.show_session_toolbar = not settings.show_session_toolbar
         for area in context.screen.areas:
             if area.type == 'VIEW_3D':
@@ -524,10 +399,10 @@ class STORYTOOLS_OT_toggle_bottom_bar(Operator):
 
 classes=(
     # VIEW3D_GT_button_widget,
-    STORYTOOLS_OT_toggle_bottom_bar,
     VIEW3D_GT_toggler_shape_widget,
-    STORYTOOLS_GGT_toolbar_switch,
-    STORYTOOLS_GGT_toolbar,
+    STORYTOOLS_GGT_map_toolbar,
+    STORYTOOLS_GGT_map_toolbar_switch,
+    # STORYTOOLS_OT_toggle_bottom_bar,
 )
 
 def register():

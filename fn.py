@@ -496,6 +496,63 @@ def is_minimap_viewport(context=None):
 
     return True
 
+def get_headers_bottom_width(context, overlap=False) -> int:
+    '''Return margin of bottom aligned headers
+    (Possible regions: HEADER, TOOL_HEADER, ASSET_SHELF, ASSET_SHELF_HEADER)
+    '''
+    if not context.preferences.system.use_region_overlap:
+        return 0
+
+    bottom_margin = 0
+    ## asset shelf header should be only added only if shelf deployed
+    regions = context.area.regions
+    header = next((r for r in regions if r.type == 'HEADER'), None)
+    tool_header = next((r for r in regions if r.type == 'TOOL_HEADER'), None)
+    asset_shelf = next((r for r in regions if r.type == 'ASSET_SHELF'), None)
+
+    if header.alignment == 'BOTTOM':
+        bottom_margin += header.height
+    if tool_header.alignment == 'BOTTOM':
+        bottom_margin += tool_header.height
+    
+    if asset_shelf.height > 1:
+        
+        if not overlap:
+            ## Header of asset shelf should only be added if shelf open
+            asset_shelf_header = next((r for r in regions if r.type == 'ASSET_SHELF_HEADER'), None)
+            bottom_margin += asset_shelf.height + asset_shelf_header.height
+        else:
+            ## Only if toggle icon is centered
+            bottom_margin += asset_shelf.height
+
+    # for r in context.area.regions:
+    #     ## 'ASSET_SHELF_HEADER' is counted even when not visible
+    #     if r.alignment == 'BOTTOM' and r.type != 'ASSET_SHELF_HEADER':
+    #         bottom_margin += r.height
+    
+    return bottom_margin
+
+def set_gizmo_settings(gz, icon,
+        color=(0.0, 0.0, 0.0),
+        color_highlight=(0.5, 0.5, 0.5),
+        alpha=0.7,
+        alpha_highlight=0.7, # 0.1
+        show_drag=False,
+        draw_options={'BACKDROP', 'OUTLINE'},
+        scale_basis=24): # scale_basis default: 14
+    gz.icon = icon
+    # default 0.0
+    gz.color = color
+    # default 0.5
+    gz.color_highlight = color_highlight
+    gz.alpha = alpha
+    gz.alpha_highlight = alpha_highlight
+    gz.show_drag = show_drag
+    gz.draw_options = draw_options
+    gz.scale_basis = scale_basis
+    gz.use_draw_offset_scale = True
+    # gz.line_width = 1.0 # no affect on 2D gizmo ?
+
 def circle_2d(x, y, radius, segments):
     coords = []
     m = (1.0 / (segments - 1)) * (pi * 2)

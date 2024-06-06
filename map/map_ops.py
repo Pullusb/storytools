@@ -52,6 +52,13 @@ class STORYTOOLS_OT_select_map_object(Operator):
         else:
             objects.sort(lambda x: (fn.location_to_region(x.matrix_world.translation) - self.mouse).length)
 
+
+        # Do not select if too distant
+        closest_dist = (fn.location_to_region(objects[0].matrix_world.translation) - self.mouse).length
+        print('closest_dist: ', closest_dist)
+        if closest_dist > 10.0:
+            return {'CANCELLED'}
+
         self.set_object_active(context, objects[0])
         return {'FINISHED'}
             
