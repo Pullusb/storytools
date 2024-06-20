@@ -1,12 +1,14 @@
 from . import (workspace_setup,
+               viewport_options,
                story_palettes,
                git_update,
                )
 
 modules = (
-    git_update,
-    story_palettes,
     workspace_setup,
+    # viewport_options,
+    story_palettes,
+    git_update,
 )
 
 def register():

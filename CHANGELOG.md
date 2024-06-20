@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.13.0
+
+- added: first version of quick settings restore
+
 1.12.2
 
 - changed: GP list do not show linked datablock infos by default (can be activated in drop down menu)

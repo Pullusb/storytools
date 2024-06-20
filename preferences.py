@@ -264,7 +264,7 @@ class STORYTOOLS_OT_restore_keymap_item(bpy.types.Operator):
     bl_idname = "storytools.restore_keymap_item"
     bl_label = "Restore keymap item"
     bl_description = "Reset keymap item to default"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "INTERNAL"}
 
     @classmethod
     def poll(cls, context):
