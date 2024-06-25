@@ -15,7 +15,7 @@ def get_session_settings(get_default=False, context=None, target='tool_settings'
 
     ## -- Viewport settings
 
-    if target == 'viewport_settings':    
+    if target == 'view_settings':    
         if context.area == 'VIEW_3D':
             space_data = context.space_data
         else:
@@ -81,9 +81,18 @@ def get_session_settings(get_default=False, context=None, target='tool_settings'
                                                     f'bpy.context.scene.tool_settings.{sub_setting}',
                                                     recursion_limit=1,
                                                     get_default=get_default)
+        
+        ## guide subcategory of gpsculpt
+        if hasattr(context.scene.tool_settings.gpencil_sculpt, 'guide'):
+            prop_dic[sub_setting] = fn.list_attr(getattr(context.scene.tool_settings.gpencil_sculpt, 'guide'),
+                                                    f'bpy.context.scene.tool_settings.gpencil_sculptguide',
+                                                    recursion_limit=1,
+                                                    get_default=get_default)
 
     return prop_dic
 
+
+## TODO: convert this operator into a panel or a menu (with Close on clic)
 
 class STORYTOOLS_OT_save_load_settings_preset(bpy.types.Operator):
     bl_idname = "storytools.save_load_settings_preset"
@@ -115,12 +124,12 @@ class STORYTOOLS_OT_save_load_settings_preset(bpy.types.Operator):
             for preset in self.preset_list:
                 # col.label(text=preset)
                 row = col.row()
-                row.operator('storytools.load_setting_preset', text=preset.stem, emboss=False).preset_path = str(preset)
+                row.operator('storytools.load_setting_preset', text=preset.stem.replace('_', ''), emboss=False).preset_path = str(preset)
                 row.operator('storytools.remove_setting_preset', text='', icon='REMOVE', emboss=False).preset_path = str(preset)
 
         ## Choice to restore default (TOOL_SETTINGS or VIEW_SETTINGS)
         layout.separator()
-        layout.operator('storytools.restore_default_settings', text=f'Restore Default', emboss=False).target = self.category
+        layout.operator('storytools.restore_default_settings', text=f'Default', emboss=False).target = self.category
 
         ## Save new settings
         ## use context.window_manager.preset_name ?
@@ -184,6 +193,13 @@ class STORYTOOLS_OT_load_setting_preset(bpy.types.Operator):
     bl_options = {"REGISTER", "INTERNAL"}
     
     preset_path : bpy.props.StringProperty(default='', options={'SKIP_SAVE'})
+
+    def invoke(self, context, event):
+        if event.ctrl:
+            # Hidden feature for inspection
+            bpy.ops.wm.path_open(filepath=str(Path(self.preset_path).parent))
+            return {'CANCELLED'}
+        return self.execute(context)
 
     def execute(self, context):
         if not self.preset_path:
@@ -254,7 +270,7 @@ class STORYTOOLS_OT_export_setting_preset(bpy.types.Operator):
 
             preset_dir = script_path / 'presets' / self.target
             
-            preset = (preset_dir / self.name).with_suffix('.json')
+            preset = (preset_dir / bpy.path.clean_name(self.name)).with_suffix('.json')
 
         if not preset_dir.exists():
             preset_dir.mkdir(exist_ok=True, parents=True)
