@@ -240,6 +240,7 @@ class STORYTOOLS_OT_export_setting_preset(bpy.types.Operator):
 
         if self.preset_path:
             preset = Path(self.preset_path)
+            preset_dir = preset.parent
         else:
             script_path = Path(bpy.utils.user_resource('SCRIPTS'))
 
