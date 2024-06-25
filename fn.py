@@ -703,6 +703,8 @@ def convert_attr(Attr):
         return [v[:] for v in Attr]
     elif isinstance(Attr,bpy.types.bpy_prop_array):
         return [Attr[i] for i in range(0,len(Attr))]
+    elif isinstance(Attr, set):
+        return(list(Attr))
     else:
         return(Attr)
 
@@ -723,6 +725,98 @@ basic_exclusions = (
 root_exclusions = ('active_section', 'is_dirty', 'studio_lights', 'solid_lights')
 
 known_types = (int, float, bool, str, set, mathutils.Vector, mathutils.Color, mathutils.Matrix)
+
+
+def list_attr(obj, rna_path_step, ct=0, data=None, recursion_limit=0, get_default=False, skip_readonly=True, includes=None, excludes=None):
+    '''
+    List recursively attribute and their value at passed data_path and return a serializable dict
+
+    path (str): data_path to get 
+    recursion_limit (int, default: 0): 0 no limit, 1 mean
+    get_default (bool, default: False): get default property value intead of current value
+    skip_readonly (bool, default: True): Do not list readonly
+    includes (list, str) : String or list of strings fnmatch pattern, include attribute if match
+    excludes (list, str) : String or list of strings fnmatch pattern, exclude attribute if match
+    '''
+
+    if includes:
+        if not isinstance(includes, list):
+            includes = [includes]
+    if excludes:
+        if not isinstance(excludes, list):
+            excludes = [excludes]
+
+    if data is None:
+        data = {}
+
+    ## TODO: use objects instead of strings
+    for prop in obj.bl_rna.properties:
+        if prop.identifier in basic_exclusions:
+            continue
+
+        ## Filters
+        if includes:
+            if not any(fnmatch(prop.identifier, pattern) for pattern in includes):
+                continue
+        if excludes:
+            if any(fnmatch(prop.identifier, pattern) for pattern in excludes):
+                continue
+
+        try:
+            value = getattr(obj, prop.identifier)
+        except AttributeError:
+            value = None
+        
+        if value is None:
+            continue
+
+        ## -> in the end, same condition as else below...
+        # if isinstance(value, bpy.types.bpy_struct):
+        #     ## test inspect sub struct, 
+        #     # print(prop, value) # Show struct name
+        #     if recursion_limit and ct+1 >= recursion_limit:
+        #         continue
+        #     list_attr(f'{path}.{prop}', ct+1, data=data,
+        #               recursion_limit=recursion_limit, get_default=get_default, skip_readonly=skip_readonly)
+        #     continue
+
+        ## No support for collection yet
+        if isinstance(value, (bpy.types.bpy_prop_collection, bpy.types.bpy_prop_array)): # , bpy.types.bpy_struct
+            continue
+        
+        if skip_readonly and prop.is_readonly:
+            if not isinstance(value, bpy.types.bpy_struct):
+                # struct container are always readonly, do not in those cases
+                # print('readonly:', path, prop)
+                continue
+
+        if isinstance(value, known_types):
+            if get_default:
+                # data[repr(obj.path_resolve(prop.identifier, False))] = convert_attr(prop.default)
+                data[f'{rna_path_step}.{prop.identifier}']= convert_attr(prop.default)
+            else:
+                ## "Repr" is truncating data_path ! Need to pass a rna_path_step 
+                # data[f'{repr(obj)}.{prop.identifier}'] = convert_attr(value)
+                # data[repr(obj.path_resolve(prop.identifier, False))] = convert_attr(value)
+                data[f'{rna_path_step}.{prop.identifier}'] = convert_attr(value)
+
+        else:
+            if recursion_limit and ct+1 >= recursion_limit:
+                continue
+
+            # print('>>', [f'{path}.{prop}', convert_attr(value), type(value)])
+            list_attr(value,
+                      f'{rna_path_step}.{prop.identifier}',
+                      ct+1,
+                      data=data,
+                      recursion_limit=recursion_limit, get_default=get_default, skip_readonly=skip_readonly, includes=includes, excludes=excludes)
+
+    return data
+
+def get_version_name():
+    version = bpy.app.version
+    return f'bl-{version[0]}_{version[1]}'
+
 
 """ def list_attr(path, ct=0, l=None, recursion_limit=0, get_default=False, skip_readonly=True, includes=None, excludes=None):
     '''
@@ -814,89 +908,21 @@ known_types = (int, float, bool, str, set, mathutils.Vector, mathutils.Color, ma
 
     return l """
 
+""" ## old_method passing data_path as string
+    viewport_options = ('overlay', 'shading')
+    for part in viewport_options:
+        prop_dic[part] = fn.list_attr(f"bpy.context.space_data.{part}")
 
-def list_attr(obj, rna_path_step, ct=0, data=None, recursion_limit=0, get_default=False, skip_readonly=True, includes=None, excludes=None):
-    '''
-    List recursively attribute and their value at passed data_path and return a serializable dict
+    inc = ['show_object_*', 'show_region_*', 'show_gizmo_*']
+    prop_dic['space_data'] = fn.list_attr(f"bpy.context.space_data",
+                                                recursion_limit=1,
+                                                includes=inc)
+    
+    excl = ['annotation_stroke_placement_view*', 'gpencil_interpolate', 'use_lock_relative']
+    prop_dic['tool_settings'] = fn.list_attr(f"bpy.context.scene.tool_settings",
+                                                recursion_limit=2,
+                                                # includes=[],
+                                                excludes=excl)
+"""
 
-    path (str): data_path to get 
-    recursion_limit (int, default: 0): 0 no limit, 1 mean
-    get_default (bool, default: False): get default property value intead of current value
-    skip_readonly (bool, default: True): Do not list readonly
-    includes (list, str) : String or list of strings fnmatch pattern, include attribute if match
-    excludes (list, str) : String or list of strings fnmatch pattern, exclude attribute if match
-    '''
 
-    if includes:
-        if not isinstance(includes, list):
-            includes = [includes]
-    if excludes:
-        if not isinstance(excludes, list):
-            excludes = [excludes]
-
-    if data is None:
-        data = {}
-
-    ## TODO: use objects instead of strings
-    for prop in obj.bl_rna.properties:
-        if prop.identifier in basic_exclusions:
-            continue
-
-        ## Filters
-        if includes:
-            if not any(fnmatch(prop.identifier, pattern) for pattern in includes):
-                continue
-        if excludes:
-            if any(fnmatch(prop.identifier, pattern) for pattern in excludes):
-                continue
-
-        try:
-            value = getattr(obj, prop.identifier)
-        except AttributeError:
-            value = None
-        
-        if value is None:
-            continue
-
-        ## -> in the end, same condition as else below...
-        # if isinstance(value, bpy.types.bpy_struct):
-        #     ## test inspect sub struct, 
-        #     # print(prop, value) # Show struct name
-        #     if recursion_limit and ct+1 >= recursion_limit:
-        #         continue
-        #     list_attr(f'{path}.{prop}', ct+1, data=data,
-        #               recursion_limit=recursion_limit, get_default=get_default, skip_readonly=skip_readonly)
-        #     continue
-
-        ## No support for collection yet
-        if isinstance(value, (bpy.types.bpy_prop_collection, bpy.types.bpy_prop_array)): # , bpy.types.bpy_struct
-            continue
-        
-        if skip_readonly and prop.is_readonly:
-            if not isinstance(value, bpy.types.bpy_struct):
-                # struct container are always readonly, do not in those cases
-                # print('readonly:', path, prop)
-                continue
-
-        if isinstance(value, known_types):
-            if get_default:
-                # data[repr(obj.path_resolve(prop.identifier, False))] = convert_attr(prop.default)
-                data[f'{rna_path_step}.{prop.identifier}']= convert_attr(prop.default)
-            else:
-                ## "Repr" is truncating data_path ! Need to pass a rna_path_step 
-                # data[f'{repr(obj)}.{prop.identifier}'] = convert_attr(value)
-                # data[repr(obj.path_resolve(prop.identifier, False))] = convert_attr(value)
-                data[f'{rna_path_step}.{prop.identifier}'] = convert_attr(value)
-
-        else:
-            if recursion_limit and ct+1 >= recursion_limit:
-                continue
-
-            # print('>>', [f'{path}.{prop}', convert_attr(value), type(value)])
-            list_attr(value,
-                      f'{rna_path_step}.{prop.identifier}',
-                      ct+1,
-                      data=data,
-                      recursion_limit=recursion_limit, get_default=get_default, skip_readonly=skip_readonly, includes=includes, excludes=excludes)
-
-    return data

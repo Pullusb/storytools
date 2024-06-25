@@ -6,7 +6,7 @@ from . import (workspace_setup,
 
 modules = (
     workspace_setup,
-    # viewport_options,
+    viewport_options,
     story_palettes,
     git_update,
 )

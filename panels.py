@@ -399,6 +399,10 @@ def materials_layout(layout, context):
     col.prop(bpy.context.scene.storytools_settings, 'material_sync', text='')
 
 def tool_layout(self, layout, context):
+    ## Export / Restore settings
+    layout.operator('storytools.save_load_settings_preset', text='View Settings Presets', icon='PRESET').category = 'view_settings'
+    layout.operator('storytools.save_load_settings_preset', text='Tool Settings Presets', icon='PRESET').category = 'tool_settings'
+
     ## -- Workspace setup
     show_workspace_switch = context.window.workspace.name != 'Storyboard'
     # show_storypencil_setup = len(context.window_manager.windows) == 1 and context.preferences.addons.get('storypencil')
@@ -411,6 +415,7 @@ def tool_layout(self, layout, context):
 
     #     if show_storypencil_setup: # Experimental Dual setup
     #         layout.operator('storytools.setup_storypencil', text='Setup Storypencil (dual window)', icon='WORKSPACE')
+
     if show_workspace_switch:
         layout.label(text='Workspace:')
         layout.operator('storytools.set_storyboard_workspace', text='Storyboard Workspace', icon='WORKSPACE')
