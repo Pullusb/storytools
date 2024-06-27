@@ -55,7 +55,8 @@ class STORYTOOLS_OT_create_object(Operator):
 
     def invoke(self, context, event):
         ## Suggest a numbered default name for quick use
-        gp_ct = len([o for o in context.scene.objects if o.type == 'GPENCIL'])
+        # gp_ct = len([o for o in context.scene.objects if o.type == 'GPENCIL'])
+        gp_ct = len([o for o in bpy.data.objects if o.type == 'GPENCIL'])
         self.name = f'Drawing_{gp_ct+1:03d}'
         settings = context.scene.storytools_settings
         
@@ -111,7 +112,7 @@ class STORYTOOLS_OT_create_object(Operator):
             loc = view_matrix @ Vector((0.0, 0.0, -self.init_dist))
         
         ## Create GP object
-        # TODO bonus : maybe check if want to use same data as another drawing
+        # TODO bonus : maybe check if want to use same data as another drawing ?
 
         ## Clean name
         self.name = self.name.strip()
@@ -120,11 +121,21 @@ class STORYTOOLS_OT_create_object(Operator):
 
         ob = bpy.data.objects.new(ob_name, gp)
 
-        ## Set collection
-        draw_col = bpy.data.collections.get('Drawings')
+        ## Set collection 
+        ## Following is Only valid with a single scene !
+        # draw_col = bpy.data.collections.get('Drawings')
+        # if not draw_col:
+        #     draw_col = bpy.data.collections.new('Drawings')
+        #     bpy.context.scene.collection.children.link(draw_col)
+        
+        ## TODO : maybe better to always create a prefixed collection ?
+        draw_col = next((c for c in context.scene.collection.children_recursive if c.name.startswith('Drawings')), None)
         if not draw_col:
-            draw_col = bpy.data.collections.new('Drawings')
-            bpy.context.scene.collection.children.link(draw_col)
+            draw_col = next((c for c in context.scene.collection.children_recursive if c.name.startswith('GP')), None)
+        if not draw_col:
+            ## Create a drawing collection or direct link in root/active collection ?
+            draw_col = context.collection # auto-fallback on scene collection
+
         draw_col.objects.link(ob)
 
         if self.parented:

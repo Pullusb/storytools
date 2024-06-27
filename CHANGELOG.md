@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.14.1
+
+- fixed: allow object and camera creation on multiple scene
+
 1.14.0
 
 - added: View and tool Setting presets

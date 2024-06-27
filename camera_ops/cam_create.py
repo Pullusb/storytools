@@ -25,7 +25,8 @@ class STORYTOOLS_OT_create_camera(Operator):
         default=True)
 
     def invoke(self, context, event):
-        cam_ct = len(bpy.data.cameras)
+        # cam_ct = len(bpy.data.cameras)
+        cam_ct = len([o for o in bpy.data.objects if o.type == 'CAMERA'])
         self.name = f'Camera_{cam_ct+1:03d}'
         
         if any(m.camera for m in context.scene.timeline_markers):
