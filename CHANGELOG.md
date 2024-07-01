@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.14.2
+
+- added: Button to remove active camera in camera drop-down menu
+- fixed: UI properties highlight changing for camera or GP list when adding / removing objects
+
 1.14.1
 
 - fixed: allow object and camera creation on multiple scene

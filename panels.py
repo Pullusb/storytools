@@ -174,8 +174,8 @@ class STORYTOOLS_PT_focal_presets(PresetPanel, Panel):
     preset_operator = 'script.execute_preset'
     preset_add_operator = 'camera.focal_preset_add'
  """
-class STORYTOOLS_PT_focal_change_ui(Panel):
-    bl_label = 'Focal Panel'
+class STORYTOOLS_PT_camera_settings(Panel):
+    bl_label = 'Camera Settings'
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Storytools" # Gpencil
@@ -242,6 +242,12 @@ class STORYTOOLS_PT_focal_change_ui(Panel):
 
             col.separator()
             col.operator('storytools.add_track_to_constraint', text='Remove Track To constraints', icon='X').remove = True
+        
+        ## Cam delete
+        col.separator()
+        row = col.row()
+        row.alert = True
+        row.operator('storytools.delete_camera', text='Delete Camera', icon='X')
 
 
 def camera_layout(layout, context):
@@ -264,7 +270,7 @@ def camera_layout(layout, context):
     # addcam.location = context.space_data.region_3d.view_matrix.inverted().translation
 
     ## Lens options
-    col_lateral.popover('STORYTOOLS_PT_focal_change_ui', text='', icon='DOWNARROW_HLT')
+    col_lateral.popover('STORYTOOLS_PT_camera_settings', text='', icon='DOWNARROW_HLT')
     # col_lateral.prop(context.scene.storytools_settings, "show_focal", text='', icon='CONE')
     
     ## ! can't call lens panel, (call context.camera in property)
@@ -574,7 +580,7 @@ panel_classes = (
     # STORYTOOLS_MT_focal_presets,
     # STORYTOOLS_PT_focal_presets,
     STORYTOOLS_OT_info_note,
-    STORYTOOLS_PT_focal_change_ui,
+    STORYTOOLS_PT_camera_settings,
     STORYTOOLS_MT_gp_objects_list_options,
     STORYTOOLS_PT_storytools_ui,
     STORYTOOLS_PT_camera_ui,

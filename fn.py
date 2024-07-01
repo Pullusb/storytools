@@ -563,6 +563,16 @@ def circle_2d(x, y, radius, segments):
         coords.append((p1, p2))
     return coords
 
+def update_ui_prop_index(context):
+    '''Update storytools UI prop index after object addition or deletion'''
+    scn = context.scene
+    if scn.camera:
+        scn.st_camera_props['index'] = next((i for i, c in enumerate(scn.objects) if scn.camera == c), 1)
+
+    gp_index = next((i for i, o in enumerate(scn.objects) if o.type == 'GPENCIL' and context.object == o), None)
+    if gp_index is not None:
+        scn.gp_object_props['index'] = gp_index
+
 ## keymap UI
 
 def _indented_layout(layout, level):

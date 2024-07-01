@@ -93,21 +93,22 @@ class STORYTOOLS_OT_create_object(Operator):
     
     def execute(self, context):
         prefs = fn.get_addon_prefs()
+        scn = context.scene
 
         if context.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT')
         bpy.ops.object.select_all(action='DESELECT')
-        # for o in context.scene.objects:o.select_set(False)
+        
         
         r3d = context.space_data.region_3d
         
         if r3d.view_perspective != 'CAMERA' and self.place_from_cam:
-            view_matrix = context.scene.camera.matrix_world
+            view_matrix = scn.camera.matrix_world
         else:    
             view_matrix = r3d.view_matrix.inverted()
 
         if self.at_cursor:
-            loc = context.scene.cursor.location
+            loc = scn.cursor.location
         else:
             loc = view_matrix @ Vector((0.0, 0.0, -self.init_dist))
         
@@ -126,12 +127,12 @@ class STORYTOOLS_OT_create_object(Operator):
         # draw_col = bpy.data.collections.get('Drawings')
         # if not draw_col:
         #     draw_col = bpy.data.collections.new('Drawings')
-        #     bpy.context.scene.collection.children.link(draw_col)
+        #     bpy.scn.collection.children.link(draw_col)
         
         ## TODO : maybe better to always create a prefixed collection ?
-        draw_col = next((c for c in context.scene.collection.children_recursive if c.name.startswith('Drawings')), None)
+        draw_col = next((c for c in scn.collection.children_recursive if c.name.startswith('Drawings')), None)
         if not draw_col:
-            draw_col = next((c for c in context.scene.collection.children_recursive if c.name.startswith('GP')), None)
+            draw_col = next((c for c in scn.collection.children_recursive if c.name.startswith('GP')), None)
         if not draw_col:
             ## Create a drawing collection or direct link in root/active collection ?
             draw_col = context.collection # auto-fallback on scene collection
@@ -139,7 +140,7 @@ class STORYTOOLS_OT_create_object(Operator):
         draw_col.objects.link(ob)
 
         if self.parented:
-            ob.parent = context.scene.camera
+            ob.parent = scn.camera
 
         ## Place
         _ref_loc, ref_rot, _ref_scale  = view_matrix.decompose()
@@ -154,7 +155,7 @@ class STORYTOOLS_OT_create_object(Operator):
 
         if self.track_to_cam:
             constraint = ob.constraints.new('TRACK_TO')
-            constraint.target = context.scene.camera
+            constraint.target = scn.camera
             constraint.track_axis = 'TRACK_Y'
             constraint.up_axis = 'UP_Z'
 
@@ -168,7 +169,7 @@ class STORYTOOLS_OT_create_object(Operator):
         
         for l_name in reversed(['Sketch', 'Line', 'Color']):
             layer = gp.layers.new(l_name)
-            layer.frames.new(context.scene.frame_current)
+            layer.frames.new(scn.frame_current)
             layer.use_lights = False # Can be a project prefs
         
             ## Set default association
@@ -177,6 +178,9 @@ class STORYTOOLS_OT_create_object(Operator):
                 fn.set_material_association(ob, layer, 'line')
             elif l_name == 'Color':
                 fn.set_material_association(ob, layer, 'fill_white')
+
+        ## update UI
+        fn.update_ui_prop_index(context)
 
         # Enter Draw mode
         bpy.ops.object.mode_set(mode='PAINT_GPENCIL')
