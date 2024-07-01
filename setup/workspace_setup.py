@@ -32,6 +32,13 @@ def activate_workspace(name='Storyboard', context=None):
         print(f'Could not found {name} at {filepath}')
         return False
 
+    ## Get biggest viewport and set category toolbar to Storytools:
+    viewports = [a for a in bpy.context.screen.areas if a.type == 'VIEW_3D']
+    if viewports:
+        vp_area = viewports.sort(key=lambda x: x.width)
+        if sidebar := next((r for r in vp_area.regions if r.type == 'UI'), None):
+            sidebar.active_panel_category = 'Storytools'
+
     return context.window.workspace
 
 class STORYTOOLS_OT_set_storyboard_workspace(bpy.types.Operator):

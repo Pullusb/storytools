@@ -209,6 +209,7 @@ class STORYTOOLS_OT_visibility_toggle(Operator):
     def execute(self, context):
         if not self.name:
             return {"CANCELLED"}
+
         ob = context.scene.objects.get(self.name)
         if not ob:
             return {"CANCELLED"}

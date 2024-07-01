@@ -936,3 +936,139 @@ def get_version_name():
 """
 
 
+
+## -- Fit view with sidebars (Unused yet)
+
+class Rect:
+    def __init__(self, x, y, width, height):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+
+    @property
+    def top_left(self):
+        return Vector((self.x, self.y))
+
+    @property
+    def bottom_left(self):
+        return Vector((self.x, self.y - self.height))
+
+    @property
+    def bottom_right(self):
+        return Vector((self.x + self.width, self.y - self.height))
+
+    @property
+    def top_right(self):
+        return Vector((self.x + self.width, self.y))
+    
+    @property
+    def center(self):
+        return Vector((self.x + self.width / 2, self.y + self.height / 2))
+
+    
+    def __str__(self):
+        return f'Rect(x={self.x}, y={self.y}, width={self.width}, height={self.height})'
+
+def get_reduced_rect(context):
+    '''return a Rect instance representing region coordinate of the frame'''
+    area = context.area
+    w, h = area.width, area.height
+    # if not bpy.context.preferences.system.use_region_overlap:
+    #     return w, h
+
+    regions = area.regions
+    header = next((r for r in regions if r.type == 'HEADER'), None)
+    tool_header = next((r for r in regions if r.type == 'TOOL_HEADER'), None)
+    asset_shelf = next((r for r in regions if r.type == 'ASSET_SHELF'), None)
+    toolbar = next((r for r in regions if r.type == 'TOOLS'), None)
+    sidebar = next((r for r in regions if r.type == 'UI'), None)
+
+    bottom_margin = 0
+    up_margin = 0
+    if header.alignment == 'BOTTOM':
+        bottom_margin += header.height
+    else:
+        up_margin += header.height
+
+    if tool_header.alignment == 'BOTTOM':
+        bottom_margin += tool_header.height
+    else:
+        up_margin += tool_header.height
+
+    if asset_shelf.height > 1:
+        bottom_margin += asset_shelf.height
+        ## Header of asset shelf should only be added if shelf open
+        # asset_shelf_header = next((r for r in regions if r.type == 'ASSET_SHELF_HEADER'), None)
+        # bottom_margin += asset_shelf.height + asset_shelf_header.height
+
+    reduced_x = 0
+    reduced_y = 0
+
+    reduced_width = w - sidebar.width - toolbar.width
+    reduced_height = h - tool_header.height - 1
+
+    return Rect(toolbar.width, h - reduced_y - 1, reduced_width, reduced_height)
+    # return Rect(self.toolbar.width, h - reduced_y - 1, right_down, left_down)
+
+
+def get_camera_frame_2d(scene=None, camera=None):
+    '''return a Rect instance representing camera 2d frame region coordinate'''
+    if scene is None:
+        scene = bpy.context.scene
+
+    frame_3d = get_cam_frame_world(scene.camera, scene=scene)
+
+    frame_2d = [location_to_region(v) for v in frame_3d]
+
+    rd = scene.render
+    resolution_x = rd.resolution_x * rd.pixel_aspect_x
+    resolution_y = rd.resolution_y * rd.pixel_aspect_y
+    ratio_x = min(resolution_x / resolution_y, 1.0)
+    ratio_y = min(resolution_y / resolution_x, 1.0)
+
+    ## Top right - CW
+    frame_width = (frame_2d[1].x - frame_2d[2].x) # same size (square)
+    frame_height = (frame_2d[0].y - frame_2d[1].y) # same size (square)
+    
+    cam_width = (frame_2d[1].x - frame_2d[2].x) * ratio_x
+    cam_height = (frame_2d[0].y - frame_2d[1].y) * ratio_y
+    
+    cam_x = frame_2d[3].x - ((frame_width - cam_width) / 2)
+    cam_y = frame_2d[3].y - ((frame_height - cam_height) / 2)
+    
+    return Rect(cam_x, cam_y, cam_width, cam_height)
+
+
+def fit_view(context=None):
+    context = context or bpy.context
+
+    def zoom_from_fac(zoomfac):
+        from math import sqrt
+        ## sqrt(2) = 1.41421356237309504880
+        return (sqrt(4 * zoomfac) - 1.41421356237309504880) * 50.0
+
+    r3d = context.space_data.region_3d
+    
+    view_frame = get_reduced_rect(context)
+    cam_frame = get_camera_frame_2d()
+    print('view_frame: ', view_frame)
+    print('cam_frame: ', cam_frame)
+
+    ## CENTER
+    r3d.view_camera_offset = (0,0) # Center as if always using region overlap
+
+    print('view_frame.width: ', view_frame.width)
+    print('cam_frame.width: ', cam_frame.width)
+    xfac = view_frame.width / (cam_frame.width + 4.0)
+    yfac = view_frame.height / (cam_frame.height + 4.0)
+
+    # xfac = view_frame.width / cam_frame.width
+    # yfac = view_frame.height / cam_frame.height
+
+    ## ZOOM
+    print('zoom before', r3d.view_camera_zoom) # Dbg
+    zoom_value = zoom_from_fac(min(xfac, yfac))
+    zoom_value = max(min(zoom_value, 30.0), -30.0) # clamp between -30 and 30
+    r3d.view_camera_zoom = zoom_value
+    print('zoom after', r3d.view_camera_zoom) # Dbg

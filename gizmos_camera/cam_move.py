@@ -203,11 +203,15 @@ class STORYTOOLS_OT_lock_camera_to_view_toggle(Operator):
             go_to_cam = True
 
         if self.fit_viewport:
+            ## TODO: Custom view_fit that consider all regions width
+            # fn.fit_view(context)
+            # return {"FINISHED"}
+
             bpy.ops.view3d.view_center_camera()
             ## Dezoom slightly to let frame enter view
             r3d = bpy.context.space_data.region_3d
-            r3d.view_camera_zoom += r3d.view_camera_zoom * -0.03
-            ## TODO: Custom view_fit that consider all toolbars
+            r3d.view_camera_zoom += r3d.view_camera_zoom * -0.1
+
             return {"FINISHED"}
 
         if self.zoom_full_res:
