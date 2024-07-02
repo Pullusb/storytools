@@ -2,7 +2,7 @@ import bpy
 from mathutils.geometry import intersect_line_plane
 
 from bpy.types import Operator
-from mathutils import Vector
+from mathutils import Vector, Matrix
 
 from .. import fn
 
@@ -134,8 +134,121 @@ class STORYTOOLS_OT_align_with_view(Operator):
 
         return {"FINISHED"}
 
+
+def vector_to_matrix(vector, up=None) -> Matrix:
+    '''Create a matrix from Vector
+    ex: Can be used to apply rotation on 3d view'''
+    
+    # Normalize the input vector
+    direction = vector.normalized()
+    
+    if up is None:
+        # Define the up vector (typically the world's Z axis)
+        up = Vector((0.0, 0.0, 1.0))
+
+        # If the direction is close to the up vector, use a different up vector
+        if abs(direction.dot(up)) > 0.999:
+            up = Vector((0.0, 1.0, 0.0))
+    
+    # Compute the right vector
+    right = direction.cross(up).normalized()
+    
+    # Recompute the up vector to ensure orthogonality
+    up = right.cross(direction).normalized()
+    
+    # Create the matrix
+    mat = Matrix((right, up, -direction)).transposed()
+
+    return mat
+    
+def align_view_to_vector(vector, up=None, context=None) -> None:
+    '''align current 3d view to vector'''
+
+    context = context or bpy.context
+    mat = vector_to_matrix(vector, up)
+
+    r3d = context.space_data.region_3d
+    if r3d.view_perspective == 'CAMERA':
+        ## Rotate camera
+        ## TODO: camera rotate in place
+        ## Could be interesting to use view pivot point as well
+        cam = context.space_data.camera
+        if cam.rotation_mode == 'QUATERNION':
+            cam.rotation_quaternion = mat.to_quaternion()
+        else:
+            cam.rotation_euler = mat.to_euler(cam.rotation_mode)
+    else:
+        ## Rotate view (rotate on pivot point)
+        context.space_data.region_3d.view_rotation = mat.to_quaternion()
+
+class STORYTOOLS_OT_align_view_to_object(Operator):
+    bl_idname = "storytools.align_view_to_object"
+    bl_label = "Align view to object"
+    bl_description = "Align 3d view to active objects orientation"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.object
+
+    def execute(self, context):
+
+        mat = context.object.matrix_world
+        settings = context.scene.tool_settings
+        orient = settings.gpencil_sculpt.lock_axis # 'VIEW', 'AXIS_Y', 'AXIS_X', 'AXIS_Z', 'CURSOR'
+        ## if alignement is front / side / top, use native operators
+
+        
+
+        if orient == 'VIEW':
+            ## temp solution:
+            bpy.ops.view3d.view_axis(align_active=True, type='FRONT', relative=False)
+            
+            ## TODO: Guess plane normal, orient with track quat ?
+            # (if plane normal is aligned with one of the main axis)
+
+            # align_view_with_vector()
+            # plane_no = context.space_data.region_3d.view_rotation @ Vector((0,0,1))
+
+        elif orient == 'CURSOR':
+            ## temp solution
+
+            ## orient view with plane
+            plane_no = Vector((0,0,-1))
+            plane_no.rotate(context.scene.cursor.matrix)
+
+            up = None
+            ## Pass up vec if we want to orient with cursor as well (often not needed)
+            ## note: in this case we could directly use cursor matrix
+
+            # up = Vector((0,1,0))
+            # up.rotate(context.scene.cursor.matrix)
+            align_view_to_vector(plane_no, up)
+
+        elif orient == 'AXIS_Y': # front (X-Z)
+            bpy.ops.view3d.view_axis(align_active=True, type='FRONT', relative=False)
+            # plane_no = Vector((0,1,0))
+            # plane_no.rotate(mat)
+
+        elif orient == 'AXIS_X': # side (Y-Z)
+            bpy.ops.view3d.view_axis(align_active=True, type='RIGHT', relative=False)
+            # plane_no = Vector((1,0,0))
+            # plane_no.rotate(mat)
+
+        elif orient == 'AXIS_Z': # top (X-Y)
+            bpy.ops.view3d.view_axis(align_active=True, type='TOP', relative=False)
+            # plane_no = Vector((0,0,1))
+            # plane_no.rotate(mat)
+
+        # co, no = fn.get_gp_draw_plane(context)
+        ## else determine the plane and move view matrix
+        
+        return {"FINISHED"}
+
+
 classes=(
 STORYTOOLS_OT_align_with_view,
+STORYTOOLS_OT_align_view_to_object,
 )
 
 def register(): 

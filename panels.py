@@ -143,9 +143,9 @@ class STORYTOOLS_PT_tool_ui(Panel):
     bl_label = "Tool"
     bl_parent_id = "STORYTOOLS_PT_storytools_ui" # as_subpanel
 
-    @classmethod
-    def poll(cls, context):
-        return context.object and context.object.type == 'GPENCIL'
+    # @classmethod
+    # def poll(cls, context):
+    #     return context.object and context.object.type == 'GPENCIL'
 
     def draw(self, context):
         col = self.layout.column()
