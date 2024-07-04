@@ -3,6 +3,7 @@ from mathutils.geometry import intersect_line_plane
 
 from bpy.types import Operator
 from mathutils import Vector, Matrix
+from math import pi
 
 from .. import fn
 
@@ -169,10 +170,14 @@ def align_view_to_vector(vector, up=None, context=None) -> None:
 
     r3d = context.space_data.region_3d
     if r3d.view_perspective == 'CAMERA':
-        ## Rotate camera
-        ## TODO: camera rotate in place
-        ## Could be interesting to use view pivot point as well
         cam = context.space_data.camera
+        ## Rotate camera from view pivot point
+        ## Could be interesting to use view pivot point as well
+        # pivot = context.space_data.region_3d.view_location
+        # cam.matrix_world
+
+        
+        ## Camera rotate in place (pivot on itself)
         if cam.rotation_mode == 'QUATERNION':
             cam.rotation_quaternion = mat.to_quaternion()
         else:
@@ -191,24 +196,46 @@ class STORYTOOLS_OT_align_view_to_object(Operator):
     def poll(cls, context):
         return context.object
 
-    def execute(self, context):
+    opposite : bpy.props.BoolProperty(default=False, options={'SKIP_SAVE'})
 
+    def invoke(self, context, event):
+        self.opposite = event.ctrl
+        return self.execute(context)
+
+    def execute(self, context):
+        ## TODO: Handle other object types (cancel or just face front)
+
+        # if self.opposite: ## TEST - NOT WORKING
+        #     r3d = context.space_data.region_3d
+        #     view_up_axis = r3d.view_rotation @ Vector((0,1,0))
+        #     rot_mat = r3d.view_rotation.to_matrix() @ Matrix.Rotation(pi, 3, view_up_axis)
+        #     # r3d.view_rotation = rot_mat.to_quaternion()
+        #     r3d.view_matrix.rotate(rot_mat.to_3x3())
+        #     return {'FINISHED'}
+
+        ## TODO: if in camera view, need to remporarily enable 'lock cam to view'
         mat = context.object.matrix_world
         settings = context.scene.tool_settings
         orient = settings.gpencil_sculpt.lock_axis # 'VIEW', 'AXIS_Y', 'AXIS_X', 'AXIS_Z', 'CURSOR'
         ## if alignement is front / side / top, use native operators
 
-        
-
         if orient == 'VIEW':
-            ## temp solution:
-            bpy.ops.view3d.view_axis(align_active=True, type='FRONT', relative=False)
+            ## A. Just Align with obejct front ?
+            # bpy.ops.view3d.view_axis(align_active=True, type='FRONT', relative=False)
             
-            ## TODO: Guess plane normal, orient with track quat ?
+            ## B. Guess plane from active
             # (if plane normal is aligned with one of the main axis)
+            ob = context.object
+            if not ob.data.layers.active:
+                bpy.ops.view3d.view_axis(align_active=True, type='FRONT', relative=False)
+            else:
+                _co, no = fn.get_frame_coord_and_normal(ob, ob.data.layers.active.active_frame)
+                
+                ## Align with 
+                align_view_to_vector(no)
 
-            # align_view_with_vector()
-            # plane_no = context.space_data.region_3d.view_rotation @ Vector((0,0,1))
+            ## Compare with view vector to align with closest side ?
+            # view_vec = context.space_data.region_3d.view_rotation @ Vector((0,0,1))
 
         elif orient == 'CURSOR':
             ## temp solution
@@ -242,6 +269,26 @@ class STORYTOOLS_OT_align_view_to_object(Operator):
 
         # co, no = fn.get_gp_draw_plane(context)
         ## else determine the plane and move view matrix
+
+
+        # if self.opposite:
+        #     # Equivalent of numpad 9 (not really an opposing to view)
+        #     # bpy.ops.view3d.view_orbit(angle=3.14159, type='ORBITRIGHT')
+            
+        #     view_up_axis = context.space_data.region_3d.view_rotation @ Vector((0,1,0))
+        #     # view_up_axis = Vector((0,1,0))
+            
+        #     # 180 degree rotate on up axis
+        #     rot_matrix = Matrix.LocRotScale(
+        #         None, # context.space_data.region_3d.view_location, # loc
+        #         Matrix.Rotation(pi, 3, view_up_axis), # rot # Matrix.Rotation(pi, 4, view_up_axis).to_quaternion()
+        #         None, # default scale
+        #         )
+
+        #     context.space_data.region_3d.view_matrix = context.space_data.region_3d.view_matrix @ rot_matrix
+
+
+        # context.scene.cursor.location = context.space_data.region_3d.view_location # Dbg
         
         return {"FINISHED"}
 

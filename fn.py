@@ -10,7 +10,7 @@ from pathlib import Path
 
 from bpy_extras import view3d_utils
 import mathutils
-from mathutils import Matrix, Vector, geometry
+from mathutils import Matrix, Vector, geometry, Quaternion
 
 from .constants import LAYERMAT_PREFIX
 
@@ -144,12 +144,6 @@ def get_scale_matrix(scale) -> Matrix:
     matscale = matscale_x @ matscale_y @ matscale_z
     return matscale
 
-def compose_matrix(loc, rot, scale):
-    loc_mat = Matrix.Translation(loc)
-    rot_mat = rot.to_matrix().to_4x4()
-    scale_mat = get_scale_matrix(scale)
-    return loc_mat @ rot_mat @ scale_mat
-
 def assign_rotation_from_ref_matrix(obj, ref_mat, rot_90=True):
     '''Get an object, a reference matrix and assign
     :obj: Object to modify
@@ -269,6 +263,89 @@ def get_gp_draw_plane(context):
         plane_no.rotate(context.scene.cursor.matrix)
 
     return plane_co, plane_no
+
+def mean_vector(vec_list):
+    '''Get mean vector from a list of vectors
+    e.g: mean_vector([self.ob.matrix_world @ co for co in self.init_pos])
+    '''
+    return Vector(np.mean(vec_list, axis=0))
+
+def get_coplanar_stroke_vector(obj, s, ensure_colplanar=True, tol=0.0003):
+    '''Get a GP stroke object and return plane normal vector.
+    
+    ensure_coplanar: return None if points in stroke are not coplanar
+    tol: tolerance value for coplanar points check
+
+    return normal vector, None if points are not coplanar and ensure_colplanar is True
+    '''
+
+    if len(s.points) < 4:
+        return
+
+    # obj = bpy.context.object
+    mat = obj.matrix_world
+    pct = len(s.points)
+    a = mat @ s.points[0].co
+    b = mat @ s.points[pct//3].co
+    c = mat @ s.points[pct//3*2].co
+    ab = b-a
+    ac = c-a
+    
+    # Get normal
+    plane_no = ab.cross(ac)#.normalized()
+
+    if ensure_colplanar:
+        for p in s.points:
+            if abs(geometry.distance_point_to_plane(mat @ p.co, a, plane_no)) > tol:
+                return
+    return plane_no
+
+def get_normal(obj, frame, tol=0.0003):
+    ct =  len(frame.strokes)
+    if ct == 0:
+        return
+    if ct < 3:
+        return get_coplanar_stroke_vector(obj, frame.strokes[0], ensure_colplanar=False)
+    
+    ## Use first point of 3 first strokes
+    mat = obj.matrix_world
+    a = mat @ frame.strokes[0].points[0].co
+    b = mat @ frame.strokes[1].points[0].co
+    c = mat @ frame.strokes[-1].points[0].co
+    ab = b-a
+    ac = c-a
+
+    plane_no = ab.cross(ac)
+    ## Verify coplanar ? # want to return even if it's not...
+    # for p in s.points:
+    #     if abs(geometry.distance_point_to_plane(mat @ p.co, a, plane_no)) > tol:
+    #         return
+    return plane_no
+
+def get_coord(obj, frame):
+    coords = [p.co for s in frame.strokes for p in s.points]
+    mean_coord = sum(coords, Vector()) / len(coords)
+    return obj.matrix_world @ mean_coord
+
+def get_frame_coord_and_normal(obj, frame, tol=0.0003):
+    '''Get a GP frame object return normal plane if strokes are coplanar (with a tolerance).
+    return normal vector if coplanar else None
+    '''
+
+    ## get plane_co
+    plane_co = get_coord(obj, frame)
+
+    plane_no = get_normal(obj, frame, tol=tol)
+
+    # if plane_no:
+    #     ## Get bbox center
+    #     bbox_center = sum([obj.matrix_world @ Vector(corner[:]) for corner in obj.bound_box], Vector()) / 8
+    #     ## Project on plane found plane normal
+    #     plane_co = geometry.intersect_line_plane(bbox_center, bbox_center + plane_no, obj.matrix_world @ frame.strokes[0].co, plane_no)
+    #     plane_co = plane_co or bbox_center
+
+    return plane_co, plane_no
+        
 
 ## -- Palette --
 

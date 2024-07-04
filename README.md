@@ -9,7 +9,12 @@ Blender addon - Set of tool for storyboarding in Blender
 
 ![Storytools UI](https://github.com/Pullusb/images_repo/blob/master/storytools_ui_demo.jpg)
 
-Version 1.0 sponsored by [**El Guiri Studios**](https://www.elguiristudios.com/)
+
+Sponsored by:
+- [**CNC**](https://www.cnc.fr/)
+- [**Autour de Minuit Studio**](https://blog.autourdeminuit.com/)
+- **Samuel Bernou** (Maintainer)
+- Version 1.0 was sponsored by [**El Guiri Studios**](https://www.elguiristudios.com/)
 
 ---  
 
@@ -149,6 +154,7 @@ use_tooltip
 ## Note for gizmoGroup
 
     # matrix_offset seem to affect only backdrop
+    ## Note: instead of compose_matrix, use Matrix.LocRotScale(None, None, Vector((2,2,2)))
     # gz.matrix_offset = fn.compose_matrix(Vector((0,0,0)), Matrix().to_quaternion(), Vector((2,2,2)))
     
     # gz.scale_basis = 40 # same as tweaking matrix_basis scale

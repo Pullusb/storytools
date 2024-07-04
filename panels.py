@@ -405,9 +405,11 @@ def materials_layout(layout, context):
     col.prop(bpy.context.scene.storytools_settings, 'material_sync', text='')
 
 def tool_layout(self, layout, context):
+    layout.operator('storytools.align_view_to_object', text='Align View To Object')
     ## Export / Restore settings
     layout.operator('storytools.save_load_settings_preset', text='View Settings Presets', icon='PRESET').category = 'view_settings'
     layout.operator('storytools.save_load_settings_preset', text='Tool Settings Presets', icon='PRESET').category = 'tool_settings'
+
 
     ## -- Workspace setup
     show_workspace_switch = context.window.workspace.name != 'Storyboard'
