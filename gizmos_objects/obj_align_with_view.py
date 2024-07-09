@@ -203,21 +203,11 @@ class STORYTOOLS_OT_align_view_to_object(Operator):
         return self.execute(context)
 
     def execute(self, context):
-        ## TODO: if in camera view, need to remporarily enable 'lock cam to view'
-        # if self.opposite: ## working, But slight offset
-        #     # print('\n-- opposite --\n')
-        #     r3d = context.space_data.region_3d
-        #     view_up_axis = r3d.view_rotation @ Vector((0,1,0))
-        #     rot_mat = Matrix.Rotation(pi, 3, view_up_axis)
-        #     loc = r3d.view_location.copy()
-        #     r3d.view_location = (0,0,0) # not needed ?
-        #     r3d.view_matrix = r3d.view_matrix @ rot_mat.to_4x4()
-        #     r3d.view_location = loc
-        #     return {'FINISHED'}
+        r3d = context.space_data.region_3d
 
         if context.object.type != 'GPENCIL':
             bpy.ops.view3d.view_axis(align_active=True, type='FRONT', relative=False)
-        
+
         else:
             mat = context.object.matrix_world
             settings = context.scene.tool_settings
@@ -280,22 +270,19 @@ class STORYTOOLS_OT_align_view_to_object(Operator):
             ## Equivalent of numpad 9 ? (but not really opposing to view)
             # bpy.ops.view3d.view_orbit(angle=3.14159, type='ORBITRIGHT')
 
-            r3d = context.space_data.region_3d
-
             r3d.update() # need to update, else previous changes are skipped
             
             view_up_axis = r3d.view_rotation @ Vector((0,1,0))
                         
             ## Create rotation matrix
             loc = r3d.view_location.copy()
-            r3d.view_location = (0,0,0) # even without, seem to be reseted when applying matrix
+            r3d.view_location = (0,0,0) # Even without, seem to be reseted when applying matrix
             
             ## Create rotation matrix
             rot_matrix = Matrix.Rotation(pi, 3, view_up_axis)
             ## Convert to 4x4
             rot_matrix = rot_matrix.to_4x4()
-
-            ## Or integrate the matrix in a 4x4 or use to_4x4
+            ## Or integrate the matrix in a 4x4
             # rot_matrix = Matrix.LocRotScale(
             #     None, # context.space_data.region_3d.view_location, # loc
             #     rot_matrix, # rot # Matrix.Rotation(pi, 4, view_up_axis).to_quaternion()
@@ -308,15 +295,28 @@ class STORYTOOLS_OT_align_view_to_object(Operator):
             ## Restore location
             r3d.view_location = loc
 
-
-        # context.scene.cursor.location = context.space_data.region_3d.view_location # Dbg
-        
         return {"FINISHED"}
 
+class STORYTOOLS_OT_opposite_view(Operator):
+    bl_idname = "storytools.opposite_view"
+    bl_label = "Opposite View"
+    bl_description = "Turn to opposite view, Rotate by 180 degrees around orbit focal point"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        r3d = context.space_data.region_3d
+        view_up_axis = r3d.view_rotation @ Vector((0,1,0))
+        rot_mat = Matrix.Rotation(pi, 3, view_up_axis)
+        loc = r3d.view_location.copy()
+        r3d.view_location = (0,0,0) # not needed ?
+        r3d.view_matrix = r3d.view_matrix @ rot_mat.to_4x4()
+        r3d.view_location = loc
+        return {'FINISHED'}
 
 classes=(
 STORYTOOLS_OT_align_with_view,
 STORYTOOLS_OT_align_view_to_object,
+STORYTOOLS_OT_opposite_view,
 )
 
 def register(): 
