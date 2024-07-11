@@ -516,6 +516,10 @@ def key_object(ob, loc=True, rot=True, scale=True, use_autokey=False, mode=None,
 
 ## UI
 
+def refresh_areas():
+    for area in bpy.context.screen.areas:
+        area.tag_redraw()
+
 def show_message_box(_message = "", _title = "Message Box", _icon = 'INFO'):
     '''Show message box with element passed as string or list
     if _message if a list of lists:
