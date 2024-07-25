@@ -454,6 +454,14 @@ class STORYTOOLS_GGT_toolbar_switch(GizmoGroup):
     def poll(cls, context):
         return True
 
+    # @staticmethod
+    # def my_target_operator(context):
+    #     wm = context.window_manager
+    #     op = wm.operators[-1] if wm.operators else None
+    #     if isinstance(op, STORYTOOLS_OT_toggle_bottom_bar):
+    #         return op
+    #     return None
+
     def setup(self, context):
         ## --- Toggle button
         self.gz_toggle_bar = self.gizmos.new("VIEW3D_GT_toggler_shape_widget")

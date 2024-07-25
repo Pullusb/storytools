@@ -17,66 +17,6 @@ def change_edit_lines_opacity(self, context):
         if not gp.is_annotation:
             gp.edit_line_color[3]=self.edit_lines_opacity
 
-
-## Tool Preset
-def get_blender_icons_as_enum():
-    # return ((i.identifier, i.name, '', i.value) for i in bpy.types.UILayout.bl_rna.functions['prop'].parameters['icon'].enum_items)
-    return tuple((i.identifier, i.name, '') for i in bpy.types.UILayout.bl_rna.functions['prop'].parameters['icon'].enum_items)
-
-class STORYTOOLS_PGT_tool_preset(PropertyGroup):
-
-    name : StringProperty(
-        name="Preset Name", description="Name that define the toolsetting\
-            \nmust be unique",
-        default="")
-
-    mode : EnumProperty(
-        name="Mode", description="Using shortcut will change to this mode", 
-        default='PAINT_GPENCIL', options={'HIDDEN', 'SKIP_SAVE'},
-        items=(
-            ('PAINT_GPENCIL', 'Draw', 'Switch to draw mode', 0),
-            ('EDIT_GPENCIL', 'Edit', 'Switch to edit mode', 1),
-            ('SCULPT_GPENCIL', 'Sculpt', 'Switch to Sculpt mode', 2),
-            ('OBJECT', 'Object', 'Switch to Object mode', 3),
-            ('NONE', 'Current', 'No mode switch', 4),
-            ))
-
-    brush : StringProperty(
-        name="Brush", description="Brush to set\
-            \nex: Eraser Stroke (with tool builtin_brush.Erase)\
-            \nEmpty field = no change",
-        default="")
-
-    tool : StringProperty(
-        name="Tool", description="Tool to set",
-        default="builtin_brush.Draw")
-    
-    layer : StringProperty(
-        name="Layer", description="Layer to set (exact name, case sensitive)\
-            \nEmpty field = no change",
-        default="Sketch")
-    
-    material : StringProperty(
-        name="Material", description="Material to set (exact name, case sensitive)\
-            \nEmpty field = No change or use layer-material synchronisation if enabled",
-        default="line")
-    
-    icon : EnumProperty(
-        name="Icon", description="Icon to display in interface", 
-        default='GPBRUSH_PEN',
-        items=get_blender_icons_as_enum()
-        )
-
-    ## "Active" separated from show
-    show : BoolProperty(
-        name='Show in UI', description='Show in brushbar (Need an icon/image)',
-        default=True,
-        )
-
-class STORYTOOLS_PG_tool_presets(PropertyGroup):
-    index : IntProperty(default=-1)
-    tools : bpy.props.CollectionProperty(type=STORYTOOLS_PGT_tool_preset)
-
 class STORYTOOLS_PGT_main_settings(PropertyGroup) :
     ## HIDDEN to hide the animatable dot thing
 
@@ -149,10 +89,6 @@ class STORYTOOLS_PGT_main_settings(PropertyGroup) :
 
 
 classes=(
-## Tool presets
-STORYTOOLS_PGT_tool_preset,
-STORYTOOLS_PG_tool_presets,
-
 STORYTOOLS_PGT_main_settings,
 # STORYTOOLS_PGT_km_preset, # old
 # STORYTOOLS_PGT_keymap_presets, # old

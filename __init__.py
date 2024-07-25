@@ -4,7 +4,7 @@ bl_info = {
     "name": "Storytools - Storyboard Tools",
     "description": "Set of tools for Storyboarding",
     "author": "Samuel Bernou",
-    "version": (1, 14, 4),
+    "version": (1, 14, 5),
     "blender": (3, 3, 0),
     "location": "View3D",
     "warning": "",
@@ -15,6 +15,7 @@ bl_info = {
 import bpy
 
 from . import properties
+from . import tool_presets
 from . import preferences
 from . import setup
 from . import camera_ops
@@ -31,6 +32,7 @@ from .fn import get_addon_prefs
 modules = (
     setup,
     properties,
+    tool_presets,
     preferences,
     camera_ops,
     handles,

@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 import bpy
+import re
 from bpy.props import (FloatProperty,
                         BoolProperty,
                         EnumProperty,
@@ -10,18 +11,36 @@ from bpy.props import (FloatProperty,
                         CollectionProperty)
 
 from bpy.types import PropertyGroup
-
+from ..fn import get_addon_prefs
 
 def get_blender_icons_as_enum():
     # return ((i.identifier, i.name, '', i.value) for i in bpy.types.UILayout.bl_rna.functions['prop'].parameters['icon'].enum_items)
     return tuple((i.identifier, i.name, '') for i in bpy.types.UILayout.bl_rna.functions['prop'].parameters['icon'].enum_items)
 
+def increment_name(name):
+    if re.search(r'.*\d+$', name):
+        ## Increment rightmost number
+        return re.sub(r'(\d+)(?!.*\d)', lambda x: str(int(x.group(1))+1).zfill(len(x.group(1))), name)
+    ## Add an increment
+    return name + '01'
+
+def ensure_preset_tool_unique_name(self, context):
+    '''Ensure name is unique'''
+    tool_presets = get_addon_prefs().tool_presets
+    name = self.preset_name
+    while name in [i.preset_name for i in tool_presets.tools if i != self]:
+        name = increment_name(name)
+    if self.preset_name != name:
+        self['preset_name'] = name
+
 class STORYTOOLS_PGT_tool_preset(PropertyGroup):
 
-    name : StringProperty(
+    preset_name : StringProperty(
         name="Preset Name", description="Name that define the toolsetting\
-            \nmust be unique",
-        default="")
+            \nMust be unique",
+        default="",
+        update=ensure_preset_tool_unique_name
+        )
 
     mode : EnumProperty(
         name="Mode", description="Using shortcut will change to this mode", 

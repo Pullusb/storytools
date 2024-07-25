@@ -1,13 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 import bpy
-from bpy.props import (FloatProperty,
-                        BoolProperty,
-                        EnumProperty,
-                        StringProperty,
-                        IntProperty,
-                        PointerProperty,
-                        FloatVectorProperty)
 
 from ..fn import get_addon_prefs, refresh_areas
 # from .properties import STORYTOOLS_PG_tool_presets
@@ -48,14 +41,55 @@ class STORYTOOLS_OT_move_collection_item(bpy.types.Operator):
     
 ## Manage tools presets
 class STORYTOOLS_OT_add_toolpreset(bpy.types.Operator):
-    '''Add '''
+    '''Add tool preset item'''
     bl_idname = "storytools.add_toolpreset"
-    bl_label = "Edit Source"
+    bl_label = "Add Tool Preset"
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):
-        tools = get_addon_prefs().tool_presets.tools
-        tools.add()
+        pg = get_addon_prefs().tool_presets
+        tools = pg.tools
+        item = tools.add()    
+        ## [] to avoid prop update
+        item['preset_name'] = f'Tool {len(tools)}' # Set name to stay unique
+        
+        # Change active index
+        ## In case item is added after current
+        # pg.index = next((i for i, element in enumerate(tools) if element == item), 0)
+        pg.index = len(tools) - 1 
+        print(f'added {item.preset_name}')
+        context.area.tag_redraw()
+        return {'FINISHED'}
+
+class STORYTOOLS_OT_duplicate_toolpreset(bpy.types.Operator):
+    '''Duplicate tool preset item'''
+    bl_idname = "storytools.duplicate_toolpreset"
+    bl_label = "Duplicate active Tool Preset"
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    @classmethod
+    def poll(cls, context):
+        return get_addon_prefs().tool_presets.index >= 0
+
+    def execute(self, context):
+        pg = get_addon_prefs().tool_presets
+        ## TODO: duplicate element, increment vased on same name, add after in collection
+        tools = pg.tools
+        active_tool = tools[pg.index]
+        
+        item = tools.add()
+
+        for attr in [i.identifier for i in item.bl_rna.properties if i.identifier not in ('name', 'rna_type')]:
+            print('set', attr)
+            ## Preset name will auto-increment with prop update
+            setattr(item, attr, getattr(active_tool, attr))
+
+        ## Set after in list
+        tools.move(len(tools)-1, pg.index + 1)
+
+        ## Change active index
+        pg.index = pg.index + 1 
+        # print(f'added {item.preset_name}')
         context.area.tag_redraw()
         return {'FINISHED'}
 
@@ -69,8 +103,10 @@ class STORYTOOLS_OT_remove_toolpreset(bpy.types.Operator):
 
     def execute(self, context):
         pg = get_addon_prefs().tool_presets
-        self.report({'INFO'}, f'Removed {pg.tools[pg.index].name}')
+        self.report({'INFO'}, f'Removed {pg.tools[pg.index].preset_name}')
         pg.tools.remove(pg.index)
+        pg.index = len(pg.tools) - 1
+
         context.area.tag_redraw()
         return {'FINISHED'}
 
@@ -79,8 +115,11 @@ class STORYTOOLS_UL_toolpreset_list(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, active_property, index):
 
         self.use_filter_show = False # force closed search
-        layout.label(text=f'{active_property}')
-        layout.label(text=item.name)
+        # layout.label(text=f'{active_property}') # Row number
+
+        # layout.label(text=item.preset_name) # preset name as label
+        layout.label(text='', icon='BLANK1') # preset name as label
+        layout.prop(item, 'preset_name', text='') # editable preset name 
         ## display icon if using blender icons with gizmos
 
         # layout.operator('storytools.edit_toolpreset', text='', icon='PRESET')
@@ -111,6 +150,7 @@ classes = (
     ## UI list
     STORYTOOLS_OT_move_collection_item,
     STORYTOOLS_OT_add_toolpreset,
+    STORYTOOLS_OT_duplicate_toolpreset,
     STORYTOOLS_OT_remove_toolpreset,
     STORYTOOLS_UL_toolpreset_list,
 )
