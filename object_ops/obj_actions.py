@@ -69,7 +69,7 @@ class STORYTOOLS_OT_create_object(Operator):
 
         distance_selection_update(self, context)
         self.parented = settings.initial_parented
-        return context.window_manager.invoke_props_dialog(self, width=250)
+        return context.window_manager.invoke_props_dialog(self, width=280)
 
     def draw(self, context):
         layout = self.layout
@@ -228,7 +228,8 @@ class STORYTOOLS_OT_object_draw(Operator):
     bl_label = 'Object Draw'
     bl_description = "Switch between drwa mode and object mode\
         \nEnter first GP object available\
-        \nIf no GPencil object exists, pop-up creation menu"
+        \nIf no GPencil object exists, pop-up creation menu\
+        \n+ Shift : pop-up creation menu"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     @classmethod
@@ -238,6 +239,8 @@ class STORYTOOLS_OT_object_draw(Operator):
     # name : bpy.props.StringProperty()
     def invoke(self, context, event):
         self.ctrl = event.ctrl
+        self.shift = event.shift
+        
         return self.execute(context)
 
     def execute(self, context):
@@ -245,6 +248,10 @@ class STORYTOOLS_OT_object_draw(Operator):
         # if self.ctrl:
         #     bpy.ops.wm.call_panel(name='STORYTOOLS_PT_drawings_ui', keep_open=True)
         #     return {"FINISHED"}
+
+        if self.shift:
+            bpy.ops.storytools.create_object('INVOKE_DEFAULT')
+            return {"FINISHED"}
 
         ## If active object is a GP, go in draw mode or do nothing
         if context.object and context.object.type == 'GPENCIL':
