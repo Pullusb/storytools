@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: GPL-2.0-or-later
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 import bpy
 from pathlib import Path
@@ -110,7 +110,7 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         items=(
             ('SETTINGS', 'Settings', 'Customize interface elements and settings', 0),
             ('SHORTCUTS', 'Shortcuts', 'Change shortcuts affectation', 1),
-            # ('TOOLS', 'Tools', 'Add or reorganize tools', 2),
+            ('TOOLS', 'Tools', 'Add or reorganize tools', 2),
             ),
         )
     # items=(
