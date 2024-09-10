@@ -207,7 +207,7 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
 
         ## Using only direct offset
         self.bar_width = (count - 1) * (gap_size * px_scale) + (section_separator * 2) * px_scale
-        vertical_pos = prefs.toolbar_margin * px_scale + fn.get_headers_bottom_width(context, overlap=False)
+        vertical_pos = prefs.toolbar_margin * px_scale + fn.get_header_margin(context, overlap=False)
         left_pos = region.width / 2 - self.bar_width / 2
         next_pos = gap_size * px_scale
 
@@ -499,7 +499,7 @@ class STORYTOOLS_GGT_toolbar_switch(GizmoGroup):
         ## Togge centered
         x_loc = context.region.width / 2
         
-        y_loc = 4 * px_scale + fn.get_headers_bottom_width(context, overlap=True)
+        y_loc = 4 * px_scale + fn.get_header_margin(context, overlap=True)
 
         mat = Matrix.Translation((x_loc, y_loc, 0))
         if context.scene.storytools_settings.show_session_toolbar:

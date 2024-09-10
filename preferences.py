@@ -12,7 +12,7 @@ from bpy.props import (FloatProperty,
                         FloatVectorProperty)
 
 from .fn import get_addon_prefs, open_addon_prefs, draw_kmi_custom, refresh_areas
-from .tool_presets.properties import STORYTOOLS_PG_tool_presets
+# from .tool_presets.properties import STORYTOOLS_PG_tool_presets
 
 def toggle_gizmo_buttons(self, _):
     from . import gizmo_toolbar
@@ -203,7 +203,7 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         description="Color of the far plane visual hint when using Depth move")
 
     ## Tool presets
-    tool_presets : PointerProperty(type=STORYTOOLS_PG_tool_presets)
+    # tool_presets : PointerProperty(type=STORYTOOLS_PG_tool_presets)
 
 
     # Update variables
@@ -276,7 +276,8 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
                 
             # for km, kmi in sorted(user_kms, key=lambda x: x[1].type):
             #     draw_kmi_custom(km, kmi, col)
-        
+
+        """
         elif self.pref_tab == 'TOOLS':
             col.label(text='Draw Topbar:', icon='NODE_TOP')
             ## show 
@@ -316,6 +317,7 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
                 col.label(text='Use "+" button to add brush')
             else:                
                 toolset_edit_ui(col)
+        """
 
         ## Git update code
         if self.is_git_repo:

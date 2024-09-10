@@ -1,15 +1,20 @@
 import bpy
 from bpy.props import (StringProperty,
-                       FloatProperty,
+                       IntProperty,
                         BoolProperty,
                         EnumProperty,)
+from bpy.types import Context, OperatorProperties
 from . import fn
+
+def get_blender_icons_as_enum():
+    # return ((i.identifier, i.name, '', i.value) for i in bpy.types.UILayout.bl_rna.functions['prop'].parameters['icon'].enum_items)
+    return tuple((i.identifier, i.name, '') for i in bpy.types.UILayout.bl_rna.functions['prop'].parameters['icon'].enum_items)
 
 class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
     bl_idname = "storytools.set_draw_tool"
     bl_label = "Set Draw Tool"
-    bl_description = "Set a draw tool\
-        \nSet tool / brush / layer / material to use"
+    bl_description = "Tool preset\
+        \nChange tool / brush / layer / material to use"
     bl_options = {"REGISTER", "INTERNAL"}
 
     @classmethod
@@ -21,16 +26,16 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
             \nJust for personal organisation",
         default="", options={'SKIP_SAVE'})
 
-    # mode : EnumProperty(
-    #     name="Mode", description="Using shortcut will change to this mode", 
-    #     default='PAINT_GPENCIL', options={'HIDDEN', 'SKIP_SAVE'},
-    #     items=(
-    #         ('PAINT_GPENCIL', 'Draw', 'Switch to draw mode', 0),
-    #         ('EDIT_GPENCIL', 'Edit', 'Switch to edit mode', 1),
-    #         ('SCULPT_GPENCIL', 'Sculpt', 'Switch to Sculpt mode', 2),
-    #         ('OBJECT', 'Object', 'Switch to Object mode', 3),
-    #         ('NONE', 'Current', 'No mode switch', 4),
-    #         ))
+    mode : EnumProperty(
+        name="Mode", description="Using shortcut will change to this mode", 
+        default='NONE', options={'HIDDEN', 'SKIP_SAVE'},
+        items=(
+            ('PAINT_GPENCIL', 'Draw', 'Switch to draw mode', 0),
+            ('EDIT_GPENCIL', 'Edit', 'Switch to edit mode', 1),
+            ('SCULPT_GPENCIL', 'Sculpt', 'Switch to Sculpt mode', 2),
+            ('OBJECT', 'Object', 'Switch to Object mode', 3),
+            ('NONE', 'Current', 'No change', 4),
+            ))
 
     tool : StringProperty(
         name="Tool", description="Tool to set\
@@ -56,11 +61,39 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
         default="", # line
         options={'SKIP_SAVE'})
 
+    ## Interface options
+    show : BoolProperty(
+        name='Show in UI', description='Show in brushbar',
+        default=True,
+        )
+    
+    icon : EnumProperty(
+        name="Icon", description="Icon to display in interface", 
+        default='GPBRUSH_PEN',
+        items=get_blender_icons_as_enum()
+        )
+
+    description : StringProperty(default='', options={'SKIP_SAVE'})
+
+    order : IntProperty(default=0)
+
+    @classmethod
+    def description(cls, context, properties, ) -> str:
+        if properties.description:
+            if properties.name:
+                return properties.name + '\n' + properties.description
+            return properties.description
+        return "Set a draw tool\
+            \nSet tool / brush / layer / material to use"
+
     def execute(self, context):
         ## Mode needs to add shortcut to generic Gpencil (would conflict with Selection mask)
         # if self.mode != 'NONE' and context.mode != self.mode:
         #     bpy.ops.object.mode_set(mode=self.mode)
-        if not self.tool and not self.brush and not self.layer and not self.material:
+        
+        prop_names = ('tool', 'brush', 'layer', 'material')
+        # if not self.tool and not self.brush and not self.layer and not self.material:
+        if not any(getattr(self, prop_name) for prop_name in prop_names) and self.mode == 'NONE':
             message = [
                 'This Storytools keymap has no settings yet',
                 'Customize or disable the keymap in addon preferences',
@@ -69,12 +102,16 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
                 ]
             fn.show_message_box(message, 'Keymap not set', 'ERROR')
             return {"CANCELLED"}
-        
+
         ob = context.object
+
+        if self.mode != 'NONE':
+            bpy.ops.object.mode_set(mode=self.mode)
+
         if self.tool:
             try:
                 bpy.ops.wm.tool_set_by_id(name=self.tool)
-                self.report({'INFO'}, f'tool {self.tool}')
+                # self.report({'INFO'}, f'Tool {self.tool}')
             except:
                 self.report({'ERROR'}, f'Cannot set tool {self.tool}, need identifier (ex: "builtin_brush.Draw")')
                 return {"CANCELLED"}
@@ -157,47 +194,65 @@ def register_keymap():
 
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='ONE', value='PRESS')
     kmi.properties.name = 'Sketch Draw'
+    kmi.properties.mode = 'PAINT_GPENCIL'
     kmi.properties.tool = 'builtin_brush.Draw'
     kmi.properties.layer = 'Sketch'
     # kmi.properties.material = '' # line
-    kmi.properties.name = ''
+    kmi.properties.icon = 'GPBRUSH_PEN'
+    kmi.properties.description = 'Set draw tool, set "Sketch" layer if available'
     addon_keymaps.append((km, kmi))
 
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='TWO', value='PRESS')
     kmi.properties.name = 'Line Draw'
+    kmi.properties.mode = 'PAINT_GPENCIL'
     kmi.properties.tool = 'builtin_brush.Draw'
     kmi.properties.layer = 'Line'
+    kmi.properties.icon = 'GPBRUSH_SMOOTH'
+    kmi.properties.description = 'Set draw tool, set "Line" layer if available'
     # kmi.properties.material = '' # line
     addon_keymaps.append((km, kmi))
     
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='THREE', value='PRESS')
     kmi.properties.name = 'Bucket Fill'
+    kmi.properties.mode = 'PAINT_GPENCIL'
     kmi.properties.tool = 'builtin_brush.Fill'
     kmi.properties.layer = 'Color'
     # kmi.properties.material = '' # fill_white
+    kmi.properties.icon = 'GPBRUSH_FILL'
+    kmi.properties.description = 'Set fill tool, set "Color" layer if available'
     addon_keymaps.append((km, kmi))
     
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='FOUR', value='PRESS')
     kmi.properties.name = 'Fill Draw'
+    kmi.properties.mode = 'PAINT_GPENCIL'
     kmi.properties.tool = 'builtin_brush.Draw'
     kmi.properties.layer = 'Color'
+    kmi.properties.icon = 'GPBRUSH_MARKER'
+    # kmi.properties.icon = 'GPBRUSH_FILL'
+    kmi.properties.description = 'Set draw tool with "Color" layer (if available)'
     # kmi.properties.material = '' # fill_white
     addon_keymaps.append((km, kmi))
     
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='FIVE', value='PRESS')
     kmi.properties.name = 'Eraser by points'
+    kmi.properties.mode = 'PAINT_GPENCIL'
     kmi.properties.tool = 'builtin_brush.Erase'
     kmi.properties.brush = 'Eraser Point'
+    kmi.properties.icon = 'GPBRUSH_ERASE_HARD'
+    kmi.properties.description = 'Set Point Eraser'
     addon_keymaps.append((km, kmi))
     
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='SIX', value='PRESS')
     kmi.properties.name = 'Eraser by strokes'
+    kmi.properties.mode = 'PAINT_GPENCIL'
     kmi.properties.tool = 'builtin_brush.Erase'
     kmi.properties.brush = 'Eraser Stroke'
+    kmi.properties.icon = 'GPBRUSH_ERASE_STROKE'
+    kmi.properties.description = 'Set Stroke Eraser'
     addon_keymaps.append((km, kmi))
 
-    kmi = km.keymap_items.new('storytools.set_draw_tool', type='SEVEN', value='PRESS')
-    addon_keymaps.append((km, kmi))
+    # kmi = km.keymap_items.new('storytools.set_draw_tool', type='SEVEN', value='PRESS')
+    # addon_keymaps.append((km, kmi))
 
     # kmi = km.keymap_items.new('storytools.set_draw_tool', type='SEVEN', value='PRESS')
     # kmi.properties.name = 'Notes'

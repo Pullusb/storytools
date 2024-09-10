@@ -1,5 +1,6 @@
-from . import (properties,
-               tool_list,
+from .. import (
+            properties,
+            tool_list,
                )
 
 modules = (

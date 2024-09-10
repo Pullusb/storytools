@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.15.0
+
+- added: Upper tool-preset bar to selected existing preset in keymap (WIP)
+- removed: experimental tool preset UI in preferences
+
 1.14.2
 
 - added: Button to remove active camera in camera drop-down menu

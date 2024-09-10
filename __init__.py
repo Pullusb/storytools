@@ -4,8 +4,8 @@ bl_info = {
     "name": "Storytools - Storyboard Tools",
     "description": "Set of tools for Storyboarding",
     "author": "Samuel Bernou",
-    "version": (1, 14, 5),
-    "blender": (3, 3, 0),
+    "version": (1, 15, 0),
+    "blender": (4, 0, 0),
     "location": "View3D",
     "warning": "",
     "doc_url": "https://github.com/Pullusb/storytools",
@@ -15,7 +15,7 @@ bl_info = {
 import bpy
 
 from . import properties
-from . import tool_presets
+# from . import tool_presets # abandonned tool preset system
 from . import preferences
 from . import setup
 from . import camera_ops
@@ -27,12 +27,13 @@ from . import map
 from . import handles
 from . import panels
 from . import keymaps
+from . import gizmo_toolpreset_bar
 from .fn import get_addon_prefs
 
 modules = (
     setup,
     properties,
-    tool_presets,
+    # tool_presets, # abandonned tool preset system
     preferences,
     camera_ops,
     handles,
@@ -43,6 +44,7 @@ modules = (
     # map,
     panels,
     keymaps,
+    gizmo_toolpreset_bar,
 )
 
 def register():
