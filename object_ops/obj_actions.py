@@ -186,6 +186,11 @@ class STORYTOOLS_OT_create_object(Operator):
         bpy.ops.object.mode_set(mode='PAINT_GPENCIL')
         fn.reset_draw_settings(context=context)
 
+        ## Show canvas if first GP created on scene (or always enable at creation)
+        if len([o for o in context.scene.objects if o.type == 'GPENCIL']) == 1:
+            context.space_data.overlay.use_gpencil_grid = True
+        # context.space_data.overlay.use_gpencil_grid = True
+
         return {"FINISHED"}
 
 ## ---

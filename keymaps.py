@@ -15,7 +15,7 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
     bl_label = "Set Draw Tool"
     bl_description = "Tool preset\
         \nChange tool / brush / layer / material to use"
-    bl_options = {"REGISTER", "INTERNAL"}
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
 
     @classmethod
     def poll(cls, context):
@@ -78,13 +78,50 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
     order : IntProperty(default=0)
 
     @classmethod
-    def description(cls, context, properties, ) -> str:
+    def description(cls, context, properties) -> str:
+        ## User mande description is passed
         if properties.description:
             if properties.name:
                 return properties.name + '\n' + properties.description
             return properties.description
-        return "Set a draw tool\
-            \nSet tool / brush / layer / material to use"
+        
+        ## Auto build description from properties
+        desc = []
+        if properties.name:
+            desc.append(properties.name) 
+        else:
+            desc.append("Tool Preset")
+
+        desc.append("")
+
+        ## Maybe do not list mode ?
+        if properties.mode != 'NONE':
+            desc.append(f"Mode: {properties.mode.title().split('_')[0]}")
+        
+        tools = []
+        if properties.tool:
+            if 'builtin_brush.' in properties.tool:
+                tools.append(f"Tool: {properties.tool.replace('builtin_brush.', '')}")
+            else:
+                tools.append(f'Tool: {properties.tool}')
+        
+        if properties.brush:
+            tools.append(f'Brush: {properties.brush}')
+
+        if tools:
+            desc.append(', '.join(tools))
+        
+        gp_properties = []        
+        if properties.layer:
+            gp_properties.append(f'Layer: {properties.layer}')
+
+        if properties.material:
+            gp_properties.append(f'Material: {properties.material}')
+
+        if gp_properties:
+            desc.append(', '.join(gp_properties))
+
+        return '\n'.join(desc)
 
     def execute(self, context):
         ## Mode needs to add shortcut to generic Gpencil (would conflict with Selection mask)
@@ -196,19 +233,21 @@ def register_keymap():
     kmi.properties.name = 'Sketch Draw'
     kmi.properties.mode = 'PAINT_GPENCIL'
     kmi.properties.tool = 'builtin_brush.Draw'
+    kmi.properties.brush = 'Pencil'
     kmi.properties.layer = 'Sketch'
     # kmi.properties.material = '' # line
     kmi.properties.icon = 'GPBRUSH_PEN'
-    kmi.properties.description = 'Set draw tool, set "Sketch" layer if available'
+    # kmi.properties.description = 'Set Pencil brush on "Sketch" layer'
     addon_keymaps.append((km, kmi))
 
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='TWO', value='PRESS')
     kmi.properties.name = 'Line Draw'
     kmi.properties.mode = 'PAINT_GPENCIL'
     kmi.properties.tool = 'builtin_brush.Draw'
+    kmi.properties.brush = 'Ink Pen'
     kmi.properties.layer = 'Line'
     kmi.properties.icon = 'GPBRUSH_SMOOTH'
-    kmi.properties.description = 'Set draw tool, set "Line" layer if available'
+    # kmi.properties.description = 'Set Ink Brush on "Line" layer'
     # kmi.properties.material = '' # line
     addon_keymaps.append((km, kmi))
     
@@ -219,7 +258,7 @@ def register_keymap():
     kmi.properties.layer = 'Color'
     # kmi.properties.material = '' # fill_white
     kmi.properties.icon = 'GPBRUSH_FILL'
-    kmi.properties.description = 'Set fill tool, set "Color" layer if available'
+    # kmi.properties.description = 'Set Fill tool on "Color" layer'
     addon_keymaps.append((km, kmi))
     
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='FOUR', value='PRESS')
@@ -228,8 +267,7 @@ def register_keymap():
     kmi.properties.tool = 'builtin_brush.Draw'
     kmi.properties.layer = 'Color'
     kmi.properties.icon = 'GPBRUSH_MARKER'
-    # kmi.properties.icon = 'GPBRUSH_FILL'
-    kmi.properties.description = 'Set draw tool with "Color" layer (if available)'
+    # kmi.properties.description = 'Set draw tool "Color" layer'
     # kmi.properties.material = '' # fill_white
     addon_keymaps.append((km, kmi))
     
@@ -239,7 +277,7 @@ def register_keymap():
     kmi.properties.tool = 'builtin_brush.Erase'
     kmi.properties.brush = 'Eraser Point'
     kmi.properties.icon = 'GPBRUSH_ERASE_HARD'
-    kmi.properties.description = 'Set Point Eraser'
+    # kmi.properties.description = 'Set Point Eraser'
     addon_keymaps.append((km, kmi))
     
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='SIX', value='PRESS')
@@ -248,7 +286,7 @@ def register_keymap():
     kmi.properties.tool = 'builtin_brush.Erase'
     kmi.properties.brush = 'Eraser Stroke'
     kmi.properties.icon = 'GPBRUSH_ERASE_STROKE'
-    kmi.properties.description = 'Set Stroke Eraser'
+    # kmi.properties.description = 'Set Stroke Eraser'
     addon_keymaps.append((km, kmi))
 
     # kmi = km.keymap_items.new('storytools.set_draw_tool', type='SEVEN', value='PRESS')

@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.15.1
+
+- changed: better description for tool presets
+- changed: using tool preset add undo step
+
 1.15.0
 
 - added: Upper tool-preset bar to selected existing preset in keymap (WIP)

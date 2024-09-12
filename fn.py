@@ -347,6 +347,31 @@ def get_frame_coord_and_normal(obj, frame, tol=0.0003):
     return plane_co, plane_no
         
 
+def reset_gp_toolsettings():
+    '''hardcoded and arbitrary set of changes to get better settings for a storyboard session'''
+    
+    context = bpy.context
+
+    ## Set opacity at 1.0 and disable pressure on current pen
+    # br = context.tool_settings.gpencil_paint.brush
+    # br.gpencil_settings.use_strength_pressure = False
+    # br.gpencil_settings.pen_strength = 1.0
+
+    ## Affect pen
+    if pencil := bpy.data.brushes.get("Pencil"):
+        pencil.gpencil_settings.pen_strength = 0.7
+        # pencil.gpencil_settings.pen_strength = 1.0
+        pencil.gpencil_settings.use_strength_pressure = False
+    
+    if pencil := bpy.data.brushes.get("Ink Pen"):
+        pencil.gpencil_settings.pen_strength = 1.0
+        # pencil.gpencil_settings.pen_strength = 1.0
+        pencil.gpencil_settings.use_strength_pressure = False
+
+    ## Disable use guide
+    context.tool_settings.gpencil_sculpt.guide.use_guide = False
+
+
 ## -- Palette --
 
 def load_palette(filepath, ob=None):
