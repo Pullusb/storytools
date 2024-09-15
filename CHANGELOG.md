@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.15.2
+
+- fixed: Tool preset tab in preferences
+
 1.15.1
 
 - changed: better description for tool presets

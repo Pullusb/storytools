@@ -109,15 +109,9 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         default='SETTINGS',
         items=(
             ('SETTINGS', 'Settings', 'Customize interface elements and settings', 0),
-            ('SHORTCUTS', 'Shortcuts', 'Change shortcuts affectation', 1),
-            ('TOOLS', 'Tools', 'Add or reorganize tools', 2),
+            ('TOOLPRESETS', 'Tool Presets', 'Manage tool presets and change their shortcuts', 1),
             ),
         )
-    # items=(
-    #     ('UI', 'Interface', 'Customize interface elements', 0),
-    #     ('SHORTCUTS', 'Shortcuts', 'Change shortcuts affectation', 1),
-    #     ('SETTINGS', 'Settings', 'Various settings', 2),
-    #     ),
 
     ## UI settings
 
@@ -258,7 +252,7 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             col.label(text='Object Settings:', icon='GREASEPENCIL')
             col.prop(self, 'default_edit_line_opacity')
 
-        elif self.pref_tab == 'SHORTCUTS':
+        elif self.pref_tab == 'TOOLPRESETS':
 
             user_keymaps = bpy.context.window_manager.keyconfigs.user.keymaps
             # km = user_keymaps['Grease Pencil Stroke Paint Mode']

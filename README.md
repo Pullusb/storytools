@@ -49,7 +49,7 @@ When selecting a material, it "stick" to current active layer
 (i.e: when selecting this layer again, it will switch back to this material)
 
 
-## Bottom Toolbar
+## Bottom Control bar
 
 Action gizmo buttons to easily place object and camera
 All transform actions respect autokey
@@ -73,8 +73,23 @@ Camera Actions:
 - Key camera position
 
 
+## Top Tool preset bar
+
+The tool presets are combos or customizables button + shortcut.  
+Each set Blender tool with options, like a Macro.  
+Defined through a shortcut and appear as button in the `Tool preset topbar` at the top of the viewport.
+
 
 <!-- ## TODO
+
+-> Add a tool preset "refresh" in addon prefs (if using custom UI, can also refresh on properties update, but might be hazardous)
+-> New tool preset button from prefs > tool presets
+-> Add UI to better view and customize tools presets (icon selector, pre-entered names for builtin brush category, can use old code from "presets as collection"
+
+-> How or when to fine tune settings of bucket fill (need to add lenght)
+-> Probably need another brush with special settings for negative fill (auto-create new brushes)
+
+-> Check if tool presets can handle multiple modes with bypass on main default shortcuts depending on each contexts
 
 -> Create a test storyboard template and check how to load
 
