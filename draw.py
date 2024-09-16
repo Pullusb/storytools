@@ -44,15 +44,12 @@ def stop_callback(self, context):
         bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
     if hasattr(self, '_pos_handle'):
         bpy.types.SpaceView3D.draw_handler_remove(self._pos_handle, 'WINDOW')
+    if hasattr(self, '_guide_handle'):
+        bpy.types.SpaceView3D.draw_handler_remove(self._guide_handle, 'WINDOW')
     context.area.tag_redraw()
 
-
 def origin_position_callback(self, context):
-    # Draw origin position VS Ghost old position
-    # self.objects
-    # self.init_mats[i]
-    
-    ## TODO: Handle case with one objects and case with multiple objects
+    """Draw origin position and init position as ghost"""
 
     coords = [] # Origin coords
     ghost_coords = [] # Starting origin coords
@@ -120,6 +117,53 @@ def origin_position_callback(self, context):
     gpu.state.depth_test_set(previous_depth_test_value)
 
     gpu.state.line_width_set(1)
+    gpu.state.blend_set('NONE')
+
+
+def guide_callback(self, context):
+    """Draw pseudo shadow to better see object, WIP TEST"""
+
+    # coords = []
+    ## only on active object
+    bbox = context.object.bound_box
+
+    ## TODO if bbox has 0 0 0, fall back on a fake 0.2, 0.2, 0.2 box
+
+    ## TODO In the end, better to draw thin lines for positionning
+
+    ## Get view orign and create a Z box according to event
+
+    mat = context.object.matrix_world
+    square = [
+              mat @ Vector(bbox[0]),
+              mat @ Vector(bbox[4]),
+              mat @ Vector(bbox[7]),
+              mat @ Vector(bbox[3]),
+              ]
+
+    if bpy.app.version <= (3,6,0):
+        shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+    else:
+        shader = gpu.shader.from_builtin('UNIFORM_COLOR')
+
+    coords = [
+        square[0],  square[1], square[0] + Vector((0,0,-12)),
+        square[1],  square[0] + Vector((0,0,-12)), square[1] + Vector((0,0,-12))
+    ]
+
+    previous_depth_test_value = gpu.state.depth_test_get()
+
+    # gpu.state.depth_test_set('LESS') # visible "in front" of other
+    gpu.state.depth_test_set('EQUAL') # ...
+    ## gpu.state.depth_test_set('GREATER') # visible in "behind" other
+    gpu.state.blend_set('ALPHA')
+    
+    shader.uniform_float("color", (0.0, 0.7, 0.4, 0.3))
+    batch = batch_for_shader(shader, 'TRIS', {"pos": coords})
+    batch.draw(shader)
+
+    gpu.state.depth_test_set(previous_depth_test_value)
+
     gpu.state.blend_set('NONE')
 
 

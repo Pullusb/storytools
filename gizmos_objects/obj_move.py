@@ -301,6 +301,9 @@ class STORYTOOLS_OT_object_pan(Operator):
         self._handle = bpy.types.SpaceView3D.draw_handler_add(draw.lock_axis_draw_callback, args, 'WINDOW', 'POST_VIEW')
         ## Handler for origin positions and ghost
         self._pos_handle = bpy.types.SpaceView3D.draw_handler_add(draw.origin_position_callback, args, 'WINDOW', 'POST_VIEW')
+        
+        ## placement helpers
+        # self._guide_handle = bpy.types.SpaceView3D.draw_handler_add(draw.guide_callback, args, 'WINDOW', 'POST_VIEW')
         context.window.cursor_set("SCROLL_XY")
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
