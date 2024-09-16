@@ -134,6 +134,8 @@ def guide_callback(self, context):
     ## Get view orign and create a Z box according to event
 
     mat = context.object.matrix_world
+
+    ## Bottom square
     square = [
               mat @ Vector(bbox[0]),
               mat @ Vector(bbox[4]),
@@ -151,11 +153,17 @@ def guide_callback(self, context):
         square[1],  square[0] + Vector((0,0,-12)), square[1] + Vector((0,0,-12))
     ]
 
+    coords += [
+        square[2],  square[3], square[2] + Vector((0,0,-12)),
+        square[3],  square[2] + Vector((0,0,-12)), square[3] + Vector((0,0,-12))
+    ]
+
     previous_depth_test_value = gpu.state.depth_test_get()
 
-    # gpu.state.depth_test_set('LESS') # visible "in front" of other
-    gpu.state.depth_test_set('EQUAL') # ...
-    ## gpu.state.depth_test_set('GREATER') # visible in "behind" other
+    gpu.state.depth_test_set('LESS') # visible "in front" of other
+    # gpu.state.depth_test_set('EQUAL') # ...
+    # gpu.state.depth_test_set('GREATER') # visible in "behind" other
+    gpu.state.face_culling_set('NONE') # NONE, FRONT or BACK.
     gpu.state.blend_set('ALPHA')
     
     shader.uniform_float("color", (0.0, 0.7, 0.4, 0.3))
