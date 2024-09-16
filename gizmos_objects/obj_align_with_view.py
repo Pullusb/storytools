@@ -204,7 +204,7 @@ class STORYTOOLS_OT_align_view_to_object(Operator):
 
     def execute(self, context):
         r3d = context.space_data.region_3d
-
+        init_persp = r3d.view_perspective
         if context.object.type != 'GPENCIL':
             bpy.ops.view3d.view_axis(align_active=True, type='FRONT', relative=False)
 
@@ -215,7 +215,7 @@ class STORYTOOLS_OT_align_view_to_object(Operator):
             ## if alignement is front / side / top, use native operators
 
             if orient == 'VIEW':
-                ## A. Just Align with obejct front ?
+                ## A. Just Align with object front ?
                 # bpy.ops.view3d.view_axis(align_active=True, type='FRONT', relative=False)
                 
                 ## B. Guess plane from active
@@ -294,6 +294,10 @@ class STORYTOOLS_OT_align_view_to_object(Operator):
             
             ## Restore location
             r3d.view_location = loc
+
+        ## Restore initial perspective mode
+        if init_persp != 'CAMERA' and init_persp != r3d.view_perspective:
+            r3d.view_perspective = init_persp
 
         return {"FINISHED"}
 

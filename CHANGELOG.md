@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.16.0
+
+- added: Origin displayed as cross on move and rotate controls, with previous position as ghost for easier placement
+- fixed: Console error when using depth control
+
 1.15.3
 
 - added: addon preferences hide toggle for tool presets bar

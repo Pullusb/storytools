@@ -108,6 +108,8 @@ class STORYTOOLS_OT_object_depth_move(Operator):
         self.delta = 0
         self.cumulated_delta = 0
 
+        self.coords = []
+        self.front_coords = []
         self.cam_pos = self.cam.matrix_world.translation
         self.view_vector = Vector((0,0,-1))
         self.view_vector.rotate(self.cam.matrix_world)
@@ -273,7 +275,7 @@ class STORYTOOLS_OT_object_pan(Operator):
         self.current_translate = Vector((0, 0, 0))
         self.init_world_loc = self.ob.matrix_world.to_translation()
 
-        self.init_pos = self.ob.location.copy() # to restore if cancelled
+        self.init_mat = self.ob.matrix_world.copy() # to restore if cancelled
 
         ## Axis Lock
         # view_matrix = context.space_data.region_3d.view_matrix
@@ -295,7 +297,10 @@ class STORYTOOLS_OT_object_pan(Operator):
         self.update_position(context, event)
 
         args = (self, context)
+        ## Handler for lock axis
         self._handle = bpy.types.SpaceView3D.draw_handler_add(draw.lock_axis_draw_callback, args, 'WINDOW', 'POST_VIEW')
+        ## Handler for origin positions and ghost
+        self._pos_handle = bpy.types.SpaceView3D.draw_handler_add(draw.origin_position_callback, args, 'WINDOW', 'POST_VIEW')
         context.window.cursor_set("SCROLL_XY")
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
@@ -365,7 +370,7 @@ class STORYTOOLS_OT_object_pan(Operator):
             return {'FINISHED'}
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
-            self.ob.location = self.init_pos
+            self.ob.matrix_world = self.init_mat
             draw.stop_callback(self, context)
             return {'CANCELLED'}
 
@@ -460,6 +465,10 @@ class STORYTOOLS_OT_object_rotate(Operator):
                 fn.key_object(self.ob, use_autokey=True)
                 return {'FINISHED'}
 
+        ## Optional handler to show origin and ghost
+        args = (self, context) # Dcb
+        self._pos_handle = bpy.types.SpaceView3D.draw_handler_add(draw.origin_position_callback, args, 'WINDOW', 'POST_VIEW') # Dcb
+
         context.window.cursor_set("SCROLL_XY")
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
@@ -501,6 +510,7 @@ class STORYTOOLS_OT_object_rotate(Operator):
         if event.type == 'LEFTMOUSE':
             context.window.cursor_set("DEFAULT")
             fn.key_object(self.ob, use_autokey=True)
+            draw.stop_callback(self, context) # Dcb
             if self.camera:
                 context.window_manager['last_rotate_call_time'] = time()
                 if self.init_mat == self.ob.matrix_world:
@@ -513,6 +523,7 @@ class STORYTOOLS_OT_object_rotate(Operator):
             self.ob.matrix_world = self.init_mat
             context.area.header_text_set(None)
             context.window.cursor_set("DEFAULT")
+            draw.stop_callback(self, context) # Dcb
             return {'CANCELLED'}
         return {'RUNNING_MODAL'}
 
