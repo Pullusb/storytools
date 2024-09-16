@@ -23,6 +23,13 @@ def toggle_gizmo_buttons(self, _):
     else:
         bpy.utils.unregister_class(gizmo_toolbar.STORYTOOLS_GGT_toolbar)
 
+def toggle_toolpreset_buttons(self, _):
+    from . import gizmo_toolpreset_bar
+    if self.active_presetbar:
+        bpy.utils.register_class(gizmo_toolpreset_bar.STORYTOOLS_GGT_toolpreset_bar)
+    else:
+        bpy.utils.unregister_class(gizmo_toolpreset_bar.STORYTOOLS_GGT_toolpreset_bar)
+
 def ui_in_sidebar_update(self, _):
     from .panels import (STORYTOOLS_PT_storytools_ui,
                          STORYTOOLS_PT_camera_ui,
@@ -122,6 +129,16 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         update=ui_in_sidebar_update,
     )
 
+    active_toolbar : BoolProperty(
+        name='Enable Bottom Control bar',
+        description="Show viewport bottom bar with control gizmo buttons",
+        default=True, update=toggle_gizmo_buttons)
+
+    active_presetbar : BoolProperty(
+        name='Enable Top Tool Presets Bar',
+        description="Show viewport top tool-presets bar",
+        default=True, update=toggle_toolpreset_buttons)
+
     default_edit_line_opacity : FloatProperty(
         name='Default Edit Line Opacity',
         description="Edit line opacity for newly created objects\
@@ -129,13 +146,9 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             \nBlender default is 0.5",
         default=0.2, min=0.0, max=1.0)
 
-    active_toolbar : BoolProperty(
-        name='Enable Bottom Toolbar',
-        description="Show viewport bottom toolbar with gizmo buttons",
-        default=True, update=toggle_gizmo_buttons)
-
+    ## Toolbar settings (Control bar)
     toolbar_margin : IntProperty(
-        name='Toolbar margin',
+        name='Control Bar Margin',
         description="Space margin between viewport and bottom tool bar Gizmo buttons",
         default=36,
         soft_min=-100, soft_max=500,
@@ -149,16 +162,38 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
     
     toolbar_backdrop_size : IntProperty(
         name='Icon Backdrop Size',
-        description="Backdrop size of the toolbar icons (Blender gizmo buttons are around 14)",
+        description="Backdrop size of the control icons (Blender gizmo buttons are around 14)",
         default=20,
         min=12, max=40)
 
     toolbar_gap_size : IntProperty(
         name='Button Distance',
-        description="Gap size between buttons in toolbar icons",
+        description="Gap size between buttons in control bar",
         default=46,
         min=20, max=200)
 
+    ## Toolpreset settings
+    presetbar_margin : IntProperty(
+        name='Preset Bar Margin',
+        description="Space margin between viewport border and tool preset buttons",
+        default=18,
+        soft_min=-100, soft_max=500,
+        min=-1000, max=1000)
+    
+    presetbar_gap_size : IntProperty(
+        name='Preset Bar Button Distance',
+        description="Gap size between buttons in tool presets bar",
+        default=46,
+        min=20, max=200)
+
+    presetbar_backdrop_size : IntProperty(
+        name='Icon Backdrop Size',
+        description="Backdrop size of the preset bar icons (Blender gizmo buttons are around 14)",
+        default=20,
+        min=12, max=40)
+
+
+    ## UI settings
     object_gz_color : FloatVectorProperty(
         name="Object Buttons Color",
         description="Object buttons gizmo backdrop color",
@@ -196,9 +231,8 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         default=(0.7, 0.2, 0.2, 0.22), min=0.0, max=1.0,
         description="Color of the far plane visual hint when using Depth move")
 
-    ## Tool presets
+    ## Tool presets (Old tool presets)
     # tool_presets : PointerProperty(type=STORYTOOLS_PG_tool_presets)
-
 
     # Update variables
     is_git_repo : BoolProperty(default=False)
@@ -224,11 +258,19 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
                 col.label(text='Layer/Material Sync is disabled when sidebar panel is off', icon='INFO')
 
             col.separator()
-            col.label(text='Toolbar Settings:', icon='STATUSBAR')
+            col.label(text='Tool Preset Bar Settings:', icon='NODE_TOP')
+            col.prop(self, 'active_presetbar')
+            col.prop(self, 'presetbar_margin')
+            col.prop(self, 'presetbar_gap_size', text='Buttons Spread')
+            col.prop(self, 'presetbar_backdrop_size')
+
+
+            col.separator()
+            col.label(text='Control Bar Settings:', icon='STATUSBAR')
             col.prop(self, 'active_toolbar')
             tool_col = col.column()
             tool_col.prop(self, 'toolbar_margin')
-            tool_col.prop(self, 'toolbar_gap_size')
+            tool_col.prop(self, 'toolbar_gap_size', text='Buttons Spread')
             tool_col.prop(self, 'toolbar_backdrop_size')
             # tool_col.prop(self, 'toolbar_icon_bounds')
             

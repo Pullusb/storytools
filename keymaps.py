@@ -28,7 +28,7 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
 
     mode : EnumProperty(
         name="Mode", description="Using shortcut will change to this mode", 
-        default='NONE', options={'HIDDEN', 'SKIP_SAVE'},
+        default='PAINT_GPENCIL', options={'HIDDEN', 'SKIP_SAVE'},
         items=(
             ('PAINT_GPENCIL', 'Draw', 'Switch to draw mode', 0),
             ('EDIT_GPENCIL', 'Edit', 'Switch to edit mode', 1),
@@ -74,6 +74,9 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
         )
 
     description : StringProperty(default='', options={'SKIP_SAVE'})
+    
+    ## Shortcut text : Internal use only for description
+    shortcut : StringProperty(default='', options={'SKIP_SAVE'})
 
     order : IntProperty(default=0)
 
@@ -81,9 +84,12 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
     def description(cls, context, properties) -> str:
         ## User mande description is passed
         if properties.description:
+            desc = properties.description
             if properties.name:
-                return properties.name + '\n' + properties.description
-            return properties.description
+                desc = properties.name + '\n' + desc
+            if properties.shortcut:
+                desc = desc + '\n' + properties.shortcut
+            return desc
         
         ## Auto build description from properties
         desc = []
@@ -94,9 +100,9 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
 
         desc.append("")
 
-        ## Maybe do not list mode ?
-        if properties.mode != 'NONE':
-            desc.append(f"Mode: {properties.mode.title().split('_')[0]}")
+        ## List mode ?
+        # if properties.mode != 'NONE':
+        #     desc.append(f"Mode: {properties.mode.title().split('_')[0]}")
         
         tools = []
         if properties.tool:
@@ -109,7 +115,7 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
             tools.append(f'Brush: {properties.brush}')
 
         if tools:
-            desc.append(', '.join(tools))
+            desc.append(' > '.join(tools))
         
         gp_properties = []        
         if properties.layer:
@@ -120,6 +126,10 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
 
         if gp_properties:
             desc.append(', '.join(gp_properties))
+
+        if properties.shortcut:
+            desc.append('')
+            desc.append(f'Shortcut: {properties.shortcut}')
 
         return '\n'.join(desc)
 
@@ -142,6 +152,7 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
 
         ob = context.object
 
+        # Mode change (Need context aware shortcut protection to work well with other modes)...
         if self.mode != 'NONE':
             bpy.ops.object.mode_set(mode=self.mode)
 

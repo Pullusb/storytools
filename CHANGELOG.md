@@ -2,6 +2,12 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.15.3
+
+- added: addon preferences hide toggle for tool presets bar
+- added: addon preferences customize margin and spreading of tool presets bar
+- added: add shortcut info in tool presets tooltip
+
 1.15.2
 
 - fixed: Tool preset tab in preferences

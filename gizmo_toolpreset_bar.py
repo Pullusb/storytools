@@ -51,12 +51,13 @@ class STORYTOOLS_GGT_toolpreset_bar(GizmoGroup):
                     fn.set_gizmo_settings(gz, icon=props.icon, alpha=0, alpha_highlight=0.2)
                     op = gz.target_set_operator("storytools.set_draw_tool")
                     op.name = props.name
-                    op.mode = props.mode
+                    # op.mode = props.mode # Default Keymap currently limited to Paint mode
                     op.tool = props.tool
                     op.layer = props.layer
                     op.material = props.material
                     op.brush = props.brush
                     op.description = props.description
+                    op.shortcut = kmi.to_string() # Shortcut text for description
                     self.tool_preset_gizmos.append(gz)
 
     def draw_prepare(self, context):
@@ -64,8 +65,8 @@ class STORYTOOLS_GGT_toolpreset_bar(GizmoGroup):
         settings = context.scene.storytools_settings
         
         # icon_size = prefs.toolbar_icon_bounds
-        gap_size = prefs.toolbar_gap_size
-        backdrop_size = 20 # prefs.toolbar_backdrop_size
+        gap_size = prefs.presetbar_gap_size
+        backdrop_size = prefs.presetbar_backdrop_size
         
         section_separator = 20
         px_scale = context.preferences.system.ui_scale
@@ -78,11 +79,12 @@ class STORYTOOLS_GGT_toolpreset_bar(GizmoGroup):
         region = context.region
         count = len(self.gizmos)
 
-        ## Using only direct offset
+        ## Using only direct offsetn
         self.bar_width = (count - 1) * (gap_size * px_scale) + (section_separator * 2) * px_scale
+        # self.bar_width = (count - 1) * (gap_size * px_scale)
         
         ## Need to set upper margin
-        vertical_pos = region.height - ((prefs.toolbar_margin * px_scale) / 2) - fn.get_header_margin(context, bottom=False, overlap=False)
+        vertical_pos = region.height - (prefs.presetbar_margin * px_scale) - fn.get_header_margin(context, bottom=False, overlap=False)
         left_pos = region.width / 2 - self.bar_width / 2
         next_pos = gap_size * px_scale
 
