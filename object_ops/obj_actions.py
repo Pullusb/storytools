@@ -335,14 +335,68 @@ def update_object_change(self, context):
     #     print('Object is hidden!')
 
 
-class CUSTOM_object_collection(PropertyGroup):
-
-    # need an index for the native object list
+class STORYTOOLS_object_collection(PropertyGroup):
+    ## need an index for the native object list
     index : bpy.props.IntProperty(default=-1, update=update_object_change)
     
     # point_prop : PointerProperty(
     #     name="Object",
     #     type=bpy.types.Object)
+
+class STORYTOOLS_OT_grease_pencil_options(bpy.types.Operator):
+    bl_idname = "storytools.grease_pencil_options"
+    bl_label = 'Grease Pencil Options Menu'
+    bl_description = "Show grease pencil options"
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    object_name : bpy.props.StringProperty(name='')
+
+    def invoke(self, context, event):
+        if not self.object_name:
+            return {"CANCELLED"}
+        self.object = bpy.data.objects.get(self.object_name)
+        if not self.object:
+            self.report({"ERROR"}, f'Could not found object named "{self.object_name}"')
+            return {"CANCELLED"}
+
+        # self.sidebar_width = next((r.width for r in context.area.regions if r.type == 'UI'), 0) / context.preferences.system.ui_scale
+        return context.window_manager.invoke_props_dialog(self, width=300)
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        item = self.object
+
+        ## ! Always show users infos even when elements are not collapsed !
+        # if self.sidebar_width <= 380:
+        if item.data.users > 1:
+            col.label(text='Multiple Data Users:', icon='USER')
+            col.template_ID(item, "data")
+        else:
+            col.label(text='Unique Data User', icon='USER')
+
+        # if self.sidebar_width <= 270:
+        ## parent infos
+        if item.parent:
+            col.label(text=f'Object Parented to "{item.parent.name}"', icon='DECORATE_LINKED')
+        else:
+            col.label(text='Object Is Not Parented', icon='BLANK1') # DECORATE_LINKED
+
+        ## In front infos
+        col.prop(item, 'show_in_front', text='In Front', icon='MOD_OPACITY')
+        
+        # if self.sidebar_width <= 240:
+        if item.visible_get():
+            col.operator('storytools.visibility_toggle', text='Toggle Visibility', icon='HIDE_OFF').name = item.name
+        else:
+            col.operator('storytools.visibility_toggle', text='Toggle Visibility', icon='HIDE_ON').name = item.name
+
+        ## TODO: Test to remove useless cancel button (and eventually OK button).
+        ## /!\ "template_popup_confirm" exists, only compatible with 4.2+
+        # layout.template_popup_confirm("", text="Ok", cancel_text="")
+
+    def execute(self, context):
+        return {"FINISHED"}
 
 class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
     # Constants (flags)
@@ -380,8 +434,9 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
         # row.prop(item, 'hide', text='', icon=hide_ico, invert_checkbox=True)
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index): # , flt_flag
+        sidebar_width = next((r.width for r in context.area.regions if r.type == 'UI'), 0) / context.preferences.system.ui_scale
         settings = context.scene.storytools_settings
-        row = layout.row()
+        row = layout.row(align=True)
         if item == context.view_layer.objects.active:
             # EDIT_GPENCIL, SCULPT_GPENCIL, WEIGHT_GPENCIL, VERTEX_GPENCIL
 
@@ -401,31 +456,45 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
         name_row.prop(item, 'name', icon=icon, text='',emboss=False)
         name_row.active = item.visible_get()
 
-        if settings.show_gp_users:
-            if item.data.users > 1:
-                row.template_ID(item, "data")
-            else:
-                row.label(text='', icon='BLANK1')
-        
-        if settings.show_gp_parent:
-            if item.parent:
-                row.label(text='', icon='DECORATE_LINKED')
-            else:
-                row.label(text='', icon='BLANK1')
-        
-        # subrow.alignment = 'RIGHT'
-        if settings.show_gp_in_front:
-            subrow = row.row()
-            subrow.prop(item, 'show_in_front', text='', icon='MOD_OPACITY', emboss=False)
-            subrow.active = item.show_in_front
 
-        ## Clickable toggle, set and sync hide from viewlayer, viewport and render 
-        ## (Can lead to confusion with blender model... but heh !)
-        if item.visible_get():
-            row.operator('storytools.visibility_toggle', text='', icon='HIDE_OFF', emboss=False).name = item.name
-        else:
-            row.operator('storytools.visibility_toggle', text='', icon='HIDE_ON', emboss=False).name = item.name
+        if sidebar_width > 380:
+            if settings.show_gp_users:
+                if item.data.users > 1:
+                    if sidebar_width > 700:
+                        row.template_ID(item, "data")
+                    else:
+                        # row.label(text=f'{item.data.users}') # text align left and cut object name
+                        row.label(text='', icon='USER')
+
+                else:
+                    row.label(text='', icon='BLANK1')
+
+        if sidebar_width > 330:
+            if settings.show_gp_parent:
+                if item.parent:
+                    row.label(text='', icon='DECORATE_LINKED')
+                else:
+                    row.label(text='', icon='BLANK1')
+        
+        if sidebar_width > 300:
+            # subrow.alignment = 'RIGHT'
+            if settings.show_gp_in_front:
+                subrow = row.row()
+                subrow.prop(item, 'show_in_front', text='', icon='MOD_OPACITY', emboss=False)
+                subrow.active = item.show_in_front
+
+        if sidebar_width > 260:
+            ## Viz Clickable toggle, set and sync hide from viewlayer, viewport and render 
+            ## (Can lead to confusion with blender model... but heh !)
+            if item.visible_get():
+                row.operator('storytools.visibility_toggle', text='', icon='HIDE_OFF', emboss=False).name = item.name
+            else:
+                row.operator('storytools.visibility_toggle', text='', icon='HIDE_ON', emboss=False).name = item.name
     
+        ## Infos pop-up for collapse items
+        # if sidebar_width <= 550:
+        row.operator('storytools.grease_pencil_options', text='', icon='THREE_DOTS', emboss=False).object_name = item.name
+
     # Called once to draw filtering/reordering options.
     # def draw_filter(self, context, layout):
     #     pass
@@ -476,7 +545,8 @@ classes=(
 STORYTOOLS_OT_create_object,
 STORYTOOLS_OT_object_draw,
 STORYTOOLS_OT_visibility_toggle,
-CUSTOM_object_collection, ## Test all bugged
+STORYTOOLS_object_collection, ## Test all bugged
+STORYTOOLS_OT_grease_pencil_options,
 STORYTOOLS_UL_gp_objects_list,
 )
 
@@ -485,7 +555,7 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
     
-    bpy.types.Scene.gp_object_props = bpy.props.PointerProperty(type=CUSTOM_object_collection)
+    bpy.types.Scene.gp_object_props = bpy.props.PointerProperty(type=STORYTOOLS_object_collection)
     
     # bpy.types.GPENCIL_MT_....append(menu_add_storytools_gp)
 

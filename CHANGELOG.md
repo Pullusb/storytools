@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.16.1
+
+- added: submenu for GP settings in list
+- changed: More compact and responsive UI for camera list and object list
+
 1.16.0
 
 - added: Origin displayed as cross on move and rotate controls, with previous position as ghost for easier placement

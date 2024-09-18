@@ -213,7 +213,7 @@ class STORYTOOLS_PT_camera_settings(Panel):
         col.active = cam.data.type != 'ORTHO'
 
         col = layout.column()
-        col.prop(context.scene.storytools_settings, "show_focal", text='Show Lens')
+        col.prop(context.scene.storytools_settings, "show_cam_settings", text='Show Settings In List')
         
         col.separator()
         col.label(text='Track To Constraint:')
@@ -271,7 +271,6 @@ def camera_layout(layout, context):
 
     ## Lens options
     col_lateral.popover('STORYTOOLS_PT_camera_settings', text='', icon='DOWNARROW_HLT')
-    # col_lateral.prop(context.scene.storytools_settings, "show_focal", text='', icon='CONE')
     
     ## ! can't call lens panel, (call context.camera in property)
     # col_lateral.operator('wm.call_panel', text='', icon='TOOL_SETTINGS').name = 'DATA_PT_lens'

@@ -68,14 +68,62 @@ def update_camera_change(self, context):
     return
 
 
-class CUSTOM_camera_collection(PropertyGroup):
+class STORYTOOLS_camera_collection(PropertyGroup):
     index : bpy.props.IntProperty(default=-1, update=update_camera_change)
+
+def show_lens(layout, object):
+    if object.data.type == 'ORTHO':
+        layout.prop(object.data, 'ortho_scale', text='', emboss=False)
+    else:
+        if object.data.lens_unit == 'FOV':
+            layout.prop(object.data, 'angle', text='', emboss=False)
+        else:
+            layout.prop(object.data, 'lens', text='', emboss=False)
+
+class STORYTOOLS_OT_camera_options(bpy.types.Operator):
+    bl_idname = "storytools.camera_options"
+    bl_label = 'Camera Options Menu'
+    bl_description = "Show camera options"
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    object_name : bpy.props.StringProperty(name='')
+
+    def invoke(self, context, event):
+        if not self.object_name:
+            return {"CANCELLED"}
+        self.object = bpy.data.objects.get(self.object_name)
+        if not self.object:
+            self.report({"ERROR"}, f'Could not found object named "{self.object_name}"')
+            return {"CANCELLED"}
+
+        # self.sidebar_width = next((r.width for r in context.area.regions if r.type == 'UI'), 0) / context.preferences.system.ui_scale
+        return context.window_manager.invoke_props_dialog(self, width=150)
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+
+        # if self.sidebar_width <= 290:
+        show_lens(col, self.object)
+        col.operator('storytools.make_active_and_select', text='Select Camera', icon='RESTRICT_SELECT_OFF').name = self.object_name
+
+
+        ## TODO: Test to remove useless cancel button (and eventually OK button).
+        ## /!\ "template_popup_confirm" exists, only compatible with 4.2+
+        # layout.template_popup_confirm("", text="Ok", cancel_text="")
+
+    def execute(self, context):
+        return {"FINISHED"}
 
 class STORYTOOLS_UL_camera_list(bpy.types.UIList):
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index): # , flt_flag
         # layout.label(text=item.name)
-        row = layout.row()
+        # row = layout.row()
+        row = layout.row(align=True)
+
+        ## Check sidebar width for responsive UI
+        sidebar_width = next((r.width for r in context.area.regions if r.type == 'UI'), 0) / context.preferences.system.ui_scale
 
         in_draw = False
         icon = 'CAMERA_DATA'
@@ -85,7 +133,6 @@ class STORYTOOLS_UL_camera_list(bpy.types.UIList):
                 icon = 'OUTLINER_OB_CAMERA'
             elif cam.name == 'draw_cam' and cam in item.children:
                 in_draw = True
-                # icon = 'OUTLINER_OB_CAMERA'
                 icon = 'CON_CAMERASOLVER'
         
         row.prop(item, 'name', icon=icon, text='', emboss=False)
@@ -114,23 +161,24 @@ class STORYTOOLS_UL_camera_list(bpy.types.UIList):
         #     else:
         #         row.label(text='', icon='BLANK1')
 
-        ## show focal length
-        if settings.show_focal:
-            if item.data.type == 'ORTHO':
-                row.prop(item.data, 'ortho_scale', text='', emboss=False)
-            else:
-                if item.data.lens_unit == 'FOV':
-                    row.prop(item.data, 'angle', text='', emboss=False)
-                else:
-                    row.prop(item.data, 'lens', text='', emboss=False)
-
         # if item.visible_get():
         #     # row.label(text='', icon='HIDE_OFF')
         #     row.operator('storytools.visibility_toggle', text='', icon='HIDE_OFF', emboss=False).name = item.name
         # else:
         #     # row.label(text='', icon='HIDE_ON')
         #     row.operator('storytools.visibility_toggle', text='', icon='HIDE_ON', emboss=False).name = item.name
-    
+
+        if settings.show_cam_settings and sidebar_width > 310:
+            show_lens(row, item)
+
+            # Select camera # show only with big lateral bar
+            row.operator('storytools.make_active_and_select', text='', icon='RESTRICT_SELECT_OFF').name = item.name
+        else:
+            ## Collapsed panel with infos
+            op = row.operator('storytools.camera_options', text='', icon='THREE_DOTS', emboss=False)
+            op.object_name = item.name
+        # if sidebar_width <= 290:
+
     # Called once to draw filtering/reordering options.
     # def draw_filter(self, context, layout):
     #     pass
@@ -194,7 +242,8 @@ class STORYTOOLS_OT_add_focal_preset(AddPresetBase, Operator):
 
 classes=(
     # STORYTOOLS_OT_camera_change_focal,
-    CUSTOM_camera_collection,
+    STORYTOOLS_OT_camera_options,
+    STORYTOOLS_camera_collection,
     STORYTOOLS_UL_camera_list,
     STORYTOOLS_OT_set_focal,
     # STORYTOOLS_OT_add_focal_preset,
@@ -212,7 +261,7 @@ def register():
 
     for cls in classes:
         bpy.utils.register_class(cls)
-    bpy.types.Scene.st_camera_props = bpy.props.PointerProperty(type=CUSTOM_camera_collection)
+    bpy.types.Scene.st_camera_props = bpy.props.PointerProperty(type=STORYTOOLS_camera_collection)
 
 def unregister():
     for cls in reversed(classes):

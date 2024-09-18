@@ -60,17 +60,16 @@ class STORYTOOLS_PGT_main_settings(PropertyGroup) :
             \nTo completely disable, uncheck 'Active Toolbar' in addon Storytools preferences",
         default=True)
     
-    show_focal : bpy.props.BoolProperty(
-        name='Show Focal',
-        description="Show the focal length properties of every camera",
+    show_cam_settings : bpy.props.BoolProperty(
+        name='Show Camera Settings',
+        description="Show Camera properties of every camera in list (when sidebar size allow)",
         default=True)
-
     
     ## GP Object properties
     show_gp_users : bpy.props.BoolProperty(
         name='Show Linked Data Toggle',
         description="Show object user data when object has multiple user (when object have multiple users)",
-        default=False)
+        default=True)
     
     show_gp_parent : bpy.props.BoolProperty(
         name='Show Parent Info',
