@@ -175,12 +175,10 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
     def draw_prepare(self, context):
         prefs = get_addon_prefs()
         settings = context.scene.storytools_settings
-        # icon_size = prefs.toolbar_icon_bounds
-        icon_size = 0
         gap_size = prefs.toolbar_gap_size
         backdrop_size = prefs.toolbar_backdrop_size
         
-        section_separator = 20
+        section_separator = int(gap_size / 2) # Fixed at 20 ?
         px_scale = context.preferences.system.ui_scale
 
         for gz in self.gizmos:
@@ -190,25 +188,34 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         
         region = context.region
         count = len(self.gizmos)
-
-        ## Old method
-        # icon_size = 34
-        # gap_size = 28
-        # self.bar_width = (count * (self.icon_size * px_scale)) + (count - 1) * (self.gap_size * px_scale) + section_separator
-        # vertical_pos = self.icon_size + 2 * px_scale
-        # left_pos = region.width / 2 - self.bar_width / 2 - self.icon_size / 2
-        # next_pos = self.icon_size * px_scale + self.gap_size * px_scale
-
-        ## With icon size pref parameter
-        # self.bar_width = (count * (icon_size * px_scale)) + (count - 1) * (gap_size * px_scale) + section_separator
-        # vertical_pos = prefs.toolbar_margin * px_scale
-        # left_pos = region.width / 2 - self.bar_width / 2 - icon_size / 2
-        # next_pos = icon_size * px_scale + gap_size * px_scale
+        sidebar_width = next((r.width for r in context.area.regions if r.type == 'UI'), 0)
 
         ## Using only direct offset
         self.bar_width = (count - 1) * (gap_size * px_scale) + (section_separator * 2) * px_scale
+
         vertical_pos = prefs.toolbar_margin * px_scale + fn.get_header_margin(context, overlap=False)
         left_pos = region.width / 2 - self.bar_width / 2
+
+        ## Responsive width adjustment
+        visible_region = region.width - sidebar_width
+        ## Sidebar push control bar to the left
+        overlap = (left_pos + self.bar_width + section_separator) - visible_region
+        if overlap > 0:
+            left_pos -= overlap
+        
+        ## Compress if left side is reached
+        if left_pos < section_separator:
+            out_size = abs(left_pos - section_separator)
+            reduction_factor = visible_region / (visible_region + out_size)
+            
+            left_pos = section_separator # Reset left side
+            # Reduce gap_size and section separator, clamped amount (factor of available space)
+            # First reduce button size
+            backdrop_size = max(backdrop_size * reduction_factor, 14)
+            # then gap size
+            gap_size = max(gap_size * reduction_factor, backdrop_size * 2)
+            section_separator = max(section_separator * reduction_factor, gap_size / 2)
+
         next_pos = gap_size * px_scale
 
         ## Prefs Object gizmo color

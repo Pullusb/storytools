@@ -163,14 +163,14 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
     toolbar_backdrop_size : IntProperty(
         name='Icon Backdrop Size',
         description="Backdrop size of the control icons (Blender gizmo buttons are around 14)",
-        default=20,
-        min=12, max=40)
+        default=18,
+        min=12, max=30)
 
     toolbar_gap_size : IntProperty(
         name='Button Distance',
         description="Gap size between buttons in control bar",
-        default=46,
-        min=20, max=200)
+        default=40,
+        min=20, max=60)
 
     ## Toolpreset settings
     presetbar_margin : IntProperty(
@@ -183,13 +183,13 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
     presetbar_gap_size : IntProperty(
         name='Preset Bar Button Distance',
         description="Gap size between buttons in tool presets bar",
-        default=46,
+        default=44,
         min=20, max=200)
 
     presetbar_backdrop_size : IntProperty(
         name='Icon Backdrop Size',
         description="Backdrop size of the preset bar icons (Blender gizmo buttons are around 14)",
-        default=20,
+        default=18,
         min=12, max=40)
 
 

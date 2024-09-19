@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.16.2
+
+- added: Responsive control bar
+- changed: reduced default 'Icon Backdrop Size' and Spreading
+
 1.16.1
 
 - added: submenu for GP settings in list
