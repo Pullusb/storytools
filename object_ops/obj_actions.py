@@ -83,7 +83,8 @@ class STORYTOOLS_OT_create_object(Operator):
         layout.prop(self, 'track_to_cam')
 
         if context.space_data.region_3d.view_perspective != 'CAMERA':
-            col=layout.column()
+            box = layout.box()
+            col = box.column()
             col.label(text='Not in camera', icon='ERROR')
             col.prop(self, 'place_from_cam', text='Face Active Camera')
         

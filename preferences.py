@@ -249,6 +249,16 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         col = layout.column()
 
         if self.pref_tab == 'SETTINGS':
+            # Tool Presets
+            col.label(text='Tool Preset Bar Settings:', icon='NODE_TOP')
+            col.prop(self, 'active_presetbar')
+            col.prop(self, 'presetbar_margin')
+            col.prop(self, 'presetbar_gap_size', text='Buttons Spread')
+            col.prop(self, 'presetbar_backdrop_size')
+
+            col.separator()
+
+            # Sidebar
             col.label(text='Sidebar Settings:', icon='NODE_SIDE')
             col.prop(self, 'show_sidebar_ui')
             subcol = col.column()
@@ -258,14 +268,8 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
                 col.label(text='Layer/Material Sync is disabled when sidebar panel is off', icon='INFO')
 
             col.separator()
-            col.label(text='Tool Preset Bar Settings:', icon='NODE_TOP')
-            col.prop(self, 'active_presetbar')
-            col.prop(self, 'presetbar_margin')
-            col.prop(self, 'presetbar_gap_size', text='Buttons Spread')
-            col.prop(self, 'presetbar_backdrop_size')
 
-
-            col.separator()
+            # Controls
             col.label(text='Control Bar Settings:', icon='STATUSBAR')
             col.prop(self, 'active_toolbar')
             tool_col = col.column()
