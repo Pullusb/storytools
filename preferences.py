@@ -250,29 +250,35 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
 
         if self.pref_tab == 'SETTINGS':
             # Tool Presets
-            col.label(text='Tool Preset Bar Settings:', icon='NODE_TOP')
-            col.prop(self, 'active_presetbar')
-            col.prop(self, 'presetbar_margin')
-            col.prop(self, 'presetbar_gap_size', text='Buttons Spread')
-            col.prop(self, 'presetbar_backdrop_size')
+            box = col.box()
+            bcol = box.column()
+            bcol.label(text='Tool Preset Bar Settings:', icon='NODE_TOP')
+            bcol.prop(self, 'active_presetbar')
+            bcol.prop(self, 'presetbar_margin')
+            bcol.prop(self, 'presetbar_gap_size', text='Buttons Spread')
+            bcol.prop(self, 'presetbar_backdrop_size')
 
-            col.separator()
+            # col.separator()
 
             # Sidebar
-            col.label(text='Sidebar Settings:', icon='NODE_SIDE')
-            col.prop(self, 'show_sidebar_ui')
-            subcol = col.column()
+            box = col.box()
+            bcol = box.column()
+            bcol.label(text='Sidebar Settings:', icon='NODE_SIDE')
+            bcol.prop(self, 'show_sidebar_ui')
+            subcol = bcol.column()
             subcol.prop(self, 'category')
             subcol.active = self.show_sidebar_ui
             if not self.show_sidebar_ui:
-                col.label(text='Layer/Material Sync is disabled when sidebar panel is off', icon='INFO')
+                bcol.label(text='Layer/Material Sync is disabled when sidebar panel is off', icon='INFO')
 
-            col.separator()
+            # col.separator()
 
             # Controls
-            col.label(text='Control Bar Settings:', icon='STATUSBAR')
-            col.prop(self, 'active_toolbar')
-            tool_col = col.column()
+            box = col.box()
+            bcol = box.column()
+            bcol.label(text='Control Bar Settings:', icon='STATUSBAR')
+            bcol.prop(self, 'active_toolbar')
+            tool_col = bcol.column()
             tool_col.prop(self, 'toolbar_margin')
             tool_col.prop(self, 'toolbar_gap_size', text='Buttons Spread')
             tool_col.prop(self, 'toolbar_backdrop_size')
@@ -286,6 +292,7 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             tool_col.active = self.active_toolbar
 
             col.separator()
+
             col.label(text='Tools Settings:', icon='MESH_CIRCLE')
             # col.label(text='Move In Depth', icon='EMPTY_SINGLE_ARROW')
             col.prop(self, 'use_visual_hint', text='Move Object Visual Hints')
