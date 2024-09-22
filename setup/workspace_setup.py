@@ -11,6 +11,8 @@ from bpy.types import (
     WindowManager,
 )
 
+from .. import fn
+
 def activate_workspace(name='Storyboard', context=None):
     if context is None:
         context = bpy.context
@@ -29,7 +31,11 @@ def activate_workspace(name='Storyboard', context=None):
     
     ret = bpy.ops.workspace.append_activate(idname=name, filepath=str(filepath))
     if ret != {'FINISHED'}:
-        print(f'Could not found {name} at {filepath}')
+        print(f'Could not found "{name}" at {filepath}')
+        message = [f'Could not found "{name}" workspace at:',
+                   str(filepath)]
+        fn.show_message_box(_message=message, _title='Workspace Not found', _icon='ERROR')
+
         return False
 
     ## Get biggest viewport and set category toolbar to Storytools:

@@ -30,6 +30,22 @@ def toggle_toolpreset_buttons(self, _):
     else:
         bpy.utils.unregister_class(gizmo_toolpreset_bar.STORYTOOLS_GGT_toolpreset_bar)
 
+def reload_toolpreset_buttons():
+    from . import gizmo_toolpreset_bar
+    bpy.utils.unregister_class(gizmo_toolpreset_bar.STORYTOOLS_GGT_toolpreset_bar)
+    bpy.utils.register_class(gizmo_toolpreset_bar.STORYTOOLS_GGT_toolpreset_bar)
+
+class STORYTOOLS_OT_reload_toolpreset_ui(bpy.types.Operator):
+    bl_idname = "storytools.reload_toolpreset_ui"
+    bl_label = "Reload UI Presets"
+    bl_description = "Reload the toolpreset topbar gizmos in viewport\
+        \nNecessary if 'set draw tool' shortcuts have just been customized"
+    bl_options = {"REGISTER", "INTERNAL"}
+
+    def execute(self, context):
+        reload_toolpreset_buttons()
+        return {'FINISHED'}
+
 def ui_in_sidebar_update(self, _):
     from .panels import (STORYTOOLS_PT_storytools_ui,
                          STORYTOOLS_PT_camera_ui,
@@ -308,19 +324,36 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         elif self.pref_tab == 'TOOLPRESETS':
 
             user_keymaps = bpy.context.window_manager.keyconfigs.user.keymaps
-            # km = user_keymaps['Grease Pencil Stroke Paint Mode']
+            ## Note: list only in 'Grease Pencil Stroke Paint Mode' as other modes are not supported yet
+            km = user_keymaps.get('Grease Pencil Stroke Paint Mode')
 
-            from . keymaps import addon_keymaps
-            # user_kms = []
-            for akm in set([kms[0] for kms in addon_keymaps]):
-                km = user_keymaps.get(akm.name)
-                if not km:
-                    continue
-                for kmi in reversed(km.keymap_items):
-                    if kmi.idname == 'storytools.set_draw_tool':
-                        draw_kmi_custom(km, kmi, col)
-                        # user_kms.append((km, kmi))
-                
+            ## search only based on addon keymaps
+            # from . keymaps import addon_keymaps
+            # # user_kms = []
+            # for akm in set([kms[0] for kms in addon_keymaps]):
+            #     km = user_keymaps.get(akm.name)
+            #     if not km:
+            #         continue
+            ## Search on all keymaps
+            
+            ## TODO: list and reoder based on order (or use dynamic UI list)
+
+            for kmi in reversed(km.keymap_items):
+                if kmi.idname == 'storytools.set_draw_tool':
+                    draw_kmi_custom(km, kmi, col)
+                    # user_kms.append((km, kmi))
+
+            col.separator()
+            row = col.row()
+            row.operator('storytools.add_tool_preset_shortcut', text="Add New Tool Preset", icon='ADD')
+            row.operator('storytools.reload_toolpreset_ui', icon='FILE_REFRESH')
+
+            col.separator()
+            box = col.box()
+            bcol = box.column()
+            bcol.label(text='After any "Tool Presets" is added or changed', icon='INFO')
+            bcol.label(text='a click on "Reload UI Presets" button above is needed', icon='BLANK1')
+            bcol.label(text='for the modification to take effect in viewport buttons', icon='BLANK1')
             # for km, kmi in sorted(user_kms, key=lambda x: x[1].type):
             #     draw_kmi_custom(km, kmi, col)
 
@@ -411,6 +444,30 @@ class STORYTOOLS_OT_restore_keymap_item(bpy.types.Operator):
 
         return {"FINISHED"}
 
+class STORYTOOLS_OT_add_tool_preset_shortcut(bpy.types.Operator):
+    bl_idname = "storytools.add_tool_preset_shortcut"
+    bl_label = "Add Tool Preset Shortcut"
+    bl_description = "Add a tool preset shortcut\
+        \nAdd new keymap entry: Grease pencil > Grease Pencil Stroke Paint Mode\
+        \nWith opertor id storytools.set_draw_tool and default value"
+    bl_options = {"REGISTER", "INTERNAL"}
+
+    def execute(self, context):
+        user_km = bpy.context.window_manager.keyconfigs.addon
+        # km = user_km.keymaps.get('Grease Pencil Stroke Paint Mode') 
+        km = user_km.keymaps.new(name = "Grease Pencil Stroke Paint Mode", space_type = "EMPTY")
+        # km.keymap_items
+        existing_presets = [kmi for kmi in km.keymap_items if kmi.idname == 'storytools.set_draw_tool']
+        
+        name = f'Preset {len(existing_presets)}'
+        kmi = km.keymap_items.new('storytools.set_draw_tool', type='F6', value='PRESS')
+        ## Set default values 
+        kmi.properties.name = name
+        kmi.properties.mode = 'PAINT_GPENCIL'
+        kmi.properties.tool = 'builtin_brush.Draw'
+        return {'FINISHED'}
+
+
 class STORYTOOLS_OT_open_addon_prefs(bpy.types.Operator):
     bl_idname = "storytools.open_addon_prefs"
     bl_label = "Open Storytools Prefs"
@@ -429,6 +486,8 @@ classes = (
     STORYTOOLS_prefs,
     STORYTOOLS_OT_open_addon_prefs,
     STORYTOOLS_OT_restore_keymap_item,
+    STORYTOOLS_OT_reload_toolpreset_ui,
+    STORYTOOLS_OT_add_tool_preset_shortcut,
 )
 
 def register(): 

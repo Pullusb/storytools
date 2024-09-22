@@ -76,7 +76,9 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
     description : StringProperty(default='', options={'SKIP_SAVE'})
     
     ## Shortcut text : Internal use only for description
-    shortcut : StringProperty(default='', options={'SKIP_SAVE'})
+    shortcut : StringProperty(default='', 
+                            description='For internal use only',
+                            options={'SKIP_SAVE', 'HIDDEN'})
 
     order : IntProperty(default=0)
 

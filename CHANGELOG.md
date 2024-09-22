@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.16.3
+
+- added: tool presets `Add` and `Reload UI` in addon preferences with infos
+
 1.16.2
 
 - added: Responsive control bar

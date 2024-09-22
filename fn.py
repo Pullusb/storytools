@@ -20,6 +20,7 @@ def get_addon_prefs():
 
 def open_addon_prefs():
     '''Open addon prefs windows with focus on current addon'''
+    #TODO futureproof update: make if work with manifest as well
     from .__init__ import bl_info
     wm = bpy.context.window_manager
     wm.addon_filter = 'All'

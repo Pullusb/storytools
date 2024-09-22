@@ -35,18 +35,21 @@ class STORYTOOLS_GGT_toolpreset_bar(GizmoGroup):
         user_keymaps = bpy.context.window_manager.keyconfigs.user.keymaps
         # km = user_keymaps['Grease Pencil Stroke Paint Mode']
 
-        from .keymaps import addon_keymaps
-
-        ## TODO: reorder keymap item from "properties.order"
-
-        for akm in set([kms[0] for kms in addon_keymaps]):
-            km = user_keymaps.get(akm.name)
-            if not km:
-                continue
+        ## Only display addon keymap :
+        # from .keymaps import addon_keymaps
+        # ## TODO: reorder keymap item from "properties.order"
+        # for akm in set([kms[0] for kms in addon_keymaps]):
+        #     km = user_keymaps.get(akm.name)
+        #     if not km:
+        #         continue
+        
+        ## List all set_draw_tools keymap
+        for km in user_keymaps:
             for kmi in reversed(km.keymap_items):
                 if kmi.idname == 'storytools.set_draw_tool':
                     props = kmi.properties
-
+                    if not kmi.active or not props.show:
+                        continue
                     gz = self.gizmos.new("GIZMO_GT_button_2d")
                     fn.set_gizmo_settings(gz, icon=props.icon, alpha=0, alpha_highlight=0.2)
                     op = gz.target_set_operator("storytools.set_draw_tool")

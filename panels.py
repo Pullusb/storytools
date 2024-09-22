@@ -143,6 +143,10 @@ class STORYTOOLS_PT_tool_ui(Panel):
     bl_label = "Tool"
     bl_parent_id = "STORYTOOLS_PT_storytools_ui" # as_subpanel
 
+    def draw_header_preset(self, context):
+        layout = self.layout
+        layout.operator("storytools.open_addon_prefs", text='', icon='PREFERENCES')
+    
     # @classmethod
     # def poll(cls, context):
     #     return context.object and context.object.type == 'GPENCIL'
