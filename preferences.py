@@ -18,10 +18,12 @@ def toggle_gizmo_buttons(self, _):
     from . import gizmo_toolbar
     if self.active_toolbar:
         bpy.utils.register_class(gizmo_toolbar.STORYTOOLS_GGT_toolbar)
+        bpy.utils.register_class(gizmo_toolbar.STORYTOOLS_GGT_toolbar_switch)
         # Force active when user tick the box
         bpy.context.scene.storytools_settings.show_session_toolbar = True 
     else:
         bpy.utils.unregister_class(gizmo_toolbar.STORYTOOLS_GGT_toolbar)
+        bpy.utils.unregister_class(gizmo_toolbar.STORYTOOLS_GGT_toolbar_switch)
 
 def toggle_toolpreset_buttons(self, _):
     from . import gizmo_toolpreset_bar
