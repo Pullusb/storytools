@@ -232,7 +232,7 @@ class STORYTOOLS_OT_visibility_toggle(Operator):
 class STORYTOOLS_OT_object_draw(Operator):
     bl_idname = "storytools.object_draw"
     bl_label = 'Object Draw'
-    bl_description = "Switch between drwa mode and object mode\
+    bl_description = "Switch between draw mode and object mode\
         \nEnter first GP object available\
         \nIf no GPencil object exists, pop-up creation menu\
         \n+ Shift : pop-up creation menu"
