@@ -432,6 +432,11 @@ class STORYTOOLS_OT_object_rotate(Operator):
 
     def invoke(self, context, event):
         if self.camera:
+            ## Need a custom implementation
+            # if context.region_data.view_perspective != 'CAMERA':
+            #     # bpy.ops.view3d.rotate_canvas('INVOKE_DEFAULT')
+            #     bpy.ops.view3d.view_roll('INVOKE_DEFAULT')
+            #     return {"FINISHED"}
             self.ob = context.scene.camera
         else:
             self.ob = context.object

@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.16.4
+
+- fixed: bottom control bar toggle was not disabled correctly by preferences
+
 1.16.3
 
 - added: tool presets `Add` and `Reload UI` in addon preferences with infos
