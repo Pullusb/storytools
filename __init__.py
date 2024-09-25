@@ -4,7 +4,7 @@ bl_info = {
     "name": "Storytools - Storyboard Tools",
     "description": "Set of tools for Storyboarding",
     "author": "Samuel Bernou",
-    "version": (1, 16, 4),
+    "version": (1, 16, 5),
     "blender": (4, 0, 0),
     "location": "View3D",
     "warning": "",
@@ -18,6 +18,7 @@ from . import properties
 # from . import tool_presets # abandonned tool preset system
 from . import preferences
 from . import setup
+from . import gpencil_ops
 from . import camera_ops
 from . import object_ops
 from . import gizmos_objects
@@ -35,6 +36,7 @@ modules = (
     properties,
     # tool_presets, # abandonned tool preset system
     preferences,
+    gpencil_ops,
     camera_ops,
     handles,
     object_ops,
