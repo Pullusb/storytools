@@ -32,11 +32,17 @@ def add_frame(available_layers, frame_number, reference_num=None, duplicate=Fals
             new_frame = l.frames.copy(prev_frame)
             new_frame.frame_number = frame_number
 
+def apply_offset_at_frame(available_layers, frame_number, offset):
+    '''apply offset X value on layer list, on all frames >= frame_number'''
+    for layer in available_layers:
+        for frame in reversed(layer.frames):
+            if frame.frame_number >= frame_number:
+                frame.frame_number = frame.frame_number + offset
 
 class STORYTOOLS_OT_new_frame(Operator):
     bl_idname = "storytools.new_frame"
     bl_label = 'New frame'
-    bl_description = "Add or duplicate previous frame"
+    bl_description = "Add or duplicate previous frame" # TODO update description for Ctrl Behavior
     bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod
@@ -47,10 +53,36 @@ class STORYTOOLS_OT_new_frame(Operator):
                              description='Create new keys with content of the previous one',
                              options={'SKIP_SAVE'})
 
+    offset_next_frames : BoolProperty(name='Offset Next Frames', default=False,
+                             description='Offset subsequent frames instead of squeezing new keys before next',
+                             options={'SKIP_SAVE'})
+
+    ## Add option to use on active layer only ?
+    # active_only : BoolProperty(name='Active Only', default=False,
+    #                          description='Use active greae pencil layer only',
+    #                          options={'SKIP_SAVE'})
+
+    @classmethod
+    def description(cls, context, properties) -> str:
+        if properties.duplicate:
+            desc = 'Create new frames with content of previous frame (on unlocked and visible layers)'
+        else:
+            desc = 'Create new empty frames (on unlocked and visible layers)'
+        
+        ## Precisions
+        desc += '\nJump forward if frame(s) already exists at current cursor\
+                 \nCtrl + Click : Offset subsequent frames to respect gap'
+        return desc
+
+    def invoke(self, context, event):
+        self.offset_next_frames = event.ctrl
+        return self.execute(context)
+
     def execute(self, context):
         ## List existing frame
 
-        gap = 12
+        gap = 12 # TODO expose gap as property
+
         # layer = context.object.data.layers.active
         
         ## Consider all unlocked layers
@@ -63,52 +95,63 @@ class STORYTOOLS_OT_new_frame(Operator):
 
         if current not in frames_nums:
             ## Easy case: Create in place (add an offset relative to previous frames ? optionally offset next ?)
+
             add_frame(available_layers, current, duplicate=self.duplicate)
 
-        else:
-            ## We're on a frame
-            ## Check where to create a new one
+            if self.offset_next_frames:
+                ## Offset next frame to respect gap (if needed)
+                next_frame_num = next((i for i in frames_nums if i > current), None)
+                if next_frame_num is not None and (current_gap := next_frame_num - current) < gap:
+                    ## Offset just the missing amount
+                    missing_offset = gap - current_gap
+                    apply_offset_at_frame(available_layers, next_frame_num, missing_offset) 
 
-            ## get number of next frame
-            next_frame_num = next((num for num in frames_nums if num > current), None)
+            return {'FINISHED'}
 
-            if next_frame_num is None or next_frame_num - current > gap * 2:
-                new_num = current + gap
+        ## We're on a frame
+        ## Check where to create a new one
+        ## TODO : if self.offset_next_frames: apply offset  
 
-            elif next_frame_num == current + 1:
-                ## Stop and raise error ? (Not user friendly, better to create frame after anyway)
-                # self.report({'ERROR'}, f'There are already frames at {current + 1}, offset the frame first')
-                # return {'CANCELLED'}
+        ## get number of next frame
+        next_frame_num = next((num for num in frames_nums if num > current), None)
 
-                ## Create after boundary block of frame
-                boundary_frame_num = next((n for n in range(current, frames_nums[-1]) if n + 1 not in frames_nums), None)
+        if next_frame_num is None or next_frame_num - current > gap * 2:
+            new_num = current + gap
 
-                if boundary_frame_num is None:
-                    new_num = frames_nums[-1] + gap
+        elif next_frame_num == current + 1:
+            ## Stop and raise error ? (Not user friendly, better to create frame after anyway)
+            # self.report({'ERROR'}, f'There are already frames at {current + 1}, offset the frame first')
+            # return {'CANCELLED'}
+
+            ## Create after boundary block of frame
+            boundary_frame_num = next((n for n in range(current, frames_nums[-1]) if n + 1 not in frames_nums), None)
+
+            if boundary_frame_num is None:
+                new_num = frames_nums[-1] + gap
+            else:
+                ## Calculate best place after boundary frame
+                next_frame_after_boundary = next((num for num in frames_nums if num > boundary_frame_num), None)
+                if next_frame_after_boundary - boundary_frame_num > gap * 2:
+                    new_num = boundary_frame_num + gap
                 else:
-                    ## Calculate best place after boundary frame
-                    next_frame_after_boundary = next((num for num in frames_nums if num > boundary_frame_num), None)
-                    if next_frame_after_boundary - boundary_frame_num > gap * 2:
-                        new_num = boundary_frame_num + gap
-                    else:
-                        new_num = boundary_frame_num + round((next_frame_after_boundary - boundary_frame_num) / 2)
-                    
-                ## Jump after next key and create whenever possible
-            else:        
-                new_num = current + round((next_frame_num - current) / 2)
+                    new_num = boundary_frame_num + round((next_frame_after_boundary - boundary_frame_num) / 2)
+                
+            ## Jump after next key and create whenever possible
+        else:        
+            new_num = current + round((next_frame_num - current) / 2)
 
-            
-            if new_num in frames_nums:
-                self.report({'ERROR'}, f'Error, a frame is already at {new_num}')
-                return {'CANCELLED'}
 
-            add_frame(available_layers, new_num, reference_num=current, duplicate=self.duplicate)
-            
-            ## Jump at frame
+        if new_num in frames_nums:
+            self.report({'ERROR'}, f'Error, a frame is already at {new_num}')
+            return {'CANCELLED'}
 
-            ## ? add frame creation hint ? (not consistent with Blender UI... and too gamified)
-            bpy.context.scene.frame_set(new_num)
-            self.report({'INFO'}, f'Create frame(s), jumping {new_num - current} forward')
+        add_frame(available_layers, new_num, reference_num=current, duplicate=self.duplicate)
+
+        ## Jump at frame
+
+        ## ? add frame creation hint ? (not consistent with Blender UI... and too gamified)
+        bpy.context.scene.frame_set(new_num)
+        self.report({'INFO'}, f'Create frame(s), jumping {new_num - current} forward')
 
         return {'FINISHED'}
 
