@@ -18,10 +18,11 @@ def add_frame(available_layers, frame_number, reference_num=None, duplicate=Fals
         if not duplicate:
             ## Simple add
             l.frames.new(frame_number=frame_number)
+            l.frames.update()
             continue
 
         ## Case of duplication
-        prev_frame = next((f for f in reversed(l.frames) if f.frame_number < reference_num), None)
+        prev_frame = next((f for f in reversed(l.frames) if f.frame_number <= reference_num), None)
         
         if prev_frame is None:
             # New plain key
@@ -31,6 +32,8 @@ def add_frame(available_layers, frame_number, reference_num=None, duplicate=Fals
             # Copy from previous key
             new_frame = l.frames.copy(prev_frame)
             new_frame.frame_number = frame_number
+        
+        l.frames.update()
 
 def apply_offset_at_frame(available_layers, frame_number, offset):
     '''apply offset X value on layer list, on all frames >= frame_number'''
@@ -65,13 +68,13 @@ class STORYTOOLS_OT_new_frame(Operator):
     @classmethod
     def description(cls, context, properties) -> str:
         if properties.duplicate:
-            desc = 'Create new frames with content of previous frame (on unlocked and visible layers)'
+            desc = 'Create new Grease pencil frames with content of previous frame (on unlocked and visible layers)'
         else:
-            desc = 'Create new empty frames (on unlocked and visible layers)'
+            desc = 'Create new Grease pencil empty frames (on unlocked and visible layers)'
         
         ## Precisions
         desc += '\nJump forward if frame(s) already exists at current cursor\
-                 \nCtrl + Click : Offset subsequent frames to respect gap'
+                 \nCtrl + Click : Offset subsequent frames'
         return desc
 
     def invoke(self, context, event):
@@ -96,6 +99,8 @@ class STORYTOOLS_OT_new_frame(Operator):
         if current not in frames_nums:
             ## Easy case: Create in place (add an offset relative to previous frames ? optionally offset next ?)
 
+            ## Apply gap offset from previous frame ?
+
             add_frame(available_layers, current, duplicate=self.duplicate)
 
             if self.offset_next_frames:
@@ -104,16 +109,37 @@ class STORYTOOLS_OT_new_frame(Operator):
                 if next_frame_num is not None and (current_gap := next_frame_num - current) < gap:
                     ## Offset just the missing amount
                     missing_offset = gap - current_gap
-                    apply_offset_at_frame(available_layers, next_frame_num, missing_offset) 
+                    apply_offset_at_frame(available_layers, next_frame_num, missing_offset)
+                    ## IDEA: Should offset affect spa-sequencer subsequents in-out values in scene ?...
+                    ## (Not for now... use may not see it and makes it codependent with a specific addon, prefs options ?)
 
             return {'FINISHED'}
 
-        ## We're on a frame
-        ## Check where to create a new one
-        ## TODO : if self.offset_next_frames: apply offset  
+        ## Here cursor is over a frame
 
-        ## get number of next frame
-        next_frame_num = next((num for num in frames_nums if num > current), None)
+        ## Get number of next frame
+        next_frame_num = next((i for i in frames_nums if i > current), None)
+
+        if self.offset_next_frames:
+            offest = 0
+            if next_frame_num is not None:
+                current_gap = next_frame_num - current
+                ## Always offset
+                # apply_offset_at_frame(available_layers, current + 1, gap)
+
+                ## OR: Offset only if next frame is less than twice the gap ?
+                if current_gap <= gap * 2:
+                    offset = gap
+                    ## Add previous offset to fix gap size between new frame and next
+                    offset = gap + max(current_gap, gap)
+                    apply_offset_at_frame(available_layers, current + 1, offset)
+
+            new_num = current + gap
+            add_frame(available_layers, new_num, reference_num=current, duplicate=self.duplicate)
+            bpy.context.scene.frame_set(new_num)
+            self.report({'INFO'}, f'Create frame(s), jumping {new_num - current} forward')
+            return {'FINISHED'}
+
 
         if next_frame_num is None or next_frame_num - current > gap * 2:
             new_num = current + gap
@@ -142,15 +168,17 @@ class STORYTOOLS_OT_new_frame(Operator):
 
 
         if new_num in frames_nums:
+            ## Should never happen if above is correct
             self.report({'ERROR'}, f'Error, a frame is already at {new_num}')
             return {'CANCELLED'}
 
         add_frame(available_layers, new_num, reference_num=current, duplicate=self.duplicate)
 
         ## Jump at frame
-
+        
         ## ? add frame creation hint ? (not consistent with Blender UI... and too gamified)
         bpy.context.scene.frame_set(new_num)
+        # bpy.context.scene.frame_current = new_num
         self.report({'INFO'}, f'Create frame(s), jumping {new_num - current} forward')
 
         return {'FINISHED'}

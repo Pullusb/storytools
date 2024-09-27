@@ -117,9 +117,24 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         self.gz_key_ob.target_set_operator("storytools.object_key_transform")
         self.object_gizmos.append(self.gz_key_ob)
 
+        ## --- Grease Pencil
+        self.gpencil_gizmos = []
+
+        ## GP add new empty frame
+        self.gz_gp_new_frame = self.gizmos.new("GIZMO_GT_button_2d")
+        fn.set_gizmo_settings(self.gz_gp_new_frame, 'DECORATE_ANIMATE')
+        self.gz_gp_new_frame.target_set_operator("storytools.new_frame")
+        self.gpencil_gizmos.append(self.gz_gp_new_frame)
+        
+        ## GP add new duplicated frame
+        self.gz_gp_new_additive_frame = self.gizmos.new("GIZMO_GT_button_2d")
+        fn.set_gizmo_settings(self.gz_gp_new_additive_frame, 'SHAPEKEY_DATA')
+        op = self.gz_gp_new_additive_frame.target_set_operator("storytools.new_frame")
+        op.duplicate = True
+        self.gpencil_gizmos.append(self.gz_gp_new_additive_frame)
 
         ## --- Camera
-        
+
         self.camera_gizmos = []
         
         ## Camera Pan
@@ -232,6 +247,13 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
             if gz in self.object_gizmos:
                 gz.color = obj_color
                 gz.color_highlight = obj_color_hl
+
+            if gz in self.gpencil_gizmos:
+                if gz == self.gpencil_gizmos[0]:
+                    left_pos += section_separator
+                gz.color = obj_color
+                gz.color_highlight = obj_color_hl
+                gz.hide = not context.object or context.object.type != 'GPENCIL'
 
             if gz in self.camera_gizmos:
                 # if separator_flag == 0:

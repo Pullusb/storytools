@@ -157,13 +157,6 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         description="Show viewport top tool-presets bar",
         default=True, update=toggle_toolpreset_buttons)
 
-    default_edit_line_opacity : FloatProperty(
-        name='Default Edit Line Opacity',
-        description="Edit line opacity for newly created objects\
-            \nSome users prefer to set it to 0 (show only selected line in edit mode)\
-            \nBlender default is 0.5",
-        default=0.2, min=0.0, max=1.0)
-
     ## Toolbar settings (Control bar)
     toolbar_margin : IntProperty(
         name='Control Bar Margin',
@@ -249,6 +242,27 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         default=(0.7, 0.2, 0.2, 0.22), min=0.0, max=1.0,
         description="Color of the far plane visual hint when using Depth move")
 
+    ### --- Greaep pencil settings
+
+    default_edit_line_opacity : FloatProperty(
+        name='Default Edit Line Opacity',
+        description="Edit line opacity for newly created objects\
+            \nSome users prefer to set it to 0 (show only selected line in edit mode)\
+            \nBlender default is 0.5",
+        default=0.2, min=0.0, max=1.0)
+
+    default_autolock : BoolProperty(
+        name='Enable Autolock at object creation',
+        description="Choose if layer autolock is enabled when creating a grease pencil object using popup",
+        default=True)
+
+    gp_frame_offset : IntProperty(
+        name='Grease Pencil Frame Offset',
+        description="Frame offset to apply when creating new frame above an existing one\
+            \nor when applying offset to next frame",
+        default=12,
+        min=1, max=200)
+
     ## Tool presets (Old tool presets)
     # tool_presets : PointerProperty(type=STORYTOOLS_PG_tool_presets)
 
@@ -320,8 +334,10 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             subcol.active = self.use_visual_hint
 
             col.separator()
-            col.label(text='Object Settings:', icon='GREASEPENCIL')
+            col.label(text='Grease Pencil Settings:', icon='GREASEPENCIL')
             col.prop(self, 'default_edit_line_opacity')
+            col.prop(self, 'default_autolock')
+            col.prop(self, 'gp_frame_offset')
 
         elif self.pref_tab == 'TOOLPRESETS':
 
