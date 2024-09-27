@@ -5,7 +5,7 @@ from mathutils import Vector, Matrix
 from bpy.types import Operator
 from bpy.props import BoolProperty
 
-# from .. import fn
+from .. import fn
 
 def add_frame(available_layers, frame_number, reference_num=None, duplicate=False):
     """On available layers list, add frame at frame_number
@@ -36,7 +36,7 @@ def add_frame(available_layers, frame_number, reference_num=None, duplicate=Fals
         l.frames.update()
 
 def apply_offset_at_frame(available_layers, frame_number, offset):
-    '''apply offset X value on layer list, on all frames >= frame_number'''
+    '''Apply offset value on frames in layer list where frames >= frame_number'''
     for layer in available_layers:
         for frame in reversed(layer.frames):
             if frame.frame_number >= frame_number:
@@ -84,7 +84,7 @@ class STORYTOOLS_OT_new_frame(Operator):
     def execute(self, context):
         ## List existing frame
 
-        gap = 12 # TODO expose gap as property
+        gap = fn.get_addon_prefs().gp_frame_offset
 
         # layer = context.object.data.layers.active
         
@@ -109,29 +109,38 @@ class STORYTOOLS_OT_new_frame(Operator):
                 if next_frame_num is not None and (current_gap := next_frame_num - current) < gap:
                     ## Offset just the missing amount
                     missing_offset = gap - current_gap
+                    
+                    ## Keep current inbetween gap size (if there is frame before) else force fixed gap
+                    prev_frame_num = next((i for i in reversed(frames_nums) if i < current), None)
+                    if prev_frame_num is not None:
+                        missing_offset = min((next_frame_num - prev_frame_num) - (next_frame_num - current), missing_offset)
+
                     apply_offset_at_frame(available_layers, next_frame_num, missing_offset)
-                    ## IDEA: Should offset affect spa-sequencer subsequents in-out values in scene ?...
-                    ## (Not for now... use may not see it and makes it codependent with a specific addon, prefs options ?)
+                    
+                    ## IDEA ? Should offset affect spa-sequencer subsequents in-out values in scene ?...
+                    ## Not for now... user may not be aware + codependent with a specific addon. Prefs options ?
 
             return {'FINISHED'}
 
-        ## Here cursor is over a frame
+        ## -- Here cursor is over a frame
 
         ## Get number of next frame
         next_frame_num = next((i for i in frames_nums if i > current), None)
 
         if self.offset_next_frames:
-            offest = 0
             if next_frame_num is not None:
                 current_gap = next_frame_num - current
-                ## Always offset
+                print('current_gap: ', current_gap)
+                ## Always apply same offset
                 # apply_offset_at_frame(available_layers, current + 1, gap)
 
-                ## OR: Offset only if next frame is less than twice the gap ?
+                ## OR: Offset only if next frame is less than twice the gap
                 if current_gap <= gap * 2:
                     offset = gap
-                    ## Add previous offset to fix gap size between new frame and next
-                    offset = gap + max(current_gap, gap)
+                    
+                    ## Optionnaly force exact gap between new and next
+                    # offset = gap + max(current_gap, gap) 
+
                     apply_offset_at_frame(available_layers, current + 1, offset)
 
             new_num = current + gap

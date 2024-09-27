@@ -2,6 +2,15 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.17.0
+
+- added: Extend the control bar with new Grease pencil operators buttons:
+ - `New GP frame` : Create new empty GP frame at position. jump forward if a frame exists at cursor. Ctrl + Click apply offset to all subsequent editable frames
+ - `New GP frame copy` : Same behavior but copy content of currently active frame 
+- added: addon preferences `Default Autolock Layers` set autolock state on new Grease pencils (enabled by default)
+- added: addon preferences `Default Layer Use Light` to set Use light state on new created object (disabled by default)
+- added: addon preferences `Grease Pencil Frame Offset` interval when offsetting key at creation (if already on a key) or when applying offset to subsequent frames
+
 1.16.4
 
 - fixed: bottom control bar toggle was not disabled correctly by preferences

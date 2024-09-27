@@ -166,12 +166,12 @@ class STORYTOOLS_OT_create_object(Operator):
 
         fn.load_default_palette(ob=ob)
         gp.edit_line_color[3] = prefs.default_edit_line_opacity # Bl default is 0.5
-        gp.use_autolock_layers = True
+        gp.use_autolock_layers = prefs.use_autolock_layers
         
         for l_name in reversed(['Sketch', 'Line', 'Color']):
             layer = gp.layers.new(l_name)
             layer.frames.new(scn.frame_current)
-            layer.use_lights = False # Can be a project prefs
+            layer.use_lights = prefs.use_lights
         
             ## Set default association
             ## TODO: Set default name as string in prefs ?
@@ -520,13 +520,12 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
         ## data : scene struct -> propname: 'objects' string 
         objs = getattr(data, propname)
         # objs: scene objects collection
-    
-        helper_funcs = bpy.types.UI_UL_list
 
         flt_flags = [self.bitflag_filter_item if o.type == 'GPENCIL'
                      and not o.name.startswith('.') else 0 for o in objs]
 
         ## By name
+        # helper_funcs = bpy.types.UI_UL_list
         # flt_flags = helper_funcs.filter_items_by_name(self.filter_name, self.bitflag_filter_item, objs, "name", reverse=False)
 
         ## BONUS option: By distance to camera ? (need to be computed OTF... possible ?)

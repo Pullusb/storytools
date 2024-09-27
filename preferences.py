@@ -251,17 +251,22 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             \nBlender default is 0.5",
         default=0.2, min=0.0, max=1.0)
 
-    default_autolock : BoolProperty(
-        name='Enable Autolock at object creation',
+    use_autolock_layers : BoolProperty(
+        name='Default Autolock Layers',
         description="Choose if layer autolock is enabled when creating a grease pencil object using popup",
         default=True)
+    
+    use_lights : BoolProperty(
+        name='Default Layer Use Light',
+        description="Choose if layers should have use light on when creating a grease pencil object using popup",
+        default=False)
 
     gp_frame_offset : IntProperty(
         name='Grease Pencil Frame Offset',
         description="Frame offset to apply when creating new frame above an existing one\
-            \nor when applying offset to next frame",
+            \nOr when applying offset to all subsequents frames",
         default=12,
-        min=1, max=200)
+        min=1, soft_max=300, max=16000)
 
     ## Tool presets (Old tool presets)
     # tool_presets : PointerProperty(type=STORYTOOLS_PG_tool_presets)
@@ -335,7 +340,8 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
 
             col.separator()
             col.label(text='Grease Pencil Settings:', icon='GREASEPENCIL')
-            col.prop(self, 'default_autolock')
+            col.prop(self, 'use_autolock_layers')
+            col.prop(self, 'use_lights')
             col.prop(self, 'default_edit_line_opacity')
             col.prop(self, 'gp_frame_offset')
 
