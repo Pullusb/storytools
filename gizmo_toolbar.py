@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# Gizmo doc
-
 import bpy
 from bpy.types import (
     Operator,
@@ -117,21 +115,6 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         self.gz_key_ob.target_set_operator("storytools.object_key_transform")
         self.object_gizmos.append(self.gz_key_ob)
 
-        ## --- Grease Pencil
-        self.gpencil_gizmos = []
-
-        ## GP add new empty frame
-        self.gz_gp_new_frame = self.gizmos.new("GIZMO_GT_button_2d")
-        fn.set_gizmo_settings(self.gz_gp_new_frame, 'DECORATE_ANIMATE')
-        self.gz_gp_new_frame.target_set_operator("storytools.new_frame")
-        self.gpencil_gizmos.append(self.gz_gp_new_frame)
-        
-        ## GP add new duplicated frame
-        self.gz_gp_new_additive_frame = self.gizmos.new("GIZMO_GT_button_2d")
-        fn.set_gizmo_settings(self.gz_gp_new_additive_frame, 'SHAPEKEY_DATA')
-        op = self.gz_gp_new_additive_frame.target_set_operator("storytools.new_frame")
-        op.duplicate = True
-        self.gpencil_gizmos.append(self.gz_gp_new_additive_frame)
 
         ## --- Camera
 
@@ -179,13 +162,28 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         self.gz_lock_view.target_set_operator("storytools.lock_view")
         self.interact_gizmos.append(self.gz_lock_view)
 
-        
         ## Draw
         self.gz_draw = self.gizmos.new("GIZMO_GT_button_2d")
         fn.set_gizmo_settings(self.gz_draw, 'GREASEPENCIL')
         self.gz_draw.target_set_operator("storytools.object_draw")
         self.interact_gizmos.append(self.gz_draw)
 
+        ## --- Grease Pencil
+        
+        self.gpencil_gizmos = []
+
+        ## GP add new empty frame
+        self.gz_gp_new_frame = self.gizmos.new("GIZMO_GT_button_2d")
+        fn.set_gizmo_settings(self.gz_gp_new_frame, 'DECORATE_ANIMATE')
+        self.gz_gp_new_frame.target_set_operator("storytools.new_frame")
+        self.gpencil_gizmos.append(self.gz_gp_new_frame)
+        
+        ## GP add new duplicated frame
+        self.gz_gp_new_additive_frame = self.gizmos.new("GIZMO_GT_button_2d")
+        fn.set_gizmo_settings(self.gz_gp_new_additive_frame, 'SHAPEKEY_DATA')
+        op = self.gz_gp_new_additive_frame.target_set_operator("storytools.new_frame")
+        op.duplicate = True
+        self.gpencil_gizmos.append(self.gz_gp_new_additive_frame)
 
     def draw_prepare(self, context):
         prefs = get_addon_prefs()
@@ -206,15 +204,15 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         sidebar_width = next((r.width for r in context.area.regions if r.type == 'UI'), 0)
 
         ## Using only direct offset
-        self.bar_width = (count - 1) * (gap_size * px_scale) + (section_separator * 2) * px_scale
+        bar_width = (count - 1) * (gap_size * px_scale) + (section_separator * 2) * px_scale
 
         vertical_pos = prefs.toolbar_margin * px_scale + fn.get_header_margin(context, overlap=False)
-        left_pos = region.width / 2 - self.bar_width / 2
+        left_pos = region.width / 2 - bar_width / 2
 
         ## Responsive width adjustment
         visible_region = region.width - sidebar_width
         ## Sidebar push control bar to the left
-        overlap = (left_pos + self.bar_width + section_separator) - visible_region
+        overlap = (left_pos + bar_width + section_separator) - visible_region
         if overlap > 0:
             left_pos -= overlap
         
@@ -241,38 +239,51 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         cam_color = prefs.camera_gz_color
         cam_color_hl = [i + 0.1 for i in cam_color]
 
+        upline_left_pos = left_pos + (gap_size * px_scale) / 2
 
+        # for i, gz in enumerate([self.object_gizmos + self.camera_gizmos + self.interact_gizmos]):
         for i, gz in enumerate(self.gizmos):
             gz.scale_basis = backdrop_size
             if gz in self.object_gizmos:
                 gz.color = obj_color
                 gz.color_highlight = obj_color_hl
 
-            if gz in self.gpencil_gizmos:
-                if gz == self.gpencil_gizmos[0]:
-                    left_pos += section_separator
-                gz.color = obj_color
-                gz.color_highlight = obj_color_hl
-                gz.hide = not context.object or context.object.type != 'GPENCIL'
-
             if gz in self.camera_gizmos:
-                # if separator_flag == 0:
                 if gz == self.camera_gizmos[0]:
-                    # Add separator
+                    ## Hack to set "key GP" actions above object key button (location can be confusing...)
+                    # upline_left_pos = left_pos + ((i-1) * next_pos) - ((gap_size * px_scale) / 2)
+                    ## Add separator
                     left_pos += section_separator
                 gz.color = cam_color
                 gz.color_highlight = cam_color_hl
-            
+
             if gz in self.interact_gizmos:
                 if gz == self.interact_gizmos[0]:
-                    # Add separator
+                    ## Add separator
                     left_pos += section_separator
                 gz.color = obj_color
                 gz.color_highlight = obj_color_hl
 
             ## Matrix world is readonly
             gz.matrix_basis = Matrix.Translation((left_pos + (i * next_pos), vertical_pos, 0))
-        
+
+        ## --- Set upper line
+
+        gpencil_hide_state = not context.object or context.object.type != 'GPENCIL'
+
+        ## Second line at center        
+        # gp_bar_width = (len(self.gpencil_gizmos) - 1) * (gap_size * px_scale) # + (section_separator * 2) * px_scale
+        # middle = visible_region / 2
+        # upline_left_pos = middle - gp_bar_width / 2
+
+        vertical_pos = vertical_pos + backdrop_size * 2.2
+        for i, gz in enumerate(self.gpencil_gizmos):
+            gz.color = obj_color
+            gz.color_highlight = obj_color_hl
+            gz.hide = gpencil_hide_state
+
+            gz.matrix_basis = Matrix.Translation((upline_left_pos + (i * next_pos), vertical_pos, 0))
+
         ## Show color when out of cam view ? : context.space_data.region_3d.view_perspective != 'CAMERA'
         self.gz_lock_cam.color = (0.5, 0.1, 0.1) if context.space_data.lock_camera else cam_color
         self.gz_lock_cam.color_highlight = (0.7, 0.2, 0.2) if context.space_data.lock_camera else cam_color_hl
@@ -286,7 +297,7 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         is_in_draw = context.mode == 'PAINT_GPENCIL'
         self.gz_draw.color = rgb_active if is_in_draw else obj_color
         self.gz_draw.color_highlight = rgb_active_higlight if is_in_draw else obj_color_hl
-            
+
 
     # def refresh(self, context):
     #     self.gz_lock_cam.icon = 'LOCKVIEW_ON' if context.space_data.lock_camera else 'LOCKVIEW_OFF'

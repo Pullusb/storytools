@@ -335,8 +335,8 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
 
             col.separator()
             col.label(text='Grease Pencil Settings:', icon='GREASEPENCIL')
-            col.prop(self, 'default_edit_line_opacity')
             col.prop(self, 'default_autolock')
+            col.prop(self, 'default_edit_line_opacity')
             col.prop(self, 'gp_frame_offset')
 
         elif self.pref_tab == 'TOOLPRESETS':
