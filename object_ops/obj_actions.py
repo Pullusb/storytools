@@ -457,40 +457,46 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
         name_row.prop(item, 'name', icon=icon, text='',emboss=False)
         name_row.active = item.visible_get()
 
+        ## Prepare visibility according to toggles
+        limits = [380, 340, 300, 260]
+        for i, prop_name in enumerate(('show_gp_users', 'show_gp_parent', 'show_gp_in_front', 'show_gp_visibility')):
+            if getattr(settings, prop_name) == 'HIDE':
+                for j, num in enumerate(limits[:i + 1]):
+                    # Adjust limits to show left items if right ones are disabled
+                    limits[j] = num - 40
 
-        if sidebar_width > 380:
-            if settings.show_gp_users:
+        if settings.show_gp_users != 'HIDE':
+            if settings.show_gp_users == 'SHOW' or sidebar_width > limits[0]: # 380:
                 if item.data.users > 1:
                     if sidebar_width > 700:
                         row.template_ID(item, "data")
                     else:
                         # row.label(text=f'{item.data.users}') # text align left and cut object name
                         row.label(text='', icon='USER')
-
                 else:
                     row.label(text='', icon='BLANK1')
 
-        if sidebar_width > 330:
-            if settings.show_gp_parent:
+        if settings.show_gp_parent != 'HIDE':
+            if settings.show_gp_parent == 'SHOW' or sidebar_width > limits[1]: # 330:
                 if item.parent:
                     row.label(text='', icon='DECORATE_LINKED')
                 else:
                     row.label(text='', icon='BLANK1')
         
-        if sidebar_width > 300:
-            # subrow.alignment = 'RIGHT'
-            if settings.show_gp_in_front:
+        if settings.show_gp_in_front != 'HIDE':
+            if settings.show_gp_in_front == 'SHOW' or sidebar_width > limits[2]: # 300:
                 subrow = row.row()
                 subrow.prop(item, 'show_in_front', text='', icon='MOD_OPACITY', emboss=False)
                 subrow.active = item.show_in_front
 
-        if sidebar_width > 260:
-            ## Viz Clickable toggle, set and sync hide from viewlayer, viewport and render 
-            ## (Can lead to confusion with blender model... but heh !)
-            if item.visible_get():
-                row.operator('storytools.visibility_toggle', text='', icon='HIDE_OFF', emboss=False).name = item.name
-            else:
-                row.operator('storytools.visibility_toggle', text='', icon='HIDE_ON', emboss=False).name = item.name
+        if settings.show_gp_visibility != 'HIDE':
+            if settings.show_gp_visibility == 'SHOW' or sidebar_width > limits[3]:
+                ## Viz Clickable toggle, set and sync hide from viewlayer, viewport and render 
+                ## (Can lead to confusion with blender model... but heh !)
+                if item.visible_get():
+                    row.operator('storytools.visibility_toggle', text='', icon='HIDE_OFF', emboss=False).name = item.name
+                else:
+                    row.operator('storytools.visibility_toggle', text='', icon='HIDE_ON', emboss=False).name = item.name
     
         ## Infos pop-up for collapse items
         # if sidebar_width <= 550:

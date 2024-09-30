@@ -17,6 +17,12 @@ def change_edit_lines_opacity(self, context):
         if not gp.is_annotation:
             gp.edit_line_color[3]=self.edit_lines_opacity
 
+display_choice_items = (
+        ('AUTO', 'Automatic', 'Show entry only if there is enough space', 0),
+        ('SHOW', 'Show', 'Always show entry in list', 1),
+        ('HIDE', 'Hide', 'Never show entry in list', 2),
+    )
+
 class STORYTOOLS_PGT_main_settings(PropertyGroup) :
     ## HIDDEN to hide the animatable dot thing
 
@@ -64,22 +70,38 @@ class STORYTOOLS_PGT_main_settings(PropertyGroup) :
         name='Show Camera Settings',
         description="Show Camera properties of every camera in list (when sidebar size allow)",
         default=True)
-    
-    ## GP Object properties
-    show_gp_users : bpy.props.BoolProperty(
-        name='Show Linked Data Toggle',
-        description="Show object user data when object has multiple user (when object have multiple users)",
-        default=True)
-    
-    show_gp_parent : bpy.props.BoolProperty(
-        name='Show Parent Info',
-        description="Show When Object is parented",
-        default=True)
 
-    show_gp_in_front : bpy.props.BoolProperty(
+    ## Properties vbisibility toggles
+
+    show_gp_visibility : bpy.props.EnumProperty(
+        name='Show Visibility Toggle',
+        description="Show object visibility toggle",
+        default='AUTO',
+        items=display_choice_items
+        )
+
+    show_gp_in_front : bpy.props.EnumProperty(
         name='Show In Front Toggle',
         description="Show object in front toggle",
-        default=True)
+        default='AUTO',
+        items=display_choice_items
+        )
+
+    show_gp_parent : bpy.props.EnumProperty(
+        name='Show Parent Info',
+        description="Show When Object is parented",
+        default='AUTO',
+        items=display_choice_items
+        )
+
+    show_gp_users : bpy.props.EnumProperty(
+        name='Show Linked Data Toggle',
+        description="Show object user data when object has multiple user (when object have multiple users)",
+        default='AUTO',
+        items=display_choice_items
+        )
+
+
 
     ## Storyboard Keymap items
     

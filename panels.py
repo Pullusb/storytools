@@ -155,16 +155,43 @@ class STORYTOOLS_PT_tool_ui(Panel):
         col = self.layout.column()
         tool_layout(self, col, context)
 
-class STORYTOOLS_MT_gp_objects_list_options(Menu):
+
+class STORYTOOLS_PT_gp_objects_list_options(bpy.types.Panel):
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI' # 'HEADER'
+    bl_category = "View"
     bl_label = "Options"
+    bl_options = {'INSTANCED'}
+    # bl_ui_units_x = 12
 
     def draw(self, context):
         layout = self.layout
         settings = context.scene.storytools_settings
-        layout.prop(settings, 'show_gp_users')
-        layout.prop(settings, 'show_gp_parent')
-        layout.prop(settings, 'show_gp_in_front')
-        # layout.operator("...", icon="FILE_REFRESH", text="Refresh")
+        col = layout.column(align=True)
+
+        col.label(text='Visibility State')
+        row=col.row(align=True)
+        row.prop(settings, 'show_gp_visibility', text='Show GP Visibility', expand=True)
+
+        col.separator()
+
+        col.label(text='In Front State')
+        row=col.row(align=True)
+        row.prop(settings, 'show_gp_in_front', text='Show In Front State', expand=True)
+        
+        col.separator()
+
+        col.label(text='Parent State')
+        row=col.row(align=True)
+        row.prop(settings, 'show_gp_parent', text='Show Parent State', expand=True)
+
+        col.separator()
+
+        col.label(text='Multiple Users State')
+        row=col.row(align=True)
+        row.prop(settings, 'show_gp_users', text='Show GP users', expand=True)
+
+
 """ 
 class STORYTOOLS_MT_focal_presets(Menu): 
     bl_label = 'Camera Focal Display Presets' 
@@ -323,7 +350,8 @@ def object_layout(layout, context):
     # if get_addon_prefs().active_toolbar:
     #     col_lateral.prop(context.scene.storytools_settings, "show_session_toolbar", text='', icon='STATUSBAR')
     
-    col_lateral.menu("STORYTOOLS_MT_gp_objects_list_options", icon='DOWNARROW_HLT', text='')
+    # col_lateral.menu("STORYTOOLS_MT_gp_objects_list_options", icon='DOWNARROW_HLT', text='')
+    col_lateral.popover(panel="STORYTOOLS_PT_gp_objects_list_options", text="", icon='DOWNARROW_HLT')
 
 def layers_layout(col, context):
     gpd = context.object.data
@@ -588,7 +616,7 @@ panel_classes = (
     # STORYTOOLS_PT_focal_presets,
     STORYTOOLS_OT_info_note,
     STORYTOOLS_PT_camera_settings,
-    STORYTOOLS_MT_gp_objects_list_options,
+    STORYTOOLS_PT_gp_objects_list_options,
     STORYTOOLS_PT_storytools_ui,
     STORYTOOLS_PT_camera_ui,
     STORYTOOLS_PT_drawings_ui,
