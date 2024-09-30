@@ -37,12 +37,15 @@ class STORYTOOLS_GGT_toolpreset_bar(GizmoGroup):
 
         ## Only display addon keymap :
         # from .keymaps import addon_keymaps
-        # ## TODO: reorder keymap item from "properties.order"
         # for akm in set([kms[0] for kms in addon_keymaps]):
         #     km = user_keymaps.get(akm.name)
         #     if not km:
         #         continue
         
+        ## List available icons to use fallback
+        # available_icons = [i.identifier for i in bpy.types.UILayout.bl_rna.functions['prop'].parameters['icon'].enum_items]
+
+        ## TODO: reorder keymap item from "properties.order"
         ## List all set_draw_tools keymap
         for km in user_keymaps:
             for kmi in reversed(km.keymap_items):
@@ -51,7 +54,13 @@ class STORYTOOLS_GGT_toolpreset_bar(GizmoGroup):
                     if not kmi.active or not props.show:
                         continue
                     gz = self.gizmos.new("GIZMO_GT_button_2d")
+                    
+                    # fallback_icon = 'GPBRUSH_PEN' if bpy.app.version < (4,3,0) else 'GREASEPENCIL'
+                    # icon = props.icon if props.icon in available_icons else fallback_icon
+                    # fn.set_gizmo_settings(gz, icon=icon, alpha=0, alpha_highlight=0.2)
+
                     fn.set_gizmo_settings(gz, icon=props.icon, alpha=0, alpha_highlight=0.2)
+                    
                     op = gz.target_set_operator("storytools.set_draw_tool")
                     op.name = props.name
                     # op.mode = props.mode # Default Keymap currently limited to Paint mode

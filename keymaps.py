@@ -69,7 +69,7 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
     
     icon : EnumProperty(
         name="Icon", description="Icon to display in interface", 
-        default='GPBRUSH_PEN',
+        default='GPBRUSH_PEN' if bpy.app.version < (4,3,0) else 'GREASEPENCIL',
         items=get_blender_icons_as_enum()
         )
 
@@ -249,7 +249,8 @@ def register_keymap():
     kmi.properties.brush = 'Pencil'
     kmi.properties.layer = 'Sketch'
     # kmi.properties.material = '' # line
-    kmi.properties.icon = 'GPBRUSH_PEN'
+    # kmi.properties.icon = 'GPBRUSH_PEN'
+    kmi.properties.icon = 'GPBRUSH_PEN' if bpy.app.version < (4,3,0) else 'GREASEPENCIL'
     # kmi.properties.description = 'Set Pencil brush on "Sketch" layer'
     addon_keymaps.append((km, kmi))
 
@@ -259,7 +260,7 @@ def register_keymap():
     kmi.properties.tool = 'builtin_brush.Draw'
     kmi.properties.brush = 'Ink Pen'
     kmi.properties.layer = 'Line'
-    kmi.properties.icon = 'GPBRUSH_SMOOTH'
+    kmi.properties.icon = 'GPBRUSH_SMOOTH' if bpy.app.version < (4,3,0) else 'LINE_DATA'
     # kmi.properties.description = 'Set Ink Brush on "Line" layer'
     # kmi.properties.material = '' # line
     addon_keymaps.append((km, kmi))
@@ -270,7 +271,7 @@ def register_keymap():
     kmi.properties.tool = 'builtin_brush.Fill'
     kmi.properties.layer = 'Color'
     # kmi.properties.material = '' # fill_white
-    kmi.properties.icon = 'GPBRUSH_FILL'
+    kmi.properties.icon = 'GPBRUSH_FILL' if bpy.app.version < (4,3,0) else 'SHADING_SOLID'
     # kmi.properties.description = 'Set Fill tool on "Color" layer'
     addon_keymaps.append((km, kmi))
     
@@ -279,7 +280,7 @@ def register_keymap():
     kmi.properties.mode = 'PAINT_GPENCIL'
     kmi.properties.tool = 'builtin_brush.Draw'
     kmi.properties.layer = 'Color'
-    kmi.properties.icon = 'GPBRUSH_MARKER'
+    kmi.properties.icon = 'GPBRUSH_MARKER' if bpy.app.version < (4,3,0) else 'NODE_MATERIAL'
     # kmi.properties.description = 'Set draw tool "Color" layer'
     # kmi.properties.material = '' # fill_white
     addon_keymaps.append((km, kmi))
@@ -289,7 +290,7 @@ def register_keymap():
     kmi.properties.mode = 'PAINT_GPENCIL'
     kmi.properties.tool = 'builtin_brush.Erase'
     kmi.properties.brush = 'Eraser Point'
-    kmi.properties.icon = 'GPBRUSH_ERASE_HARD'
+    kmi.properties.icon = 'GPBRUSH_ERASE_HARD' if bpy.app.version < (4,3,0) else 'CLIPUV_DEHLT'
     # kmi.properties.description = 'Set Point Eraser'
     addon_keymaps.append((km, kmi))
     
@@ -298,7 +299,7 @@ def register_keymap():
     kmi.properties.mode = 'PAINT_GPENCIL'
     kmi.properties.tool = 'builtin_brush.Erase'
     kmi.properties.brush = 'Eraser Stroke'
-    kmi.properties.icon = 'GPBRUSH_ERASE_STROKE'
+    kmi.properties.icon = 'GPBRUSH_ERASE_STROKE' if bpy.app.version < (4,3,0) else 'CON_TRACKTO'
     # kmi.properties.description = 'Set Stroke Eraser'
     addon_keymaps.append((km, kmi))
 

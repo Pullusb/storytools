@@ -2,6 +2,12 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.17.1
+
+- added: GP buttons color preferences with new default color
+- fixed: GP Buttons placement
+- changed: Partial compatibility with 4.3 (need breaking change for full compatibility)
+
 1.17.0
 
 - added: Extend the control bar with new Grease pencil operators buttons:

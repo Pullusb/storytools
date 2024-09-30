@@ -207,14 +207,20 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
     ## UI settings
     object_gz_color : FloatVectorProperty(
         name="Object Buttons Color",
-        description="Object buttons gizmo backdrop color",
+        description="Object viewport buttons backdrop color",
         default=(0.3, 0.3, 0.3), min=0, max=1.0, step=3, precision=2,
         subtype='COLOR_GAMMA', size=3)
 
     camera_gz_color : FloatVectorProperty(
         name="Camera Buttons Color",
-        description="Camera buttons gizmo backdrop color",
+        description="Camera viewport buttons backdrop color",
         default=(0.1, 0.1, 0.1), min=0, max=1.0, step=3, precision=2,
+        subtype='COLOR_GAMMA', size=3)
+
+    gp_gz_color : FloatVectorProperty(
+        name="Grease Pencil Buttons Color",
+        description="Grease Pencil viewport buttons backdrop color",
+        default=(0.2, 0.2, 0.2), min=0, max=1.0, step=3, precision=2,
         subtype='COLOR_GAMMA', size=3)
 
     active_gz_color : FloatVectorProperty(
@@ -322,7 +328,9 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             # tool_col.prop(self, 'toolbar_icon_bounds')
             
             tool_col.separator()
+            
             tool_col.prop(self, 'object_gz_color')
+            tool_col.prop(self, 'gp_gz_color')
             tool_col.prop(self, 'camera_gz_color')
             tool_col.prop(self, 'active_gz_color')
 

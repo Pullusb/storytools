@@ -231,17 +231,18 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
 
         next_pos = gap_size * px_scale
 
-        ## Prefs Object gizmo color
+        ## Prefs gizmo colors
         obj_color = prefs.object_gz_color
         obj_color_hl = [i + 0.1 for i in obj_color]
-        
-        ## Prefs Camera gizmo color
+
         cam_color = prefs.camera_gz_color
         cam_color_hl = [i + 0.1 for i in cam_color]
+        
+        gp_color = prefs.gp_gz_color
+        gp_color_hl = [i + 0.1 for i in gp_color]
 
         upline_left_pos = left_pos + (gap_size * px_scale) / 2
 
-        # for i, gz in enumerate([self.object_gizmos + self.camera_gizmos + self.interact_gizmos]):
         for i, gz in enumerate(self.gizmos):
             gz.scale_basis = backdrop_size
             if gz in self.object_gizmos:
@@ -267,6 +268,8 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
             ## Matrix world is readonly
             gz.matrix_basis = Matrix.Translation((left_pos + (i * next_pos), vertical_pos, 0))
 
+            ## this loop actualy set gz.scale_basis = backdrop_size on gp_gizmos as well
+
         ## --- Set upper line
 
         gpencil_hide_state = not context.object or context.object.type != 'GPENCIL'
@@ -276,10 +279,10 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         # middle = visible_region / 2
         # upline_left_pos = middle - gp_bar_width / 2
 
-        vertical_pos = vertical_pos + backdrop_size * 2.2
+        vertical_pos = vertical_pos + (backdrop_size * px_scale) * 2
         for i, gz in enumerate(self.gpencil_gizmos):
-            gz.color = obj_color
-            gz.color_highlight = obj_color_hl
+            gz.color = gp_color
+            gz.color_highlight = gp_color_hl
             gz.hide = gpencil_hide_state
 
             gz.matrix_basis = Matrix.Translation((upline_left_pos + (i * next_pos), vertical_pos, 0))
@@ -314,14 +317,17 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
 
 # x_l = -8
 # x_r = 8
-x_l = -10
-x_r = 10
-y_d = -6
-y_u = 6
+x_l = -10 # X Left
+x_r = 10 # X Right
+y_d = -6 # Y Down
+y_u = 6 # Y Up
 
 toggler_shape_verts = (
     (x_l, y_d), (x_r, y_d), (x_r, y_u),
     (x_l, y_d), (x_r, y_u), (x_l, y_u),
+    ## Square with diagonal in other direction (does not fix the issue)
+    # (x_l, y_d), (x_r, y_d), (x_l, y_u),
+    # (x_l, y_u), (x_r, y_u), (x_r, y_d),
                 )
 
 up_arrow_verts = [
