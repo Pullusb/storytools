@@ -1,14 +1,18 @@
 from . import (workspace_setup,
+               reset_draw_settings,
                viewport_options,
                story_palettes,
                git_update,
+               ui,
                )
 
 modules = (
     workspace_setup,
+    reset_draw_settings,
     viewport_options,
     story_palettes,
     git_update,
+    ui,
 )
 
 def register():

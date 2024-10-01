@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.17.2
+
+- changed: move workspace related operator in a new popup menu in header corner
+- added: `Quick reset draw settings` (in workspace panel) button with related section in preferences
+
 1.17.1
 
 - added: GP buttons color preferences with new default color

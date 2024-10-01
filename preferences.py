@@ -49,16 +49,17 @@ class STORYTOOLS_OT_reload_toolpreset_ui(bpy.types.Operator):
         return {'FINISHED'}
 
 def ui_in_sidebar_update(self, _):
-    from .panels import (STORYTOOLS_PT_storytools_ui,
-                         STORYTOOLS_PT_camera_ui,
-                         STORYTOOLS_PT_drawings_ui,
-                         STORYTOOLS_PT_layers_ui,
-                         STORYTOOLS_PT_materials_ui,
-                         STORYTOOLS_PT_brushes_ui,
-                         STORYTOOLS_PT_colors_ui,
-                         STORYTOOLS_PT_palette_ui,
-                         STORYTOOLS_PT_tool_ui,
-                         )
+    from .ui import (
+        STORYTOOLS_PT_storytools_ui,
+        STORYTOOLS_PT_camera_ui,
+        STORYTOOLS_PT_drawings_ui,
+        STORYTOOLS_PT_layers_ui,
+        STORYTOOLS_PT_materials_ui,
+        STORYTOOLS_PT_brushes_ui,
+        STORYTOOLS_PT_colors_ui,
+        STORYTOOLS_PT_palette_ui,
+        STORYTOOLS_PT_tool_ui,
+                     )
     
     cls_and_id = (
         (STORYTOOLS_PT_storytools_ui, 'STORYTOOLS_PT_storytools_ui'),
@@ -135,6 +136,7 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         items=(
             ('SETTINGS', 'Settings', 'Customize interface elements and settings', 0),
             ('TOOLPRESETS', 'Tool Presets', 'Manage tool presets and change their shortcuts', 1),
+            ('RESETLIST', 'Reset List', 'Choose some UI and tools to restore in one click', 2),
             ),
         )
 
@@ -274,6 +276,48 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         default=12,
         min=1, soft_max=300, max=16000)
 
+    ### --- Preferences for reset screen
+
+    show_sidebar : EnumProperty(
+        name='Show Sidebar',
+        description="Choose to show/hide sidebar or leave it as it is",
+        default='SHOW',
+        items=(
+            ('SHOW', 'Show Sidebar', 'Customize interface elements and settings', 0),
+            ('HIDE', 'Hide Sidebar', 'Manage tool presets and change their shortcuts', 1),
+            ('NONE', 'Do Nothing', 'Manage tool presets and change their shortcuts', 2),
+            ),
+        )
+
+    set_sidebar_tab : BoolProperty(
+        name='Set Tab In Sidebar',
+        description="Set tab in sidebar",
+        default=True)
+
+    sidebar_tab_target : StringProperty(
+        name='Set Storytools Tab',
+        description="Name of the Tab to set (respect case)",
+        default='Storytools')
+
+
+    set_edit_line_opacity : BoolProperty(
+        name='Set Edit Line Opacity',
+        description="Set edit line opacity",
+        default=True)
+
+    set_selection_tool : EnumProperty(
+        name='Set Selection Tool (in edit mode)',
+        description="Set the selection tool if in grease pencil edit mode",
+        default='builtin.select_lasso',
+        items=(
+            ('builtin.select_lasso', 'Select Lasso', '', 0),
+            ('builtin.select_box', 'Select Box', '', 1),
+            ('builtin.select_circle', 'Select Circle', '', 2),
+            ('builtin.select', 'Tweak', '', 3),
+            ('NONE', 'Do Nothing', 'Do not set any tools', 4),
+            ),
+        )
+
     ## Tool presets (Old tool presets)
     # tool_presets : PointerProperty(type=STORYTOOLS_PG_tool_presets)
 
@@ -388,6 +432,31 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             bcol.label(text='for the modification to take effect in viewport buttons', icon='BLANK1')
             # for km, kmi in sorted(user_kms, key=lambda x: x[1].type):
             #     draw_kmi_custom(km, kmi, col)
+        
+        elif self.pref_tab == 'RESETLIST':
+            box = col.box()
+            bcol = box.column()
+            bcol.label(text='Following settings are related to "Reset Drawing Setup" operator', icon='INFO')
+            bcol.label(text='Used to quickly reset prefered drawing settings', icon='BLANK1')
+            bcol.label(text='This operator is located in menu at top right corner in header', icon='GREASEPENCIL')
+            # bcol.label(text='Customize to your convenience', icon='BLANK1')
+
+            bcol = box.column()
+            
+            bcol.prop(self, 'show_sidebar', text='Sidebar State')
+            
+            row = bcol.row()
+            row.prop(self, 'set_sidebar_tab')
+            subrow = row.row()
+            subrow.prop(self, 'sidebar_tab_target', text='')
+            subrow.active = self.set_sidebar_tab
+            
+            row = bcol.row()
+            row.prop(self, 'set_edit_line_opacity')
+            row.label(text=f'{self.default_edit_line_opacity:.1f} (located in "Settings" Tab)')
+
+            bcol.prop(self, 'set_selection_tool')
+
 
         """
         elif self.pref_tab == 'TOOLS':

@@ -75,7 +75,7 @@ class STORYTOOLS_PGT_tool_preset(PropertyGroup):
     
     icon : EnumProperty(
         name="Icon", description="Icon to display in interface", 
-        default='GPBRUSH_PEN',
+        default='GPBRUSH_PEN' if bpy.app.version < (4,3,0) else 'GREASEPENCIL',
         items=get_blender_icons_as_enum()
         )
 

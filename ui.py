@@ -143,10 +143,10 @@ class STORYTOOLS_PT_tool_ui(Panel):
     bl_label = "Tool"
     bl_parent_id = "STORYTOOLS_PT_storytools_ui" # as_subpanel
 
-    def draw_header_preset(self, context):
-        layout = self.layout
-        layout.operator("storytools.open_addon_prefs", text='', icon='PREFERENCES')
-    
+    # def draw_header_preset(self, context):
+    #     layout = self.layout
+    #     layout.operator("storytools.open_addon_prefs", text='', icon='PREFERENCES')
+
     # @classmethod
     # def poll(cls, context):
     #     return context.object and context.object.type == 'GPENCIL'
@@ -205,6 +205,7 @@ class STORYTOOLS_PT_focal_presets(PresetPanel, Panel):
     preset_operator = 'script.execute_preset'
     preset_add_operator = 'camera.focal_preset_add'
  """
+
 class STORYTOOLS_PT_camera_settings(Panel):
     bl_label = 'Camera Settings'
     bl_space_type = "VIEW_3D"
@@ -439,41 +440,30 @@ def tool_layout(self, layout, context):
     row = layout.row(align=True)
     row.operator('storytools.align_view_to_object', text='Align View To Object')
     row.operator('storytools.opposite_view', text='', icon='FORCE_MAGNETIC') # CON_ROTLIMIT
-    ## Export / Restore settings
-    layout.operator('storytools.save_load_settings_preset', text='View Settings Presets', icon='PRESET').category = 'view_settings'
-    layout.operator('storytools.save_load_settings_preset', text='Tool Settings Presets', icon='PRESET').category = 'tool_settings'
-
 
     ## -- Workspace setup
-    show_workspace_switch = context.window.workspace.name != 'Storyboard'
-    # show_storypencil_setup = len(context.window_manager.windows) == 1 and context.preferences.addons.get('storypencil')
-    # if show_workspace_switch or show_storypencil_setup:        
-    #     layout.separator()
+    ## Export / Restore settings
+    # layout.operator('storytools.save_load_settings_preset', text='View Settings Presets', icon='PRESET').category = 'view_settings'
+    # layout.operator('storytools.save_load_settings_preset', text='Tool Settings Presets', icon='PRESET').category = 'tool_settings'
+    # ## Load workspace from file
+    # show_workspace_switch = context.window.workspace.name != 'Storyboard'
+    # if show_workspace_switch:
     #     layout.label(text='Workspace:')
-
-    #     if show_workspace_switch:
-    #         layout.operator('storytools.set_storyboard_workspace', text='Storyboard Workspace', icon='WORKSPACE')
-
-    #     if show_storypencil_setup: # Experimental Dual setup
-    #         layout.operator('storytools.setup_storypencil', text='Setup Storypencil (dual window)', icon='WORKSPACE')
-
-    if show_workspace_switch:
-        layout.label(text='Workspace:')
-        layout.operator('storytools.set_storyboard_workspace', text='Storyboard Workspace', icon='WORKSPACE')
+    #     layout.operator('storytools.set_storyboard_workspace', text='Storyboard Workspace', icon='WORKSPACE')
 
     ## -- Check for grease pencil tools addon
 
-    # if not hasattr(bpy.types, GP_PT_sidebarPanel):
-    if not context.preferences.addons.get('greasepencil_tools') and not context.preferences.addons.get('greasepencil-addon'):
+    if bpy.app.version < (4,2,0) and (not context.preferences.addons.get('greasepencil_tools') and not context.preferences.addons.get('greasepencil-addon')):
+        ## Propose to enable built-in
         layout.separator()
         layout.label(text='GP Tools addon is disabled')
         layout.operator('preferences.addon_enable', text='Enable Grease Pencil Tools').module = 'greasepencil_tools'
         # layout.operator('preferences.addon_enable',text='Enable Grease Pencil Tools').module='greasepencil-addon' # The Dev one
     else:
-        ## Don't know how to auto-pin GP_tools panel, so call it's panel draw directly
-        # layout.separator()
-        layout.label(text='Tools:')
-        bpy.types.GP_PT_sidebarPanel.draw(self, context) # (Use 'self.layout', Show at the end only)
+        if hasattr(bpy.types, 'GP_PT_sidebarPanel'):
+            ## Don't know how to auto-pin GP_tools panel, so call it's panel draw directly
+            layout.label(text='Tools:')
+            bpy.types.GP_PT_sidebarPanel.draw(self, context) # (Use 'self.layout', Show at the end only)
 
 class STORYTOOLS_MT_material_context_menu(bpy.types.Menu):
     # bl_idname = "STORYTOOLS_MT_material_context_menu"
