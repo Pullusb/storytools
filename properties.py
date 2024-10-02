@@ -60,41 +60,43 @@ class STORYTOOLS_PGT_main_settings(PropertyGroup) :
             ('DISABLED', 'No Sync', 'No material association when changing layer', 2),
             ))
 
-    show_session_toolbar : bpy.props.BoolProperty(
+    show_session_toolbar : BoolProperty(
         name='Show Toolbar',
         description="Show/Hide viewport Bottom Toolbar buttons on this session\
             \nTo completely disable, uncheck 'Active Toolbar' in addon Storytools preferences",
         default=True)
     
-    show_cam_settings : bpy.props.BoolProperty(
+    show_cam_settings : EnumProperty(
         name='Show Camera Settings',
         description="Show Camera properties of every camera in list (when sidebar size allow)",
-        default=True)
+        default='AUTO',
+        items=display_choice_items
+        )
 
     ## Properties vbisibility toggles
 
-    show_gp_visibility : bpy.props.EnumProperty(
+    show_gp_visibility : EnumProperty(
         name='Show Visibility Toggle',
         description="Show object visibility toggle",
         default='SHOW',
         items=display_choice_items
         )
 
-    show_gp_in_front : bpy.props.EnumProperty(
+    show_gp_in_front : EnumProperty(
         name='Show In Front Toggle',
         description="Show object in front toggle",
         default='AUTO',
         items=display_choice_items
         )
 
-    show_gp_parent : bpy.props.EnumProperty(
+    show_gp_parent : EnumProperty(
         name='Show Parent Info',
         description="Show When Object is parented",
         default='AUTO',
         items=display_choice_items
         )
 
-    show_gp_users : bpy.props.EnumProperty(
+    show_gp_users : EnumProperty(
         name='Show Linked Data Toggle',
         description="Show object user data when object has multiple user (when object have multiple users)",
         default='AUTO',

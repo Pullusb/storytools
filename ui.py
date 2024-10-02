@@ -252,7 +252,6 @@ class STORYTOOLS_PT_camera_settings(Panel):
         col.active = cam.data.type != 'ORTHO'
 
         col = layout.column()
-        col.prop(context.scene.storytools_settings, "show_cam_settings", text='Show Settings In List')
         
         col.separator()
         col.label(text='Track To Constraint:')
@@ -287,6 +286,18 @@ class STORYTOOLS_PT_camera_settings(Panel):
         row = col.row()
         row.alert = True
         row.operator('storytools.delete_camera', text='Delete Camera', icon='X')
+
+        col.separator()
+        
+        row = col.row()
+        row.label(text="Settings Display Toggle:")
+        info = row.operator('storytools.info_note', text='', icon='QUESTION', emboss=False)
+        info.title = 'Display Toggles Informations'
+        info.text = 'Show/hide: Define what infos you want to see in list\
+                \nAutomatic: icons appear only if there is enough sidebar space'
+
+        row = col.row()
+        row.prop(context.scene.storytools_settings, "show_cam_settings", text='Show Settings In List', expand=True)
 
 
 def camera_layout(layout, context):

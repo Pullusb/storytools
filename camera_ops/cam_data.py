@@ -135,8 +135,10 @@ class STORYTOOLS_UL_camera_list(bpy.types.UIList):
                 in_draw = True
                 icon = 'CON_CAMERASOLVER'
         
-        row.prop(item, 'name', icon=icon, text='', emboss=False)
-
+        row_name = row.row(align=True)
+        row_name.prop(item, 'name', icon=icon, text='', emboss=False)
+        row_name.active = item.visible_get()
+        
         settings = context.scene.storytools_settings
 
         ## Show data when no single user (whill showup with Draw Cam)
@@ -168,10 +170,9 @@ class STORYTOOLS_UL_camera_list(bpy.types.UIList):
         #     # row.label(text='', icon='HIDE_ON')
         #     row.operator('storytools.visibility_toggle', text='', icon='HIDE_ON', emboss=False).name = item.name
 
-        if settings.show_cam_settings and sidebar_width > 310:
+        if settings.show_cam_settings == 'SHOW' or (settings.show_cam_settings == 'AUTO' and sidebar_width > 300):
             show_lens(row, item)
-
-            # Select camera # show only with big lateral bar
+            # Select camera 
             row.operator('storytools.make_active_and_select', text='', icon='RESTRICT_SELECT_OFF').name = item.name
         else:
             ## Collapsed panel with infos
