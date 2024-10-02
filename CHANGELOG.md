@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.18.0
+
+- added: Navigate GP frame button. active layer by default, all accessible (visible and unlocked) when pressing shift
+
 1.17.3
 
 - changed: GP (drawing) object visibility icon show when there is a viewport-rendering conflict

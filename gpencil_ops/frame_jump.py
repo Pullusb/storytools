@@ -1,7 +1,13 @@
 import bpy
 
 from mathutils import Vector, Matrix
-
+from bpy.props import (FloatProperty,
+                        BoolProperty,
+                        EnumProperty,
+                        StringProperty,
+                        IntProperty,
+                        PointerProperty,
+                        CollectionProperty)
 from bpy.types import Operator
 
 from .. import fn
@@ -10,7 +16,7 @@ def check_for_frames(ob, active_only=True):
     if ob.type != 'GPENCIL':
         return 'Not a Grease Pencil object'
 
-    if not (layer := ob.data.lauers.active):
+    if not (layer := ob.data.layers.active):
         return "No active layer on grease pencil object"
 
     if not len(layer.frames):
@@ -19,11 +25,9 @@ def check_for_frames(ob, active_only=True):
     return False
 
 
-## Duplicate code from GPtoolbox ?
-
-"""
-class STORYTOOLS_OT_gp_frame_jump(Operator):
-    bl_idname = "screen.gp_frame_jump"
+## Ops partially copied from GP Toolbox (Public, GPL, same author ^^)
+class STORYTOOLS_OT_greasepencil_frame_jump(Operator):
+    bl_idname = "storytools.greasepencil_frame_jump"
     bl_label = 'Jump to GPencil Keyframe'
     bl_description = "Jump to prev/next keyframe on active and selected layers of active grease pencil object"
     bl_options = {'REGISTER', 'UNDO'}
@@ -31,12 +35,128 @@ class STORYTOOLS_OT_gp_frame_jump(Operator):
     @classmethod
     def poll(cls, context):
         return context.object and context.object.type == 'GPENCIL'
-    
+
+    # next : BoolProperty(
+    #     name="Next GP frame", description="Go to next or previous grease pencil frame", 
+    #     default=True, options={'HIDDEN', 'SKIP_SAVE'})
+    direction : EnumProperty(
+        name="Jump to GP frame", description="Go to next or previous grease pencil frame", 
+        items=(
+            ('NEXT', 'Next', 'Jump to next keyframe', 0),
+            ('PREV', 'Previous', 'Jump to previous keyframe', 1),   
+            ),
+        default='NEXT', options={'HIDDEN', 'SKIP_SAVE'})
+
+    target : EnumProperty(
+        name="Target layer", description="Choose wich layer to consider for keyframe change", 
+        default='ACTIVE', options={'HIDDEN', 'SKIP_SAVE'},
+        items=(
+            ('ACTIVE', 'Active and selected', 'jump in keyframes of active and other selected layers ', 0),
+            ('VISIBLE', 'Visibles layers', 'jump in keyframes of visibles layers', 1),   
+            ('ACCESSIBLE', 'Visible and unlocked layers', 'jump in keyframe of all layers', 2),   
+            ))
+
+    keyframe_type : EnumProperty(
+        name="Keyframe Filter", description="Filter jump to specific keyframe type",
+        default='ALL', options={'HIDDEN', 'SKIP_SAVE'},
+        items=(
+            ('ALL', 'All', '', 0),
+            ('KEYFRAME', 'Keyframe', '', 'KEYTYPE_KEYFRAME_VEC', 1),
+            ('BREAKDOWN', 'Breakdown', '', 'KEYTYPE_BREAKDOWN_VEC', 2),
+            ('MOVING_HOLD', 'Moving Hold', '', 'KEYTYPE_MOVING_HOLD_VEC', 3),
+            ('EXTREME', 'Extreme', '', 'KEYTYPE_EXTREME_VEC', 4),
+            ('JITTER', 'Jitter', '', 'KEYTYPE_JITTER_VEC', 5),
+            # ('NONE', 'Use UI Filter', '', 6), # 'KEYFRAME' # UI filter was used in GP toolbox
+            ))
+
+    # sent_by_gizmo : BoolProperty(
+    #     name="Sent ", description="Internal properties to check if sent using gizmo", 
+    #     default=False, options={'HIDDEN', 'SKIP_SAVE'})
+
+    @classmethod
+    def description(cls, context, properties) -> str:
+        ## User mande description is passed
+        if properties.direction == 'NEXT':
+            desc = 'Jump to next grease pencil frame'
+        else:
+            desc = 'Jump to previous grease pencil frame'
+        # desc += '\nCtrl + Click: Include object animation keys'
+        desc += '\nShift + Click: Consider all accessible layers instead of only active'
+        return desc
+
+    def invoke(self, context, event):
+        # self.prefs = fn.get_addon_prefs()
+        ## If there is a clic event, consider that it was launched using gizmo button
+        if event.type == 'LEFTMOUSE':
+            if event.shift:
+                self.target = 'ACCESSIBLE'
+
+            ## Consider object keys ? 
+            # if event.ctrl:
+            #     # Need to add object_keys bool prop
+            #     self.object_keys = True
+
+        return self.execute(context)
+
     def execute(self, context):
         if error_message := check_for_frames(context.object):
             self.report({'ERROR'}, error_message)
             return {'CANCELLED'}
-"""
+
+        if self.target == 'ACTIVE':
+            gpl = [l for l in context.object.data.layers if l.select and not l.hide]
+            if not context.object.data.layers.active in gpl:
+                gpl.append(context.object.data.layers.active)   
+        
+        elif self.target == 'VISIBLE':
+            gpl = [l for l in context.object.data.layers if not l.hide]
+        
+        elif self.target == 'ACCESSIBLE':
+            gpl = [l for l in context.object.data.layers if not l.hide and not l.lock]
+
+        current = context.scene.frame_current
+        p = n = None
+
+        mins = []
+        maxs = []
+        for l in gpl:
+            for f in l.frames:
+                # keyframe type filter
+                if self.keyframe_type != 'ALL' and self.keyframe_type != f.keyframe_type:
+                    continue
+
+                if f.frame_number < current:
+                    p = f.frame_number
+                if f.frame_number > current:
+                    n = f.frame_number
+                    break
+
+            mins.append(p)
+            maxs.append(n)
+            p = n = None
+
+        mins = [i for i in mins if i is not None]
+        maxs = [i for i in maxs if i is not None]
+
+        if mins:
+            p = max(mins)
+        if maxs:
+            n = min(maxs)
+
+        ## Double the frame set to avoid refresh problem (had one in 2.91.2) ?
+        if self.direction == 'NEXT' and n is not None:
+            context.scene.frame_set(n)
+            # context.scene.frame_current = n
+        elif self.direction == 'PREV' and p is not None:
+            context.scene.frame_set(p)
+            # context.scene.frame_current = p
+        else:
+            direction = 'next' if self.direction == 'NEXT' else 'previous'
+            plural = '' if self.target == 'ACTIVE' else 's'
+            self.report({'INFO'}, f'No {direction} keyframe on {self.target.lower()} layer{plural}')
+            return {"CANCELLED"}
+
+        return {"FINISHED"}
 
 
 """ # WIP flip frame ops, modal copeid from object pan
@@ -113,3 +233,13 @@ class STORYTOOLS_OT_flip_frames(Operator):
     def execute(self, context):
         return {"FINISHED"}
 """
+
+classes = (STORYTOOLS_OT_greasepencil_frame_jump,)
+
+def register(): 
+    for cls in classes:
+        bpy.utils.register_class(cls)
+
+def unregister():
+    for cls in reversed(classes):
+        bpy.utils.unregister_class(cls)

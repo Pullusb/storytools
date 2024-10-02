@@ -1,11 +1,11 @@
 from . import (
     frame_new,
-    # frame_jump,
+    frame_jump,
                )
 
 modules = (
     frame_new,
-    # frame_jump,
+    frame_jump,
 )
 
 def register():

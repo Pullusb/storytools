@@ -185,6 +185,20 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         op.duplicate = True
         self.gpencil_gizmos.append(self.gz_gp_new_additive_frame)
 
+        ## GP jump prev
+        self.gz_gp_jump_prev = self.gizmos.new("GIZMO_GT_button_2d")
+        fn.set_gizmo_settings(self.gz_gp_jump_prev, 'PREV_KEYFRAME')
+        op = self.gz_gp_jump_prev.target_set_operator("storytools.greasepencil_frame_jump")
+        op.direction = 'PREV'
+        self.gpencil_gizmos.append(self.gz_gp_jump_prev)
+
+        ## GP jump next
+        self.gz_gp_jump_next = self.gizmos.new("GIZMO_GT_button_2d")
+        fn.set_gizmo_settings(self.gz_gp_jump_next, 'NEXT_KEYFRAME')
+        op = self.gz_gp_jump_next.target_set_operator("storytools.greasepencil_frame_jump")
+        op.direction = 'NEXT'
+        self.gpencil_gizmos.append(self.gz_gp_jump_next)
+
     def draw_prepare(self, context):
         prefs = get_addon_prefs()
         settings = context.scene.storytools_settings
