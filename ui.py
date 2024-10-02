@@ -167,6 +167,13 @@ class STORYTOOLS_PT_gp_objects_list_options(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         settings = context.scene.storytools_settings
+        row = layout.row()
+        row.label(text='Drawing List Display Toggles')
+        info = row.operator('storytools.info_note', text='', icon='QUESTION', emboss=False)
+        info.title = 'Display Toggles Informations'
+        info.text = 'Show/hide: Define what infos you want to see in list\
+                \nAutomatic: icons appear only if there is enough sidebar space'
+
         col = layout.column(align=True)
 
         col.label(text='Visibility State')

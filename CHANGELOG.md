@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.17.3
+
+- changed: GP (drawing) object visibility icon show when there is a viewport-rendering conflict
+- added: info-hint in drawing's displays toggle channel
+
 1.17.2
 
 - changed: move workspace related operator in a new popup menu in header corner

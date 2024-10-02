@@ -76,7 +76,7 @@ class STORYTOOLS_PGT_main_settings(PropertyGroup) :
     show_gp_visibility : bpy.props.EnumProperty(
         name='Show Visibility Toggle',
         description="Show object visibility toggle",
-        default='AUTO',
+        default='SHOW',
         items=display_choice_items
         )
 

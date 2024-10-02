@@ -454,7 +454,7 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
         else:
             icon = 'OUTLINER_OB_GREASEPENCIL'
         name_row = row.row()
-        name_row.prop(item, 'name', icon=icon, text='',emboss=False)
+        name_row.prop(item, 'name', icon=icon, text='', emboss=False)
         name_row.active = item.visible_get()
 
         ## Prepare visibility according to toggles
@@ -491,12 +491,15 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
 
         if settings.show_gp_visibility != 'HIDE':
             if settings.show_gp_visibility == 'SHOW' or sidebar_width > limits[3]:
-                ## Viz Clickable toggle, set and sync hide from viewlayer, viewport and render 
-                ## (Can lead to confusion with blender model... but heh !)
+                ## Viz Clickable toggle, set and sync hide from all 3 view state [viewlayer, viewport and render]
+                ## (Can lead to confusion with blender default... but heh!)
+
                 if item.visible_get():
-                    row.operator('storytools.visibility_toggle', text='', icon='HIDE_OFF', emboss=False).name = item.name
+                    icon = 'HIDE_OFF' if not item.hide_render else 'RESTRICT_RENDER_ON' # VIS_SEL_10
+                    row.operator('storytools.visibility_toggle', text='', icon=icon, emboss=False).name = item.name
                 else:
-                    row.operator('storytools.visibility_toggle', text='', icon='HIDE_ON', emboss=False).name = item.name
+                    icon = 'HIDE_ON' if item.hide_render else 'RESTRICT_RENDER_OFF' # VIS_SEL_01
+                    row.operator('storytools.visibility_toggle', text='', icon=icon, emboss=False).name = item.name
     
         ## Infos pop-up for collapse items
         # if sidebar_width <= 550:
