@@ -83,6 +83,7 @@ class STORYTOOLS_GGT_toolpreset_bar(GizmoGroup):
         section_separator = 20
         px_scale = context.preferences.system.ui_scale
 
+        ## Toggle on/off with same session as bottom control bar
         for gz in self.gizmos:
             gz.hide = not settings.show_session_toolbar
         if not settings.show_session_toolbar:

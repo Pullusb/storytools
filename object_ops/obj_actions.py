@@ -261,10 +261,24 @@ class STORYTOOLS_OT_object_draw(Operator):
 
         ## If active object is a GP, go in draw mode or do nothing
         if context.object and context.object.type == 'GPENCIL':
+            if not context.object.visible_get():
+                ## Show error if object is invisible
+                mess = [f'Active object "{context.object.name}" is not visible',
+                        ]
+                ## /!\ Adding property in popup message close popup when released !
+                # [context.object, 'hide_viewport', 'Visibility', 'BLANK1'],
+
+                fn.show_message_box(_message=mess, _icon='ERROR')
+                return {"CANCELLED"}
+
             if context.mode != 'PAINT_GPENCIL':
+                # bpy.ops.storytools.make_active_and_select(name = context.object.name, mode='PAINT_GPENCIL')
                 bpy.ops.object.mode_set(mode='PAINT_GPENCIL')
             else:
+                # bpy.ops.storytools.make_active_and_select(name = context.object.name)
                 bpy.ops.object.mode_set(mode='OBJECT')
+
+            context.object.select_set(True)
 
             return {"FINISHED"}
 
