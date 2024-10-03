@@ -1,4 +1,5 @@
 import bpy
+from .. import fn
 
 class STORYTOOLS_PT_quick_setup(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
@@ -37,6 +38,14 @@ class STORYTOOLS_PT_quick_setup(bpy.types.Panel):
 
         col.separator()
         col.operator("storytools.open_addon_prefs", text='Open Storytools Preferences', icon='PREFERENCES')
+
+        ## Minimap
+        # col.separator()
+        # if not fn.is_minimap_viewport:
+        #     col.label(text='Minimap:')
+        #     col.operator('storytools.setup_minimap_viewport', text='Viewport to minimap', icon='WORLD').split_viewport = False
+        #     col.operator('storytools.setup_minimap_viewport', text='Split With Minimap', icon='SPLIT_HORIZONTAL').split_viewport = True
+
 
         # show_storypencil_setup = len(context.window_manager.windows) == 1 and context.preferences.addons.get('storypencil')
         # if show_workspace_switch or show_storypencil_setup:        

@@ -144,9 +144,51 @@ class STORYTOOLS_OT_setup_minimap_viewport(Operator):
     bl_description = "Setup current viewport as minimap\
         \nAdjust viewport settings so viewport is considered as minimap\
         \n(determined by viewport orientation and combination of tool-settings"
-    bl_options = {"REGISTER", "INTERNAL"} # "UNDO", 
+    bl_options = {"REGISTER", "INTERNAL", "UNDO"} # FIXME remove undo ?
+
+    split_viewport : bpy.props.BoolProperty(name='Split Viewport', default=False, options={'SKIP_SAVE'})
+
+    @classmethod
+    def description(cls, context, properties) -> str:
+        if properties.split_viewport:
+            desc = 'Split current area to create a minimap viewport'
+        else:
+            desc = 'Setup current viewport as minimap'
+        
+        ## Precisions
+        desc += '\nAdjust viewport settings so viewport is considered as minimap\
+                 \n(determined by viewport orientation and combination of tool-settings'
+        return desc
+
+    def invoke(self, context, event):
+        if not self.split_viewport:
+            ## if there is no other viewport in screens
+            viewport_count = 0
+            for window in bpy.context.window_manager.windows:
+                screen = window.screen
+                for area in screen.areas:
+                    if area.type == 'VIEW_3D':
+                        viewport_count += 1
+
+            if viewport_count == 1:
+                wm = bpy.context.window_manager
+                return wm.invoke_props_dialog(self)
+        
+        return self.execute(context)
+
+    def draw(self, context):
+        layout = self.layout
+        col=layout.column(align=True)
+        col.label(text='This is the only viewport!', icon='ERROR')
+        col.label(text='Are you sure you want to use it as minimap ?')
+        col.label(text='(Viewport view settings are lost)')
+        col.separator()
+        col.label(text='Alternatively you can split current viewport:')
+        col.operator('storytools.setup_minimap_viewport', text='Split With Minimap', icon='SPLIT_HORIZONTAL').split_viewport = True        
 
     def execute(self, context):
+        if self.split_viewport:
+            bpy.ops.screen.area_split(direction='HORIZONTAL', float=0.7)
 
         ## Set TOP ortho view (if needed)
         if context.region_data.view_perspective != 'ORTHO':
