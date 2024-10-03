@@ -202,6 +202,14 @@ class STORYTOOLS_OT_lock_camera_to_view_toggle(Operator):
             context.space_data.region_3d.view_perspective = 'CAMERA'
             go_to_cam = True
 
+        r3d = context.space_data.region_3d
+        is_rotation_locked = r3d.lock_rotation
+
+        if is_rotation_locked and (self.fit_viewport or self.zoom_full_res):
+            ## If lock rotation is enabled zoom ops will raise errors
+            ## Unlock temporarily
+            r3d.lock_rotation = False
+
         if self.fit_viewport:
             ## TODO: Custom view_fit that consider all regions width
             # fn.fit_view(context)
@@ -209,14 +217,19 @@ class STORYTOOLS_OT_lock_camera_to_view_toggle(Operator):
 
             bpy.ops.view3d.view_center_camera()
             ## Dezoom slightly to let frame enter view
-            r3d = bpy.context.space_data.region_3d
+
             r3d.view_camera_zoom += r3d.view_camera_zoom * -0.1
 
+            if is_rotation_locked:
+                r3d.lock_rotation = True
             return {"FINISHED"}
 
         if self.zoom_full_res:
             bpy.ops.view3d.zoom_camera_1_to_1()
+            if is_rotation_locked:
+                r3d.lock_rotation = True
             return {"FINISHED"}
+
 
         if go_to_cam:
             return {"FINISHED"}
