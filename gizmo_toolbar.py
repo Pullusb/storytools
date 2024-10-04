@@ -145,6 +145,13 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         self.gz_lock_cam.target_set_operator("storytools.lock_camera_to_view_toggle")
         self.camera_gizmos.append(self.gz_lock_cam)
 
+        ## Lock view
+        self.gz_lock_view = self.gizmos.new("GIZMO_GT_button_2d")
+        fn.set_gizmo_settings(self.gz_lock_view, 'LOCKVIEW_ON')
+        self.gz_lock_view.target_set_operator("storytools.lock_view")
+        self.camera_gizmos.append(self.gz_lock_view)
+
+
         ## Camera key position
         self.gz_key_cam = self.gizmos.new("GIZMO_GT_button_2d")
         fn.set_gizmo_settings(self.gz_key_cam, 'DECORATE_KEYFRAME')
@@ -156,11 +163,17 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         
         self.interact_gizmos = []
         
-        ## Lock view
-        self.gz_lock_view = self.gizmos.new("GIZMO_GT_button_2d")
-        fn.set_gizmo_settings(self.gz_lock_view, 'LOCKVIEW_ON')
-        self.gz_lock_view.target_set_operator("storytools.lock_view")
-        self.interact_gizmos.append(self.gz_lock_view)
+        # ## Lock view
+        # self.gz_lock_view = self.gizmos.new("GIZMO_GT_button_2d")
+        # fn.set_gizmo_settings(self.gz_lock_view, 'LOCKVIEW_ON')
+        # self.gz_lock_view.target_set_operator("storytools.lock_view")
+        # self.interact_gizmos.append(self.gz_lock_view)
+
+        ## Autokey
+        # self.gz_autokey = self.gizmos.new("GIZMO_GT_button_2d")
+        # fn.set_gizmo_settings(self.gz_autokey, 'RECORD_OFF')
+        # self.gz_autokey.target_set_operator("storytools.autokey_switch")
+        # self.interact_gizmos.append(self.gz_autokey)
 
         ## Draw
         self.gz_draw = self.gizmos.new("GIZMO_GT_button_2d")
@@ -301,19 +314,27 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
 
             gz.matrix_basis = Matrix.Translation((upline_left_pos + (i * next_pos), vertical_pos, 0))
 
+        red = (0.5, 0.1, 0.1)
+        red_hl = (0.7, 0.2, 0.2)
         ## Show color when out of cam view ? : context.space_data.region_3d.view_perspective != 'CAMERA'
-        self.gz_lock_cam.color = (0.5, 0.1, 0.1) if context.space_data.lock_camera else cam_color
-        self.gz_lock_cam.color_highlight = (0.7, 0.2, 0.2) if context.space_data.lock_camera else cam_color_hl
+        self.gz_lock_cam.color = red if context.space_data.lock_camera else cam_color
+        self.gz_lock_cam.color_highlight = red_hl if context.space_data.lock_camera else cam_color_hl
 
         rgb_active = prefs.active_gz_color # (0.1, 0.1, 0.4)
         rgb_active_higlight = (rgb_active[0] + 0.1, rgb_active[1] + 0.1, rgb_active[2] + 0.1)
-        r3d = context.space_data.region_3d
-        self.gz_lock_view.color = rgb_active if r3d.lock_rotation else obj_color
-        self.gz_lock_view.color_highlight = rgb_active_higlight if r3d.lock_rotation else obj_color_hl
         
+        r3d = context.space_data.region_3d
+        self.gz_lock_view.color = rgb_active if r3d.lock_rotation else cam_color
+        self.gz_lock_view.color_highlight = rgb_active_higlight if r3d.lock_rotation else cam_color_hl
+        
+        ## Paint toggle color
         is_in_draw = context.mode == 'PAINT_GPENCIL'
         self.gz_draw.color = rgb_active if is_in_draw else obj_color
         self.gz_draw.color_highlight = rgb_active_higlight if is_in_draw else obj_color_hl
+
+        ## Autokey toggle color
+        # self.gz_autokey.color = red if context.scene.tool_settings.use_keyframe_insert_auto else obj_color
+        # self.gz_autokey.color_highlight = red_hl if context.scene.tool_settings.use_keyframe_insert_auto else obj_color_hl
 
 
     # def refresh(self, context):

@@ -2,9 +2,14 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-1.18.0
+1.19.0
+
+- changed: Lock orbit navigation moved in the camera group, as it is related to view in general
+
+1.18.1
 
 - added: Navigate GP frame button. active layer by default, all accessible (visible and unlocked) when pressing shift
+- fixed: bug when using camera zoom with orbit lock
 
 1.17.3
 

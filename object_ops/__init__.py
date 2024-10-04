@@ -1,7 +1,11 @@
-from . import obj_actions
+from . import (
+    obj_actions,
+    autolock_switch,
+)
 
 modules = (
     obj_actions,
+    autolock_switch,
 )
 
 def register():
