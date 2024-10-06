@@ -6,6 +6,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 1.19.1
 
 - changed: `Align to view` is now z-facing lights, speaker and empty-image objects (previoulsy z-facing text objects)
+- fixed: problem with bottom bar alignment
 
 1.19.0
 

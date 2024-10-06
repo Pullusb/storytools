@@ -227,7 +227,8 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
             return
         
         region = context.region
-        count = len(self.gizmos)
+        # count = len(self.gizmos) # Wrong with gizmo added out of main line (GP gizmos)
+        count = len(self.object_gizmos + self.camera_gizmos + self.interact_gizmos)
         sidebar_width = next((r.width for r in context.area.regions if r.type == 'UI'), 0)
 
         ## Using only direct offset
