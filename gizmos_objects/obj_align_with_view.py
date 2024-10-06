@@ -130,8 +130,9 @@ class STORYTOOLS_OT_align_with_view(Operator):
                 ## Aligned to view Matrix
                 ref_matrix = r3d.view_matrix.inverted()
 
-            ## Objects are rotated by 90° on X except for Text objects.
-            fn.assign_rotation_from_ref_matrix(ob, ref_matrix, rot_90=ob.type != 'FONT')
+            ## Objects are rotated by 90° on X except for Text objects or empty image.
+            rotate_90 = ob.type not in ('FONT', 'SPEAKER', 'LIGHT') and not (ob.type == 'EMPTY' and ob.empty_display_type == 'IMAGE')
+            fn.assign_rotation_from_ref_matrix(ob, ref_matrix, rot_90=rotate_90)
 
         return {"FINISHED"}
 

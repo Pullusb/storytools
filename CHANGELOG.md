@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+1.19.1
+
+- changed: `Align to view` is now z-facing lights, speaker and empty-image objects (previoulsy z-facing text objects)
+
 1.19.0
 
 - changed: Lock orbit navigation moved in the camera group, as it is related to view in general
@@ -131,7 +136,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 1.9.0
 
-- added: `Align-to-view` has a better redo panel and `bring objects in view` handle multi-object (based on origins)
+- added: `Align to view` has a better redo panel and `bring objects in view` handle multi-object (based on origins)
 
 1.8.12
 

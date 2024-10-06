@@ -4,7 +4,7 @@ bl_info = {
     "name": "Storytools - Storyboard Tools",
     "description": "Set of tools for Storyboarding",
     "author": "Samuel Bernou",
-    "version": (1, 19, 0),
+    "version": (1, 19, 1),
     "blender": (4, 0, 0),
     "location": "View3D",
     "warning": "",
