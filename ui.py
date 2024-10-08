@@ -214,10 +214,10 @@ class STORYTOOLS_PT_focal_presets(PresetPanel, Panel):
  """
 
 class STORYTOOLS_PT_camera_settings(Panel):
-    bl_label = 'Camera Settings'
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Storytools" # Gpencil
+    bl_label = 'Camera Settings'
     bl_options = {'INSTANCED'}
 
     @classmethod

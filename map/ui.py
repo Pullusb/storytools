@@ -1,9 +1,12 @@
 import bpy
 from bpy.types import Panel
-from ..fn import get_addon_prefs
+from .. import fn
+
+## Unused -- all transfered to setup panel
 
 class STORYTOOLS_PT_map_ui(Panel):
     bl_space_type = "VIEW_3D"
+    # bl_region_type = "HEADER"
     bl_region_type = "UI"
     bl_category = "View"
     bl_label = "Minimap"
@@ -11,10 +14,10 @@ class STORYTOOLS_PT_map_ui(Panel):
 
     @classmethod
     def poll(cls, context):
-        return True
+        return fn.is_minimap_viewport(context)
 
     def draw_header(self, context):
-        prefs = get_addon_prefs()
+        # prefs = fn.get_addon_prefs()
         if context.region.type == "HEADER":
             self.layout.operator("storytools.map_frame_objects", text="", icon="ZOOM_SELECTED")
             # self.layout.prop(prefs, "minimap_mode", text="", icon="ZOOM_SELECTED")
@@ -26,11 +29,11 @@ class STORYTOOLS_PT_map_ui(Panel):
         layout = self.layout
         layout.use_property_split = True
         layout.use_property_decorate = False
-        prefs = get_addon_prefs()
+        # prefs = fn.get_addon_prefs()
         col = layout.column(align=True)
         ## Full display
         # col.prop(prefs, "nested_level", text='Nested Level')
-        col.operator("storytools.setup_minimap_viewport", text='Setup Minimap Viewport')
+        # col.operator("storytools.setup_minimap_viewport", text='Setup Minimap Viewport')
         col.operator("storytools.disable_minimap_viewport", text='Disable Minimap Viewport')
         col.separator()
         col.label(text='Recenter Map:')
@@ -52,7 +55,8 @@ def register():
     bpy.types.VIEW3D_HT_header.append(draw_header_button)
 
 def unregister():
+    bpy.types.VIEW3D_HT_header.remove(draw_header_button)
+    
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
     
-    bpy.types.VIEW3D_HT_header.remove(draw_header_button)

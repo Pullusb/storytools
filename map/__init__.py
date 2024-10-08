@@ -2,14 +2,14 @@ from . import (
     # gizmos_map,
     handler_draw_map,
     map_ops,
-    panels,
+    # ui,
     )
 
 modules = (
     # gizmos_map,
     handler_draw_map,
     map_ops,
-    panels,
+    # ui,
 )
 
 def register():
