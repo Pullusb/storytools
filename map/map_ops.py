@@ -188,7 +188,7 @@ class STORYTOOLS_OT_setup_minimap_viewport(Operator):
 
     def execute(self, context):
         if self.split_viewport:
-            bpy.ops.screen.area_split(direction='HORIZONTAL', float=0.7)
+            bpy.ops.screen.area_split(direction='HORIZONTAL', factor=0.7)
 
         ## Set TOP ortho view (if needed)
         if context.region_data.view_perspective != 'ORTHO':

@@ -43,7 +43,7 @@ modules = (
     gizmos_objects,
     gizmos_camera,
     gizmo_toolbar,
-    # map,
+    map,
     ui,
     keymaps,
     gizmo_toolpreset_bar,

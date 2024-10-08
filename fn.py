@@ -578,26 +578,31 @@ def show_message_box(_message = "", _title = "Message Box", _icon = 'INFO'):
 
 
 def is_minimap_viewport(context=None):
+    
+    space_data = context.space_data # Error when checking from header
+    region_data = context.region_data
+    # space_data = context.area.spaces.active
+    # region_data = space_data.region_3d
 
     ## check if in quad view
-    # if context.space_data.region_quadviews:
-    #     return False
+    if space_data.region_quadviews:
+        return False
 
-    ## specific combination to identify as map viewport (Arbitrary)
-    if context.space_data.show_object_viewport_lattice or context.space_data.show_object_viewport_light_probe:
+    # specific combination to identify as map viewport (Arbitrary)
+    if space_data.show_object_viewport_lattice or space_data.show_object_viewport_light_probe:
         return False
 
     ## check if locked
-    if not context.region_data.lock_rotation:
+    if not region_data.lock_rotation:
         return False
 
     ## check if looking down
-    euler_view = context.region_data.view_matrix.to_euler()
+    euler_view = region_data.view_matrix.to_euler()
     if euler_view[1] != 0.0 or euler_view[1] != 0.0:
         return False
     
     ## Check if ortho view
-    if context.region_data.view_perspective != 'ORTHO':
+    if region_data.view_perspective != 'ORTHO':
         return False
     
     ## TODO : additional check with view settings combination to identify map viewport

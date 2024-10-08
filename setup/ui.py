@@ -41,7 +41,7 @@ class STORYTOOLS_PT_quick_setup(bpy.types.Panel):
 
         ## Minimap
         # col.separator()
-        # if not fn.is_minimap_viewport:
+        # if not fn.is_minimap_viewport(context):
         #     col.label(text='Minimap:')
         #     col.operator('storytools.setup_minimap_viewport', text='Viewport to minimap', icon='WORLD').split_viewport = False
         #     col.operator('storytools.setup_minimap_viewport', text='Split With Minimap', icon='SPLIT_HORIZONTAL').split_viewport = True
