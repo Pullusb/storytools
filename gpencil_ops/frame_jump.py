@@ -54,6 +54,7 @@ class STORYTOOLS_OT_greasepencil_frame_jump(Operator):
             ('ACTIVE', 'Active and selected', 'jump in keyframes of active and other selected layers ', 0),
             ('VISIBLE', 'Visibles layers', 'jump in keyframes of visibles layers', 1),   
             ('ACCESSIBLE', 'Visible and unlocked layers', 'jump in keyframe of all layers', 2),   
+            ('ALL', 'All', 'All layer, even locked and hidden', 3),   
             ))
 
     keyframe_type : EnumProperty(
@@ -81,7 +82,10 @@ class STORYTOOLS_OT_greasepencil_frame_jump(Operator):
         else:
             desc = 'Jump to previous grease pencil frame'
         # desc += '\nCtrl + Click: Include object animation keys'
-        desc += '\nShift + Click: Consider all accessible layers instead of only active'
+        desc += '\n+ Ctrl : Consider visible layers keys (instead of active only)'
+        desc += '\n+ Shift : Consider unlocked and visible layers'
+        desc += '\n+ Ctrl + Shift : all (even locked and hidden)'
+
         return desc
 
     def invoke(self, context, event):
@@ -90,6 +94,10 @@ class STORYTOOLS_OT_greasepencil_frame_jump(Operator):
         if event.type == 'LEFTMOUSE':
             if event.shift:
                 self.target = 'ACCESSIBLE'
+            if event.ctrl:
+                self.target = 'VISIBLE'
+            if event.ctrl and event.shift:
+                self.target = 'ALL'
 
             ## Consider object keys ? 
             # if event.ctrl:
@@ -113,6 +121,9 @@ class STORYTOOLS_OT_greasepencil_frame_jump(Operator):
         
         elif self.target == 'ACCESSIBLE':
             gpl = [l for l in context.object.data.layers if not l.hide and not l.lock]
+
+        elif self.target == 'ALL':
+            gpl = [l for l in context.object.data.layers]
 
         current = context.scene.frame_current
         p = n = None
@@ -159,7 +170,7 @@ class STORYTOOLS_OT_greasepencil_frame_jump(Operator):
         return {"FINISHED"}
 
 
-""" # WIP flip frame ops, modal copeid from object pan
+""" # WIP flip frame ops, modal copied from object pan
 class STORYTOOLS_OT_flip_frames(Operator):
     bl_idname = "storytools.flip_frames"
     bl_label = 'Flip Frames'

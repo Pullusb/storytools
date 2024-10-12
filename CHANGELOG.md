@@ -2,6 +2,13 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.19.3
+
+- added: New options for frame jump gizmo ops:
+    - no modifier: jump on keys of active layer
+    - +ctrl: jump on keys of visible layers
+    - +shift: jump on keys of visible and unlocked layers
+    - +ctrl+shift: keys of all layers
 
 1.19.1
 
