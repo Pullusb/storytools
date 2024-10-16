@@ -8,9 +8,66 @@ from gpu_extras.batch import batch_for_shader
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from mathutils.geometry import intersect_line_plane
 from mathutils import Vector
+from bpy_extras import view3d_utils
 
 from bpy.app.handlers import persistent
 from .. import fn
+
+
+## User view calculation from Swann Martinez's Multi-user addon
+def project_to_viewport(region: bpy.types.Region, rv3d: bpy.types.RegionView3D, coords: list, distance: float = 1.0) -> Vector:
+    """ Compute a projection from 2D to 3D viewport coordinate
+
+        :param region: target windows region
+        :type region:  bpy.types.Region
+        :param rv3d: view 3D
+        :type rv3d: bpy.types.RegionView3D
+        :param coords: coordinate to project
+        :type coords: list
+        :param distance: distance offset into viewport
+        :type distance: float
+        :return: Vector() list of coordinates [x,y,z]
+    """
+    target = [0, 0, 0]
+
+    if coords and region and rv3d:
+        view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, coords)
+        ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, coords)
+        target = ray_origin + view_vector * distance
+
+    return Vector((target.x, target.y, target.z))
+
+def generate_user_camera(area, region, rv3d) -> list:
+    """ Generate a basic camera represention of the user point of view
+    v1-4 first point represent the square
+    v5: frame center point
+    v6: view location
+    v7: 
+
+    :return: list of 7 points
+    """
+
+    # area, region, rv3d = view3d_find()
+
+    v1 = v2 = v3 = v4 = v5 = v6 = v7 = [0, 0, 0]
+
+    if area and region and rv3d:
+        width = region.width
+        height = region.height
+
+        v1 = project_to_viewport(region, rv3d, (width, height))
+        v2 = project_to_viewport(region, rv3d, (width, 0))
+        v3 = project_to_viewport(region, rv3d, (0, 0))
+        v4 = project_to_viewport(region, rv3d, (0, height))
+
+        v5 = project_to_viewport(region, rv3d, (width/2, height/2))
+        v6 = rv3d.view_location # list(rv3d.view_location)
+        v7 = project_to_viewport(
+            region, rv3d, (width/2, height/2), distance=-.8)
+
+    coords = [v1, v2, v3, v4, v5, v6, v7]
+
+    return coords
 
 def extrapolate_points_by_length(a, b, length):
     '''
@@ -64,8 +121,8 @@ def draw_map_callback_2d():
     
     ### Trace GP objects 
     color = (0.8, 0.8, 0.0, 0.9)
-    gps = [o for o in bpy.context.scene.objects if o.type == 'GPENCIL' and o.visible_get()]    
-    
+    # gps = [o for o in bpy.context.scene.objects if o.type == 'GPENCIL' and o.visible_get()]
+
     # scale = context.region_data.view_distance # TODO: define scaling
     radius = 10.0
     offset_vector = Vector((0, radius + radius * 0.1))
@@ -126,37 +183,57 @@ def draw_map_callback_2d():
         # left, right = frame_region[-2][1], frame_region[-1][1] # Keep second element of the last two pair
 
         # View cone with clipping display
-        if cam.data.type == 'ORTHO':
-            cam_view = [
-                # Left
-                fn.location_to_region(intersect_line_plane(left, left + orient, near_clip_point, orient)),
-                fn.location_to_region(intersect_line_plane(left, left + orient, far_clip_point, orient)),
-                # Right
-                fn.location_to_region(intersect_line_plane(right, right + orient, near_clip_point, orient)),
-                fn.location_to_region(intersect_line_plane(right, right + orient, far_clip_point, orient)),
-            ]
-        else:            
-            cam_view = [
-                # Left
-                fn.location_to_region(intersect_line_plane(loc, left, near_clip_point, orient)),
-                fn.location_to_region(intersect_line_plane(loc, left, far_clip_point, orient)),
-                # Right
-                fn.location_to_region(intersect_line_plane(loc, right, near_clip_point, orient)),
-                fn.location_to_region(intersect_line_plane(loc, right, far_clip_point, orient)),
-            ]
+        cam_view = get_frustum_lines(loc, left, right, orient, near_clip_point, far_clip_point, cam.data.type)
 
-        # Add perpenticular lines 
-        cam_view.append(cam_view[0])
-        cam_view.append(cam_view[2])
-        cam_view.append(cam_view[1])
-        cam_view.append(cam_view[3])
+        cam_view = [fn.location_to_region(v) for v in cam_view]
 
-        ## TODO : Trace cam Tri         
+        ## TODO : Trace cam Tri  
 
         cam_lines = batch_for_shader(shader_uniform, 'LINES', {"pos": cam_view})
         shader_uniform.bind()
         shader_uniform.uniform_float("color", (0.5, 0.5, 1.0, 0.5))
         cam_lines.draw(shader_uniform)
+
+
+    ## Iterate over non-minimap viewports
+    # current_region = next((region for region in context.area.regions if region.type == 'WINDOW'), None)
+    # current_rv3d = context.space_data.region_3d
+    # for window in bpy.context.window_manager.windows:
+    #     for area in window.screen.areas:
+    #         if area.type == 'VIEW_3D':
+    #             space = area.spaces.active # area.spaces[0]
+    #             if not fn.is_minimap_viewport(context, space) and not space.region_quadviews:
+
+    #                 rv3d = space.region_3d
+    #                 if rv3d.view_perspective == 'CAMERA':
+    #                     ## Same as camera view
+    #                     continue
+
+    #                 region = next((region for region in area.regions if region.type == 'WINDOW'), None)
+    #                 if region is None:
+    #                     continue
+    #                 ## Construct lines - naive method for now (consider view is always z-aligned)
+    #                 orient = Vector((0,0,1))
+    #                 orient.rotate(mat)
+                    
+    #                 user_cam = generate_user_camera(area, region, rv3d)
+    #                 loc = user_cam[5]
+    #                 left = (user_cam[2] + user_cam[3]) / 2
+    #                 right = (user_cam[0] + user_cam[1]) / 2
+    #                 near_clip_point = rv3d.view_matrix.inverted() @ Vector((0, 0, -space.clip_start))
+    #                 far_clip_point = rv3d.view_matrix.inverted() @ Vector((0, 0, -space.clip_end))
+
+    #                 view_lines = get_frustum_lines(loc, left, right, orient, near_clip_point, far_clip_point, rv3d.view_perspective)
+
+    #                 # view_lines = [fn.location_to_region(v) for v in view_lines]
+    #                 ## bpy.context.region ? 
+    #                 # view_lines = [location_3d_to_region_2d(region, rv3d, v) for v in view_lines]
+    #                 view_lines = [location_3d_to_region_2d(current_region, current_rv3d, v) for v in view_lines]
+
+    #                 view_batch = batch_for_shader(shader_uniform, 'LINES', {"pos": view_lines})
+    #                 shader_uniform.bind()
+    #                 shader_uniform.uniform_float("color", (0.5, 0.3, 0.01, 0.5))
+    #                 view_batch.draw(shader_uniform)
 
 
 def circle_3d(x, y, radius, segments):
@@ -168,6 +245,48 @@ def circle_3d(x, y, radius, segments):
         coords.append(Vector((p1, p2, 0)))
     return coords
 
+def get_frustum_lines(loc, left, right, orient, near_clip_point, far_clip_point, view_type, post_pixel=True):
+
+    if view_type == 'ORTHO':
+        view_list = [
+            # Left
+            intersect_line_plane(left, left + orient, near_clip_point, orient),
+            intersect_line_plane(left, left + orient, far_clip_point, orient),
+            # Right
+            intersect_line_plane(right, right + orient, near_clip_point, orient),
+            intersect_line_plane(right, right + orient, far_clip_point, orient),
+        ]
+    else:
+        ###  Cone Coors
+
+        ## Basic view cone
+        # view_list = [
+        #     loc, extrapolate_points_by_length(loc, right, 2000),
+        #     loc, extrapolate_points_by_length(loc, left, 2000)
+        # ]
+        
+        # View cone with clipping display
+        view_list = [
+            # Left
+            intersect_line_plane(loc, left, near_clip_point, orient),
+            intersect_line_plane(loc, left, far_clip_point, orient),
+            # Right
+            intersect_line_plane(loc, right, near_clip_point, orient),
+            intersect_line_plane(loc, right, far_clip_point, orient),
+        ]
+
+    # if post_pixel:
+    #     view_list = [fn.location_to_region(v) for v in view_list]
+
+    # Add perpenticular lines 
+    view_list.append(view_list[0])
+    view_list.append(view_list[2])
+    view_list.append(view_list[1])
+    view_list.append(view_list[3])
+    
+    return view_list
+
+## Not used: used 2D POST_PIXEL version
 def draw_map_callback():
     context = bpy.context
     if not fn.is_minimap_viewport(context):
@@ -247,56 +366,23 @@ def draw_map_callback():
         loc = mat.to_translation()
         gpu.state.line_width_set(1.0)
 
-
         right = (frame[0] + frame[1]) / 2
         left = (frame[2] + frame[3]) / 2
-        cam_tri = [loc, left, right]
+        # cam_tri = [loc, left, right]
 
         near_clip_point = mat @ Vector((0,0,-cam.data.clip_start))
         far_clip_point = mat @ Vector((0,0,-cam.data.clip_end))
         orient = Vector((0,0,1))
         orient.rotate(mat)
 
-        if cam.data.type == 'ORTHO':
-            cam_view = [
-                # Left
-                intersect_line_plane(left, left + orient, near_clip_point, orient),
-                intersect_line_plane(left, left + orient, far_clip_point, orient),
-                # Right
-                intersect_line_plane(right, right + orient, near_clip_point, orient),
-                intersect_line_plane(right, right + orient, far_clip_point, orient),
-            ]
-        else:
-            ###  Cone Coors
-
-            ## Basic view cone
-            # cam_view = [
-            #     loc, extrapolate_points_by_length(loc, right, 2000),
-            #     loc, extrapolate_points_by_length(loc, left, 2000)
-            # ]
-            
-            # View cone with clipping display
-            cam_view = [
-                # Left
-                intersect_line_plane(loc, left, near_clip_point, orient),
-                intersect_line_plane(loc, left, far_clip_point, orient),
-                # Right
-                intersect_line_plane(loc, right, near_clip_point, orient),
-                intersect_line_plane(loc, right, far_clip_point, orient),
-            ]
-            # TODO : rotate or project on world z orientation, (at least get get largest cone from view if rotated)
-
-        # Add perpenticular lines 
-        cam_view.append(cam_view[0])
-        cam_view.append(cam_view[2])
-        cam_view.append(cam_view[1])
-        cam_view.append(cam_view[3])
+        cam_view = get_frustum_lines(
+            loc, left, right, orient, near_clip_point, far_clip_point, cam.data.type, 
+            post_pixel=False)
 
         cam_lines = batch_for_shader(shader_uniform, 'LINES', {"pos": cam_view})
         shader_uniform.bind()
         shader_uniform.uniform_float("color", (0.5, 0.5, 1.0, 0.5))
         cam_lines.draw(shader_uniform)
-
 
 draw_handle = None
 

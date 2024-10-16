@@ -577,11 +577,11 @@ def show_message_box(_message = "", _title = "Message Box", _icon = 'INFO'):
     bpy.context.window_manager.popup_menu(draw, title = _title, icon = _icon)
 
 
-def is_minimap_viewport(context=None):
+def is_minimap_viewport(context=None, space_data=None):
     
     # space_data = context.space_data # Error when checking from header
     # region_data = context.region_data
-    space_data = context.area.spaces.active
+    space_data = space_data or context.area.spaces.active
     region_data = space_data.region_3d
 
     ## check if in quad view
