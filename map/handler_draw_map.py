@@ -7,8 +7,9 @@ from gpu_extras.presets import draw_circle_2d
 from gpu_extras.batch import batch_for_shader
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from mathutils.geometry import intersect_line_plane
-from mathutils import Vector
+from mathutils import Vector, Color
 from bpy_extras import view3d_utils
+from time import time
 
 from bpy.app.handlers import persistent
 from .. import fn
@@ -41,7 +42,7 @@ def generate_user_camera(area, region, rv3d) -> list:
     """ Generate a basic camera represention of the user point of view
     v1-4 first point represent the square
     v5: frame center point
-    v6: view location
+    v6: view location (orbit point)
     v7: 
 
     :return: list of 7 points
@@ -194,46 +195,66 @@ def draw_map_callback_2d():
         shader_uniform.uniform_float("color", (0.5, 0.5, 1.0, 0.5))
         cam_lines.draw(shader_uniform)
 
-
+    return
     ## Iterate over non-minimap viewports
     # current_region = next((region for region in context.area.regions if region.type == 'WINDOW'), None)
     # current_rv3d = context.space_data.region_3d
-    # for window in bpy.context.window_manager.windows:
-    #     for area in window.screen.areas:
-    #         if area.type == 'VIEW_3D':
-    #             space = area.spaces.active # area.spaces[0]
-    #             if not fn.is_minimap_viewport(context, space) and not space.region_quadviews:
+    base_color = (0.6, 0.3, 0.08)
+    hue_offset = 0
+    # print(f'{time()} Loop over 3D areas') #Dbg
+    for window in bpy.context.window_manager.windows:
+        for area in window.screen.areas:
+            if area.type == 'VIEW_3D':
+                space = area.spaces.active # area.spaces[0]
+                if fn.is_minimap_viewport(context, space) or space.region_quadviews:
+                    continue
+                
+                # print(f'3D viewport') #Dbg
+                rv3d = space.region_3d
+                if rv3d.view_perspective == 'CAMERA':
+                    ## Same as camera view
+                    continue
 
-    #                 rv3d = space.region_3d
-    #                 if rv3d.view_perspective == 'CAMERA':
-    #                     ## Same as camera view
-    #                     continue
+                region = next((region for region in area.regions if region.type == 'WINDOW'), None)
+                if region is None:
+                    continue
+                ## Construct lines - naive method for now (consider view is always z-aligned)
+                view_mat = rv3d.view_matrix.inverted()
+                view_orient = Vector((0,0,1))
+                view_orient.rotate(view_mat)
+                
+                user_cam = generate_user_camera(area, region, rv3d)
+                # loc = rv3d.view_matrix.inverted().to_translation()
+                loc = user_cam[6]
+                left = (user_cam[2] + user_cam[3]) / 2
+                right = (user_cam[0] + user_cam[1]) / 2
+                near_clip_point = view_mat @ Vector((0, 0, -space.clip_start))
+                far_clip_point = view_mat @ Vector((0, 0, -space.clip_end))
+                
+                view_lines = get_frustum_lines(loc, left, right, view_orient, near_clip_point, far_clip_point, rv3d.view_perspective)
 
-    #                 region = next((region for region in area.regions if region.type == 'WINDOW'), None)
-    #                 if region is None:
-    #                     continue
-    #                 ## Construct lines - naive method for now (consider view is always z-aligned)
-    #                 orient = Vector((0,0,1))
-    #                 orient.rotate(mat)
-                    
-    #                 user_cam = generate_user_camera(area, region, rv3d)
-    #                 loc = user_cam[5]
-    #                 left = (user_cam[2] + user_cam[3]) / 2
-    #                 right = (user_cam[0] + user_cam[1]) / 2
-    #                 near_clip_point = rv3d.view_matrix.inverted() @ Vector((0, 0, -space.clip_start))
-    #                 far_clip_point = rv3d.view_matrix.inverted() @ Vector((0, 0, -space.clip_end))
+                ## specify current region (no need, using current context is OK)
+                # view_lines = [location_3d_to_region_2d(current_region, current_rv3d, v) for v in view_lines]
+                view_lines = [fn.location_to_region(v) for v in view_lines]
 
-    #                 view_lines = get_frustum_lines(loc, left, right, orient, near_clip_point, far_clip_point, rv3d.view_perspective)
+                ## Add focal point (view-loc) Line
+                # view_lines += [fn.location_to_region(v) for v in user_cam[5:7]]
 
-    #                 # view_lines = [fn.location_to_region(v) for v in view_lines]
-    #                 ## bpy.context.region ? 
-    #                 # view_lines = [location_3d_to_region_2d(region, rv3d, v) for v in view_lines]
-    #                 view_lines = [location_3d_to_region_2d(current_region, current_rv3d, v) for v in view_lines]
+                color = Color(base_color)
+                color.h += hue_offset
+                view_batch = batch_for_shader(shader_uniform, 'LINES', {"pos": view_lines})
+                shader_uniform.bind()
+                shader_uniform.uniform_float("color", (*tuple(color), 0.8))
+                view_batch.draw(shader_uniform)
+                
+                # print(f'draw viewport {hue_offset}') #Dbg
+                ## Do not work, probably detect no changes as viewport move is not considered one
+                # context.area.tag_redraw()
+                hue_offset += 0.25
 
-    #                 view_batch = batch_for_shader(shader_uniform, 'LINES', {"pos": view_lines})
-    #                 shader_uniform.bind()
-    #                 shader_uniform.uniform_float("color", (0.5, 0.3, 0.01, 0.5))
-    #                 view_batch.draw(shader_uniform)
+    # context.area.tag_redraw()
+    ## 
+    # context.scene.cursor.location = context.scene.cursor.location
 
 
 def circle_3d(x, y, radius, segments):
@@ -245,7 +266,18 @@ def circle_3d(x, y, radius, segments):
         coords.append(Vector((p1, p2, 0)))
     return coords
 
-def get_frustum_lines(loc, left, right, orient, near_clip_point, far_clip_point, view_type, post_pixel=True):
+def get_frustum_lines(loc, left, right, orient, near_clip_point, far_clip_point, view_type):
+    """return points of quad representing view frustum
+    sequence reresent following pairs to be used draw batch LINES
+    # Left and Right lines:
+    left near -> left far
+    right near -> right far
+    
+    ## near clip and far clip perpendicular lines:
+    left near -> right near
+    left far -> right far
+
+    """
 
     if view_type == 'ORTHO':
         view_list = [
@@ -285,7 +317,7 @@ def get_frustum_lines(loc, left, right, orient, near_clip_point, far_clip_point,
     view_list.append(view_list[3])
     
     return view_list
-
+'''
 ## Not used: used 2D POST_PIXEL version
 def draw_map_callback():
     context = bpy.context
@@ -376,14 +408,13 @@ def draw_map_callback():
         orient.rotate(mat)
 
         cam_view = get_frustum_lines(
-            loc, left, right, orient, near_clip_point, far_clip_point, cam.data.type, 
-            post_pixel=False)
+            loc, left, right, orient, near_clip_point, far_clip_point, cam.data.type)
 
         cam_lines = batch_for_shader(shader_uniform, 'LINES', {"pos": cam_view})
         shader_uniform.bind()
         shader_uniform.uniform_float("color", (0.5, 0.5, 1.0, 0.5))
         cam_lines.draw(shader_uniform)
-
+'''
 draw_handle = None
 
 def register():
