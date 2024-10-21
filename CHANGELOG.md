@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.19.4
+
+- added: initial minimap preferences + improve minimap view 
+
 1.19.3
 
 - added: New options for frame jump gizmo ops:

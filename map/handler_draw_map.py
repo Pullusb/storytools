@@ -125,7 +125,8 @@ def draw_map_callback_2d():
 
     # if context.region_data.view_perspective != 'CAMERA':
     #     return
-   
+    
+    settings = fn.get_addon_prefs()
     gpu.state.blend_set('ALPHA')
     shader_uniform = gpu.shader.from_builtin('UNIFORM_COLOR')
     font_id = 0
@@ -135,7 +136,7 @@ def draw_map_callback_2d():
     # gps = [o for o in bpy.context.scene.objects if o.type == 'GPENCIL' and o.visible_get()]
 
     # scale = context.region_data.view_distance # TODO: define scaling
-    radius = 10.0
+    radius = settings.map_dot_size * context.preferences.system.ui_scale
     offset_vector = Vector((0, radius + radius * 0.1))
     # for gp in gps:
     #     draw_circle_2d(fn.location_to_region(gp.matrix_world.translation), color, scale)
@@ -154,30 +155,34 @@ def draw_map_callback_2d():
         color.h = name_to_hue(ob.name) # Hue by name
         color = (*color, 1.0) # Add alpha
 
-        ## Draw location
-        ## On origin
-        # loc = fn.location_to_region(ob.matrix_world.to_translation()) # On origin ?
-
-        ## On BBox median point (feel probably better for user perspective)
         loc = fn.location_to_region(Vector(np.mean([ob.matrix_world @ Vector(corner) for corner in ob.bound_box], axis=0)))
-        circle_co = fn.circle_2d(*loc, radius, 20) # Scaled to dist radius
-        batch = batch_for_shader(shader_uniform, 'TRI_FAN', {"pos":  circle_co})
-        shader_uniform.bind()
-        shader_uniform.uniform_float("color", color)
-        batch.draw(shader_uniform)
+        if settings.use_map_dot:
+            ## Draw location
+            ## On origin
+            # loc = fn.location_to_region(ob.matrix_world.to_translation()) # On origin ?
 
-        display_name = ob.name if len(ob.name) <= 24 else ob.name[:21] + '...'
-        ## Draw text shadow
-        blf.position(font_id, *(loc + offset_vector + shadow_offset), 0)
-        blf.size(font_id, 20)
-        blf.color(font_id, 0,0,0, 0.8) # shadow color
-        blf.draw(font_id, display_name)
+            ## On BBox median point (feel probably better for user perspective)
+            ## note: can use "4" circle to mark another object type
+            circle_co = fn.circle_2d(*loc, radius, 20) # Scaled to dist radius
+            batch = batch_for_shader(shader_uniform, 'TRI_FAN', {"pos":  circle_co})
+            shader_uniform.bind()
+            shader_uniform.uniform_float("color", color)
+            batch.draw(shader_uniform)
 
-        ## Draw text 
-        blf.position(font_id, *(loc + offset_vector), 0)
-        blf.size(font_id, 20)
-        blf.color(font_id, *color)
-        blf.draw(font_id, display_name)
+        ## Names
+        if settings.use_map_name:
+            display_name = ob.name if len(ob.name) <= 24 else ob.name[:21] + '...'
+            ## Draw text shadow
+            blf.position(font_id, *(loc + offset_vector + shadow_offset), 0)
+            blf.size(font_id, settings.map_name_size)
+            blf.color(font_id, 0,0,0, 0.8) # shadow color
+            blf.draw(font_id, display_name)
+
+            ## Draw text 
+            blf.position(font_id, *(loc + offset_vector), 0)
+            blf.size(font_id, settings.map_name_size)
+            blf.color(font_id, *color)
+            blf.draw(font_id, display_name)
 
     cam = bpy.context.scene.camera
     if cam:
@@ -186,7 +191,7 @@ def draw_map_callback_2d():
         frame = [cam.matrix_world @ v for v in cam.data.view_frame(scene=context.scene)]
         mat = cam.matrix_world
         loc = mat.to_translation()
-        gpu.state.line_width_set(1.0)
+        gpu.state.line_width_set(3.0) # Thick only on camera tri ?
 
         right = (frame[0] + frame[1]) / 2
         left = (frame[2] + frame[3]) / 2
@@ -217,7 +222,7 @@ def draw_map_callback_2d():
         cam_lines.draw(shader_uniform)
 
     return
-
+    # FIXME: refresh view trace
     ## Iterate over non-minimap viewports
     # current_region = next((region for region in context.area.regions if region.type == 'WINDOW'), None)
     current_rv3d = context.space_data.region_3d

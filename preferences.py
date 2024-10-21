@@ -205,6 +205,29 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         default=18,
         min=12, max=40)
 
+    ## Minimap settings
+
+    use_map_name : BoolProperty(
+        name='Show Map names',
+        description="Show objects name on map",
+        default=True)
+    
+    map_name_size : IntProperty(
+        name='Name Size',
+        description="Size of the names displayed on minimap",
+        default=18,
+        min=4, soft_max=100, max=500)
+    
+    use_map_dot : BoolProperty(
+        name='Show Map Dots',
+        description="Show colored marker on objects",
+        default=True)
+    
+    map_dot_size : IntProperty(
+        name='Object Dot Size',
+        description="Size of dots marking objects on map",
+        default=10,
+        min=1, soft_max=100, max=500)
 
     ## UI settings
     object_gz_color : FloatVectorProperty(
@@ -250,7 +273,7 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         default=(0.7, 0.2, 0.2, 0.22), min=0.0, max=1.0,
         description="Color of the far plane visual hint when using Depth move")
 
-    ### --- Greaep pencil settings
+    ### --- Grease pencil settings
 
     default_edit_line_opacity : FloatProperty(
         name='Default Edit Line Opacity',
@@ -396,6 +419,20 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             col.prop(self, 'use_lights')
             col.prop(self, 'default_edit_line_opacity')
             col.prop(self, 'gp_frame_offset')
+
+            box = col.box()
+            bcol = box.column()
+            bcol.label(text='Minimap Settings', icon='WORLD_DATA')
+            # bcol.prop(self, 'active_map_toolbar')
+            tool_col = bcol.column()
+            tool_col.prop(self, 'use_map_name')
+            tool_col.prop(self, 'map_name_size')
+            tool_col.prop(self, 'use_map_dot')
+            tool_col.prop(self, 'map_dot_size')
+            # tool_col.prop(self, 'map_toolbar_margin')
+            # tool_col.prop(self, 'map_toolbar_gap_size', text='Buttons Spread')
+            # tool_col.prop(self, 'map_toolbar_backdrop_size')
+
 
         elif self.pref_tab == 'TOOLPRESETS':
 
