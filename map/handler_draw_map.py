@@ -2,6 +2,8 @@ import bpy
 import gpu
 import blf
 import numpy as np
+import hashlib
+
 from math import pi, cos, sin
 from gpu_extras.presets import draw_circle_2d
 from gpu_extras.batch import batch_for_shader
@@ -107,6 +109,14 @@ def vertices_to_line_loop(v_list, closed=True) -> list:
     return loop
 
 
+def name_to_hue(name):
+    # Use MD5 hash for consistency across sessions
+    hash_value = hashlib.md5(name.encode()).hexdigest()
+    # Convert first 8 characters of hash to integer and scale to 0-1
+    return int(hash_value[:8], 16) / 0xffffffff
+
+shadow_offset = Vector((1,-1))
+
 ## 2D minimap drawing
 def draw_map_callback_2d():
     context = bpy.context
@@ -135,10 +145,15 @@ def draw_map_callback_2d():
 
     for ob in [o for o in bpy.context.scene.objects if o.type == 'GPENCIL' and o.visible_get()]:
         if context.object and context.object == ob:
-            color = (0.9, 0.9, 0.6, 0.9)
+            # color = (0.9, 0.9, 0.6, 0.9) # All same color
+            color = (0.9, 0.9, 0.6)
         else:
-            color = (0.7, 0.7, 0.0, 0.85)
-        
+            # color = (0.7, 0.7, 0.0, 0.85) # All same color
+            color = (0.7, 0.7, 0.0)
+        color = Color(color)
+        color.h = name_to_hue(ob.name) # Hue by name
+        color = (*color, 1.0) # Add alpha
+
         ## Draw location
         ## On origin
         # loc = fn.location_to_region(ob.matrix_world.to_translation()) # On origin ?
@@ -151,11 +166,17 @@ def draw_map_callback_2d():
         shader_uniform.uniform_float("color", color)
         batch.draw(shader_uniform)
 
+        display_name = ob.name if len(ob.name) <= 24 else ob.name[:21] + '...'
+        ## Draw text shadow
+        blf.position(font_id, *(loc + offset_vector + shadow_offset), 0)
+        blf.size(font_id, 20)
+        blf.color(font_id, 0,0,0, 0.8) # shadow color
+        blf.draw(font_id, display_name)
+
         ## Draw text 
         blf.position(font_id, *(loc + offset_vector), 0)
         blf.size(font_id, 20)
         blf.color(font_id, *color)
-        display_name = ob.name if len(ob.name) <= 24 else ob.name[:24-3] + '...'
         blf.draw(font_id, display_name)
 
     cam = bpy.context.scene.camera
@@ -196,21 +217,26 @@ def draw_map_callback_2d():
         cam_lines.draw(shader_uniform)
 
     return
+
     ## Iterate over non-minimap viewports
     # current_region = next((region for region in context.area.regions if region.type == 'WINDOW'), None)
-    # current_rv3d = context.space_data.region_3d
-    base_color = (0.6, 0.3, 0.08)
+    current_rv3d = context.space_data.region_3d
+    
+    # base_color = (0.6, 0.3, 0.08)
+    base_color = (0.7, 0.4, 0.08)
     hue_offset = 0
     # print(f'{time()} Loop over 3D areas') #Dbg
+    # minimap_areas = []
     for window in bpy.context.window_manager.windows:
         for area in window.screen.areas:
             if area.type == 'VIEW_3D':
                 space = area.spaces.active # area.spaces[0]
                 if fn.is_minimap_viewport(context, space) or space.region_quadviews:
+                    # minimap_areas.append((area, space.region_3d))
                     continue
-                
-                # print(f'3D viewport') #Dbg
+
                 rv3d = space.region_3d
+                # print(f'3D viewport') #Dbg
                 if rv3d.view_perspective == 'CAMERA':
                     ## Same as camera view
                     continue
@@ -250,11 +276,24 @@ def draw_map_callback_2d():
                 # print(f'draw viewport {hue_offset}') #Dbg
                 ## Do not work, probably detect no changes as viewport move is not considered one
                 # context.area.tag_redraw()
-                hue_offset += 0.25
+                # area.tag_redraw()
+                # rv3d.update()
+                # current_rv3d.update()
 
+                hue_offset += 0.25
+    
+    ## Redraw minimap areas
+    # for a, r in minimap_areas:
+    #     a.tag_redraw()
+    #     r.update()
+    
+    # dps = bpy.context.evaluated_depsgraph_get()
+    # dps.update()
+
+    # current_rv3d.update()
     # context.area.tag_redraw()
     ## 
-    # context.scene.cursor.location = context.scene.cursor.location
+    # context.scene.cursor.location = context.scene.cursor.location # UGLY TEST to make it work
 
 
 def circle_3d(x, y, radius, segments):

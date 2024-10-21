@@ -2,6 +2,7 @@ from . import (
     # gizmos_map,
     handler_draw_map,
     map_ops,
+    gizmo_map_toolbar,
     # ui,
     )
 
@@ -9,6 +10,7 @@ modules = (
     # gizmos_map,
     handler_draw_map,
     map_ops,
+    gizmo_map_toolbar,
     # ui,
 )
 

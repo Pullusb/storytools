@@ -534,7 +534,7 @@ class STORYTOOLS_GGT_toolbar_switch(GizmoGroup):
 
     @classmethod
     def poll(cls, context):
-        return True
+        return not fn.is_minimap_viewport(context)
 
     # @staticmethod
     # def my_target_operator(context):

@@ -188,20 +188,20 @@ class STORYTOOLS_OT_setup_minimap_viewport(Operator):
 
     def execute(self, context):
         if self.split_viewport:
-            bpy.ops.screen.area_split(direction='HORIZONTAL', factor=0.7)
+            bpy.ops.screen.area_split(direction='HORIZONTAL', factor=0.49)
 
         ## Set TOP ortho view (if needed)
         if context.region_data.view_perspective != 'ORTHO':
             context.region_data.view_perspective = 'ORTHO'
 
-        euler_view = context.region_data.view_matrix.to_euler()
-        if euler_view[1] != 0.0 or euler_view[1] != 0.0:
-            ## ops has incorrect context
-            # bpy.ops.view3d.view_axis(type='TOP', align_active=True, relative=True) 
-            ## manual view set
-            context.region_data.view_rotation = Quaternion()
-            ## Also frame GP and cam
-            frame_objects(context, target='ALL')
+        # euler_view = context.region_data.view_matrix.to_euler()
+        # if euler_view[1] != 0.0 or euler_view[1] != 0.0:
+        #     ## ops has incorrect context
+        #     # bpy.ops.view3d.view_axis(type='TOP', align_active=True, relative=True) 
+        ## manual view set
+        context.region_data.view_rotation = Quaternion()
+        ## Also frame GP and cam
+        frame_objects(context, target='ALL')
 
         ## Lock view
         context.region_data.lock_rotation = True # map_val
@@ -232,12 +232,15 @@ class STORYTOOLS_OT_setup_minimap_viewport(Operator):
         overlay.show_stats = False
         overlay.show_look_dev = False
         overlay.show_bones = False
-        overlay.show_outline_selected = False
+        # overlay.show_outline_selected = False
         overlay.show_viewer_attribute = False
         overlay.show_relationship_lines = False
         
+        overlay.use_gpencil_grid = False
+        overlay.use_gpencil_fade_objects = False
+        
         overlay.show_outline_selected = True # Keep selection overlay
-        overlay.show_object_origins_all = True # Show all object origin
+        overlay.show_object_origins_all = False # Show all object origin ?
         overlay.show_extras = True # Needed to show camera (and lights)
 
         ## Gizmos
@@ -286,6 +289,7 @@ class STORYTOOLS_OT_disable_minimap_viewport(Operator):
 
 ### Keymap Click operator
 ## Override clicks with poll on whole minimap viewport (?)
+## No keymap registered for now, could be used to create a custom minimap context menu
 
 class STORYTOOLS_OT_minimap_lc(Operator):
     bl_idname = "storytools.minimap_lc"
