@@ -130,7 +130,8 @@ def draw_map_callback_2d():
     gpu.state.blend_set('ALPHA')
     shader_uniform = gpu.shader.from_builtin('UNIFORM_COLOR')
     font_id = 0
-    
+
+    cam = bpy.context.scene.camera
     ### Trace GP objects 
     color = (0.8, 0.8, 0.0, 0.9)
     # gps = [o for o in bpy.context.scene.objects if o.type == 'GPENCIL' and o.visible_get()]
@@ -144,7 +145,16 @@ def draw_map_callback_2d():
     # if active and active.type == 'GPENCIL':
     #     draw_circle_2d(fn.location_to_region(active.matrix_world.translation), (0.9, 0.9, 0.0, 0.9), scale)
 
-    for ob in [o for o in bpy.context.scene.objects if o.type == 'GPENCIL' and o.visible_get()]:
+    gp_list = [o for o in bpy.context.scene.objects if o.type == 'GPENCIL' and o.visible_get()]
+
+    ## Always recenter map (expensive! Need better object-frame function)
+    # if settings.map_always_frame_objects:
+    #     obj_list = gp_list
+    #     if cam:
+    #         obj_list = obj_list + [cam]
+    #     fn.frame_objects(context, objects=obj_list)
+
+    for ob in gp_list:
         if context.object and context.object == ob:
             # color = (0.9, 0.9, 0.6, 0.9) # All same color
             color = (0.9, 0.9, 0.6)
@@ -184,7 +194,6 @@ def draw_map_callback_2d():
             blf.color(font_id, *color)
             blf.draw(font_id, display_name)
 
-    cam = bpy.context.scene.camera
     if cam:
         ## ? Instead highlight camera basic Gizmo ?
 

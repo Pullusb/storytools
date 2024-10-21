@@ -1191,3 +1191,57 @@ def fit_view(context=None):
     zoom_value = max(min(zoom_value, 30.0), -30.0) # clamp between -30 and 30
     r3d.view_camera_zoom = zoom_value
     print('zoom after', r3d.view_camera_zoom) # Dbg
+
+def frame_objects(context, target='NONE', objects=None):
+    '''frame objects in view using BBox
+    target (str): string to define what to show (ALL: GP object + Camera)
+    objects (list, default:None): alternatively, a list of object to frame can be passed
+    '''
+    if objects is None:
+        objects = [o for o in context.scene.objects if o.type in ('GPENCIL',) and o.visible_get()]
+
+        if target == 'ALL' and context.scene.camera:
+            objects.append(context.scene.camera)
+
+        # objects = [o for o in context.view_layer.objects if o.type in ('GPENCIL',) and o.visible_get()]
+    if not objects:
+        return {'CANCELLED'}
+
+    # with context.temp_override(active=objects[0], selected_objects=objects, selected_editable_objects=objects, selected_ids=objects):
+    #     # bpy.ops.view3d.view_selected('INVOKE_DEFAULT', use_all_regions=False)
+    #     bpy.ops.view3d.view_selected()
+
+    ## as of 4.1.1 override do not works with view3d.view_selected : https://projects.blender.org/blender/blender/issues/112141
+    ## Trying a full homemade method
+
+    # calculate x/y Bbox
+    global_bbox = [ob.matrix_world @ Vector(v) for ob in objects for v in ob.bound_box]
+    # global_bbox_center = Vector(np.mean(global_bbox, axis=0))
+    sorted_x = sorted(global_bbox,key = lambda x : x.x)
+    sorted_y = sorted(global_bbox,key = lambda x : x.y)
+    sorted_z = sorted(global_bbox,key = lambda x : x.z)
+
+    down_left = Vector((sorted_x[0].x, sorted_y[0].y, sorted_z[0].z))
+    top_right = Vector((sorted_x[-1].x, sorted_y[-1].y, sorted_z[-1].z))
+    
+    global_bbox_center = (down_left + top_right) / 2
+    # bbox_2d = [sorted_x[0].x, sorted_x[-1].x, sorted_y[0].y, sorted_y[-1].y]
+
+    ## Debug
+    # context.scene.cursor.location = down_left
+    # fn.empty_at(down_left, name='DL', size=0.2)
+    # fn.empty_at(top_right, name='TR', size=0.2)
+
+    width = sorted_x[-1].x - sorted_x[0].x
+    height = sorted_y[-1].y - sorted_y[0].y
+    val = width if width > height else height
+    
+    # if (down_left.xy - top_right.xy).length < 1.0:
+    val = max(val, 2.0) # Clamp to 2.0 as minimum value
+
+    ## Set center and view distance 
+    context.region_data.view_location.xy = global_bbox_center.xy
+    context.region_data.view_distance = val
+
+    if context.region_data.view_location.z < top_right.z:
+        context.region_data.view_location.z = top_right.z + 0.2

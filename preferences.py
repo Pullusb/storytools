@@ -207,6 +207,11 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
 
     ## Minimap settings
 
+    map_always_frame_objects : BoolProperty(
+        name='Always Frame Objects',
+        description="Constantly set pan and zoom to frame GP objects and camera",
+        default=False)
+
     use_map_name : BoolProperty(
         name='Show Map names',
         description="Show objects name on map",
@@ -429,6 +434,9 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             tool_col.prop(self, 'map_name_size')
             tool_col.prop(self, 'use_map_dot')
             tool_col.prop(self, 'map_dot_size')
+            # tool_col.prop(self, 'map_always_frame_objects')
+
+            ## Potential future Customization
             # tool_col.prop(self, 'map_toolbar_margin')
             # tool_col.prop(self, 'map_toolbar_gap_size', text='Buttons Spread')
             # tool_col.prop(self, 'map_toolbar_backdrop_size')
