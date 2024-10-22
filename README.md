@@ -4,15 +4,14 @@ Blender addon - Set of tool for storyboarding in Blender
 
 ## [Download latest](https://github.com/Pullusb/storytools/archive/master.zip)
 
-
-<!-- https://github.com/Pullusb/storytools/archive/refs/heads/master.zip -->
+## [Documentation](https://pullusb.github.io/storytools-docs/)
 
 ![Storytools UI](https://github.com/Pullusb/images_repo/blob/master/storytools_ui_demo.jpg)
 
 
 Sponsored by:
 - [**CNC**](https://www.cnc.fr/)
-- [**Autour de Minuit Studio**](https://blog.autourdeminuit.com/)
+- [**Autour de Minuit**](https://blog.autourdeminuit.com/)
 - **Samuel Bernou** (Maintainer)
 - Version 1.0 was sponsored by [**El Guiri Studios**](https://www.elguiristudios.com/)
 
@@ -23,6 +22,9 @@ Sponsored by:
 Add a `storytools` Tab in viewport sidebar
 
 > After installation, restart blender once to enable material association handler
+
+
+For a complete user guide, head to the [documentation](https://pullusb.github.io/storytools-docs/)
 
 ### Create New Drawing
 
@@ -53,8 +55,6 @@ When selecting a material, it "stick" to current active layer
 
 Action gizmo buttons to easily place object and camera
 All transform actions respect autokey
-
-<!-- > Note: currently not all actions respects autokey -->
 
 Objects Actions:
 
