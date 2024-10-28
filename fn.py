@@ -49,14 +49,20 @@ def region_to_location(viewcoords, depthcoords) -> Vector:
         bpy.context.region, bpy.context.space_data.region_3d, viewcoords, depthcoords)
 
 def reset_draw_settings(context=None):
-    ## set drawing plane to origin - Front Axis
+    '''Reset placement and orientation settings according to addon preferences'''
     context = context or bpy.context
     settings = context.scene.tool_settings
-    # 'VIEW', 'AXIS_Y', 'AXIS_X', 'AXIS_Z', 'CURSOR'
-    settings.gpencil_sculpt.lock_axis = 'AXIS_Y'
-    # 'ORIGIN', 'CURSOR', 'SURFACE', 'STROKE'
-    settings.gpencil_stroke_placement_view3d = 'ORIGIN'
+    prefs = get_addon_prefs()
 
+    # 'ORIGIN', 'CURSOR', 'SURFACE', 'STROKE'
+    # settings.gpencil_stroke_placement_view3d = 'ORIGIN'
+    if prefs.default_placement != 'NONE':
+        settings.gpencil_stroke_placement_view3d = prefs.default_placement
+    
+    # 'VIEW', 'AXIS_Y', 'AXIS_X', 'AXIS_Z', 'CURSOR'
+    # settings.gpencil_sculpt.lock_axis = 'AXIS_Y' # Front Axis
+    if prefs.default_orientation != 'NONE':
+        settings.gpencil_sculpt.lock_axis = prefs.default_orientation
 
 def coord_distance_from_view(coord=None, context=None):
     '''Get distance between view origin and plane facing view at coordinate'''

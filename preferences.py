@@ -304,6 +304,33 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         default=12,
         min=1, soft_max=300, max=16000)
 
+    default_placement : EnumProperty(
+        name='Placement',
+        default='ORIGIN',
+        description='Set Grease pencil stroke placement settings when creating new object',
+        items=(
+            ('ORIGIN', 'Origin', 'Draw stroke at Object origin', 'OBJECT_ORIGIN', 0),
+            ('CURSOR', '3D Cursor', 'Draw stroke at 3D cursor location', 'PIVOT_CURSOR', 1),
+            ('SURFACE', 'Surface', 'Stick stroke to surfaces', 'SNAP_FACE', 2),
+            ('STROKE', 'Stroke', 'Stick stroke to other strokes', 'STROKE', 3),
+            ('NONE', 'Keep Placement', 'Do not change placement setting', 'BLANK1', 4)
+            ),
+        )
+
+    default_orientation : EnumProperty(
+        name='Orientation',
+        description="Set Grease pencil Orientation when creating new objects",
+        default='AXIS_Y',
+        items=(
+            ('VIEW', 'View', 'Align strokes to current view plane', 'RESTRICT_VIEW_ON', 0),
+            ('AXIS_Y', 'Front (X-Z)', 'Project strokes to plane locked to Y', 'AXIS_FRONT', 1),
+            ('AXIS_X', 'Side (Y-Z)', 'Project strokes to plane locked to X', 'AXIS_SIDE', 2),
+            ('AXIS_Z', 'Top (X-Y)', 'Project strokes to plane locked to Z', 'AXIS_TOP', 3),
+            ('CURSOR', 'Cursor', 'Align strokes to current 3D cursor orientation', 'PIVOT_CURSOR', 4),
+            ('NONE', 'Keep Orientation', 'Do not change orientation setting', 'BLANK1', 5)
+            )
+        )
+
     ### --- Preferences for reset screen
 
     show_sidebar : EnumProperty(
@@ -419,7 +446,14 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             subcol.active = self.use_visual_hint
 
             col.separator()
+            ## GP setttings
             col.label(text='Grease Pencil Settings:', icon='GREASEPENCIL')
+            row = col.row(align=True)
+            row.prop(self, 'default_placement', text='Set Placement / Orientation')
+            row.prop(self, 'default_orientation', text='')
+            ## placement and orientation on two lines
+            # col.prop(self, 'default_placement')
+            # col.prop(self, 'default_orientation')
             col.prop(self, 'use_autolock_layers')
             col.prop(self, 'use_lights')
             col.prop(self, 'default_edit_line_opacity')
