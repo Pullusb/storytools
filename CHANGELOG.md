@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.19.6
+
+- fixed: Transforms on object using child-of constraints
+
 1.19.5
 
 - added: Default placement and orientation preferences to set when creating a new object

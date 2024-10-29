@@ -74,6 +74,28 @@ def draw_callback_wall(self, context):
     gpu.state.depth_test_set(previous_depth_test_value)
     # gpu.state.depth_mask_set(False)
 
+def store_and_disable_child_of(objects: list) -> dict:
+    '''get a list of objects, store enabled child of constraint and disable them'''
+    
+    objects_child_of = {}
+    for ob in objects:
+        childof_list = []
+        for const in ob.constraints:
+            if const.type == 'CHILD_OF' and const.target and const.enabled:
+                childof_list.append(const)
+                const.enabled = False # Disable the constraint !
+        
+        if childof_list:
+            objects_child_of[ob] = childof_list
+    
+    return objects_child_of
+
+def restore_child_of(constraint_dict):
+    for _ob, constraints in constraint_dict.items():
+        for const in constraints:
+            const.enabled = True
+            const.inverse_matrix = const.target.matrix_world.inverted()
+
 class STORYTOOLS_OT_object_depth_move(Operator):
     bl_idname = "storytools.object_depth_move"
     bl_label = "Object Depth Move"
@@ -121,7 +143,7 @@ class STORYTOOLS_OT_object_depth_move(Operator):
             if context.object.type != 'CAMERA' and context.object not in self.objects:
                 self.objects.append(context.object)
         else:
-            self.objects = [context.object]
+            self.objects = [context.object]        
 
         # Filter locked objects
         self.objects = [o for o in self.objects if not any(o.lock_location)] 
@@ -130,6 +152,7 @@ class STORYTOOLS_OT_object_depth_move(Operator):
             return {'CANCELLED'}
 
         self.init_mats = [o.matrix_world.copy() for o in self.objects]
+        self.constraint_dict = store_and_disable_child_of(self.objects) # ChildConst
         
         if self.cam.data.type == 'ORTHO':
             context.area.header_text_set(f'Move factor: 0.00')
@@ -148,12 +171,16 @@ class STORYTOOLS_OT_object_depth_move(Operator):
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
-    def stop(self, context):
-        context.area.header_text_set(None)
-        context.window.cursor_set("DEFAULT")
-        bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW') # gpuDraw
-        context.area.tag_redraw()
-        ## refresh all view if in all viewport
+    # def stop(self, context):
+    #     context.area.header_text_set(None)
+    #     context.window.cursor_set("DEFAULT")
+    #     bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW') # gpuDraw
+    #     context.area.tag_redraw()
+    #     ## refresh all view if in all viewport
+
+    def exit_modal(self, context):
+        draw.stop_callback(self, context)
+        restore_child_of(self.constraint_dict) # ChildConst
 
     def modal(self, context, event):
         if self.mode == 'distance':
@@ -234,16 +261,16 @@ class STORYTOOLS_OT_object_depth_move(Operator):
 
         # cancel on release
         if event.type in {'LEFTMOUSE'}: # and event.value == 'PRESS'
-            draw.stop_callback(self, context)
             ## Key objects
             for o in self.objects:
                 fn.key_object(o, use_autokey=True)
+            self.exit_modal(context)
             return {"FINISHED"}
         
         if event.type in {'RIGHTMOUSE', 'ESC'} and event.value == 'PRESS':
             for i, obj in enumerate(self.objects):
                 obj.matrix_world = self.init_mats[i]
-            draw.stop_callback(self, context)
+            self.exit_modal(context)
             return {"CANCELLED"}
 
         return {"RUNNING_MODAL"}
@@ -274,6 +301,9 @@ class STORYTOOLS_OT_object_pan(Operator):
         self.cumulated_translate = Vector((0, 0, 0))
         self.current_translate = Vector((0, 0, 0))
         self.init_world_loc = self.ob.matrix_world.to_translation()
+
+        ## Child_of are disabled during modal !!! (restored in exit_modal)
+        self.constraint_dict = store_and_disable_child_of([self.ob]) # ChildConst
 
         self.init_mat = self.ob.matrix_world.copy() # to restore if cancelled
 
@@ -361,6 +391,10 @@ class STORYTOOLS_OT_object_pan(Operator):
         ## Set new position
         self.ob.matrix_world.translation = new_loc
 
+    def exit_modal(self, context):
+        draw.stop_callback(self, context)
+        restore_child_of(self.constraint_dict) # ChildConst
+
     def modal(self, context, event):    
         self.update_position(context, event)
 
@@ -368,13 +402,13 @@ class STORYTOOLS_OT_object_pan(Operator):
             self.lock = event.type if self.lock != event.type else None
 
         if event.type == 'LEFTMOUSE': # and event.value == 'RELEASE'
-            draw.stop_callback(self, context)
             fn.key_object(self.ob, use_autokey=True)
+            self.exit_modal(context)
             return {'FINISHED'}
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
             self.ob.matrix_world = self.init_mat
-            draw.stop_callback(self, context)
+            self.exit_modal(context)
             return {'CANCELLED'}
 
         return {'RUNNING_MODAL'}
@@ -455,6 +489,8 @@ class STORYTOOLS_OT_object_rotate(Operator):
         self.current_delta = 0
 
         self.init_mat = self.ob.matrix_world.copy()
+        self.constraint_dict = store_and_disable_child_of([self.ob]) # ChildConst
+        self.ob.matrix_world = self.init_mat # ChildConst -> re-set to avoid jump in viewport
 
         self.view_vector = Vector((0,0,-1))
         r3d = context.space_data.region_3d
@@ -513,25 +549,29 @@ class STORYTOOLS_OT_object_rotate(Operator):
         mat.translation = self.init_mat.translation
         self.ob.matrix_world = mat
 
+    def exit_modal(self, context):
+        context.area.header_text_set(None)
+        context.window.cursor_set("DEFAULT")
+        draw.stop_callback(self, context) # Dcb
+        restore_child_of(self.constraint_dict) # ChildConst
+
     def modal(self, context, event): 
         self.update_rotation(context, event)
         if event.type == 'LEFTMOUSE':
-            context.window.cursor_set("DEFAULT")
             fn.key_object(self.ob, use_autokey=True)
-            draw.stop_callback(self, context) # Dcb
             if self.camera:
                 context.window_manager['last_rotate_call_time'] = time()
                 if self.init_mat == self.ob.matrix_world:
                     ## Avoid undo stack push if there was on moves
+                    self.exit_modal(context)
                     return {'CANCELLED'}
+            self.exit_modal(context)
 
             return {'FINISHED'}
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
             self.ob.matrix_world = self.init_mat
-            context.area.header_text_set(None)
-            context.window.cursor_set("DEFAULT")
-            draw.stop_callback(self, context) # Dcb
+            self.exit_modal(context)
             return {'CANCELLED'}
         return {'RUNNING_MODAL'}
 
