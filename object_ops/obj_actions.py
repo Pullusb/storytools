@@ -96,9 +96,9 @@ class STORYTOOLS_OT_create_object(Operator):
         prefs = fn.get_addon_prefs()
         scn = context.scene
 
-        if context.object.visible_get() and context.mode != 'OBJECT':
+        if context.object and context.object.visible_get() and context.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT')
-        
+
         if context.mode == 'OBJECT':
             bpy.ops.object.select_all(action='DESELECT')
 
