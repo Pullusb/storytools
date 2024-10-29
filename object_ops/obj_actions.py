@@ -96,11 +96,12 @@ class STORYTOOLS_OT_create_object(Operator):
         prefs = fn.get_addon_prefs()
         scn = context.scene
 
-        if context.mode != 'OBJECT':
+        if context.object.visible_get() and context.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT')
-        bpy.ops.object.select_all(action='DESELECT')
         
-        
+        if context.mode == 'OBJECT':
+            bpy.ops.object.select_all(action='DESELECT')
+
         r3d = context.space_data.region_3d
         
         if r3d.view_perspective != 'CAMERA' and self.place_from_cam:
