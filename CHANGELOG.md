@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.20.0
+
+- added: Preferences for GP settings behavior.
+- added: Control bar pop-up menu on button to change `frame add` and `frame jump` behavior (synced from preferences by default, but can be localized per scene).
+
 1.19.6
 
 - fixed: Transforms on object using child-of constraints

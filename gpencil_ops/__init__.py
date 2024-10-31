@@ -1,11 +1,13 @@
 from . import (
     frame_new,
     frame_jump,
+    ui,
                )
 
 modules = (
     frame_new,
     frame_jump,
+    ui,
 )
 
 def register():

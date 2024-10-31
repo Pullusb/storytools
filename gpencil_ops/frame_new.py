@@ -84,15 +84,25 @@ class STORYTOOLS_OT_new_frame(Operator):
     def execute(self, context):
         ## List existing frame
 
-        gap = fn.get_addon_prefs().gp_frame_offset
+        # gp_settings = fn.get_addon_prefs().gp # from preferences
+        gp_settings = context.scene.storytools_gp_settings # from scene
+
+        gap = gp_settings.frame_offset
+        target_layer = gp_settings.frame_target_layers
 
         # layer = context.object.data.layers.active
         
         ## Consider all unlocked layers
-        available_layers = [l for l in context.object.data.layers if not l.hide and not l.lock]
+        # layer_pool = [l for l in context.object.data.layers if not l.hide and not l.lock]
+        if target_layer == 'ACCESSIBLE':
+            layer_pool = [l for l in context.object.data.layers if not l.hide and not l.lock]
+        elif target_layer == 'ACTIVE':
+            layer_pool = [context.object.data.layers.active]
+        elif target_layer == 'VISIBLE':
+            layer_pool = [l for l in context.object.data.layers if not l.hide]
 
         ## All frames (on all unlocked layers)
-        frames_nums = sorted(set([f.frame_number for l in available_layers for f in l.frames]))
+        frames_nums = sorted(set([f.frame_number for l in layer_pool for f in l.frames]))
 
         current = context.scene.frame_current
 
@@ -101,7 +111,7 @@ class STORYTOOLS_OT_new_frame(Operator):
 
             ## Apply gap offset from previous frame ?
 
-            add_frame(available_layers, current, duplicate=self.duplicate)
+            add_frame(layer_pool, current, duplicate=self.duplicate)
 
             if self.offset_next_frames:
                 ## Offset next frame to respect gap (if needed)
@@ -115,7 +125,7 @@ class STORYTOOLS_OT_new_frame(Operator):
                     if prev_frame_num is not None:
                         missing_offset = min((next_frame_num - prev_frame_num) - (next_frame_num - current), missing_offset)
 
-                    apply_offset_at_frame(available_layers, next_frame_num, missing_offset)
+                    apply_offset_at_frame(layer_pool, next_frame_num, missing_offset)
                     
                     ## IDEA ? Should offset affect spa-sequencer subsequents in-out values in scene ?...
                     ## Not for now... user may not be aware + codependent with a specific addon. Prefs options ?
@@ -132,7 +142,7 @@ class STORYTOOLS_OT_new_frame(Operator):
                 current_gap = next_frame_num - current
                 print('current_gap: ', current_gap)
                 ## Always apply same offset
-                # apply_offset_at_frame(available_layers, current + 1, gap)
+                # apply_offset_at_frame(layer_pool, current + 1, gap)
 
                 ## OR: Offset only if next frame is less than twice the gap
                 if current_gap <= gap * 2:
@@ -141,10 +151,10 @@ class STORYTOOLS_OT_new_frame(Operator):
                     ## Optionnaly force exact gap between new and next
                     # offset = gap + max(current_gap, gap) 
 
-                    apply_offset_at_frame(available_layers, current + 1, offset)
+                    apply_offset_at_frame(layer_pool, current + 1, offset)
 
             new_num = current + gap
-            add_frame(available_layers, new_num, reference_num=current, duplicate=self.duplicate)
+            add_frame(layer_pool, new_num, reference_num=current, duplicate=self.duplicate)
             bpy.context.scene.frame_set(new_num)
             self.report({'INFO'}, f'Create frame(s), jumping {new_num - current} forward')
             return {'FINISHED'}
@@ -181,7 +191,7 @@ class STORYTOOLS_OT_new_frame(Operator):
             self.report({'ERROR'}, f'Error, a frame is already at {new_num}')
             return {'CANCELLED'}
 
-        add_frame(available_layers, new_num, reference_num=current, duplicate=self.duplicate)
+        add_frame(layer_pool, new_num, reference_num=current, duplicate=self.duplicate)
 
         ## Jump at frame
         

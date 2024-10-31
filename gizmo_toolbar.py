@@ -212,6 +212,14 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         op.direction = 'NEXT'
         self.gpencil_gizmos.append(self.gz_gp_jump_next)
 
+        ## GP settings panel
+        self.gz_gp_setting = self.gizmos.new("GIZMO_GT_button_2d")
+        fn.set_gizmo_settings(self.gz_gp_setting, 'PREFERENCES')
+        op = self.gz_gp_setting.target_set_operator("wm.call_panel")
+        ## panel is defined in gpencil_ops.ui
+        op.name = 'STORYTOOLS_PT_gp_settings_ui' # panel name
+        self.gpencil_gizmos.append(self.gz_gp_setting)
+
     def draw_prepare(self, context):
         prefs = get_addon_prefs()
         settings = context.scene.storytools_settings
@@ -257,6 +265,7 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
             gap_size = max(gap_size * reduction_factor, backdrop_size * 2)
             section_separator = max(section_separator * reduction_factor, gap_size / 2)
 
+        init_left_pos = left_pos
         next_pos = gap_size * px_scale
 
         ## Prefs gizmo colors
@@ -279,8 +288,6 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
 
             if gz in self.camera_gizmos:
                 if gz == self.camera_gizmos[0]:
-                    ## Hack to set "key GP" actions above object key button (location can be confusing...)
-                    # upline_left_pos = left_pos + ((i-1) * next_pos) - ((gap_size * px_scale) / 2)
                     ## Add separator
                     left_pos += section_separator
                 gz.color = cam_color
@@ -314,6 +321,10 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
             gz.hide = gpencil_hide_state
 
             gz.matrix_basis = Matrix.Translation((upline_left_pos + (i * next_pos), vertical_pos, 0))
+
+        ## Re-set position of GP settiong Gizmo button
+        self.gz_gp_setting.scale_basis = 10
+        self.gz_gp_setting.matrix_basis = Matrix.Translation((init_left_pos - section_separator/1.5, vertical_pos-(section_separator/3), 0)).copy()
 
         red = (0.5, 0.1, 0.1)
         red_hl = (0.7, 0.2, 0.2)

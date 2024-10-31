@@ -11,7 +11,10 @@ from bpy.props import (FloatProperty,
                         PointerProperty,
                         FloatVectorProperty)
 
+from bpy.app.handlers import persistent
+
 from .fn import get_addon_prefs, open_addon_prefs, draw_kmi_custom, refresh_areas
+from .properties import STORYTOOLS_PGT_gp_settings # gp local settings
 # from .tool_presets.properties import STORYTOOLS_PG_tool_presets
 
 def toggle_gizmo_buttons(self, _):
@@ -135,8 +138,9 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         default='SETTINGS',
         items=(
             ('SETTINGS', 'Settings', 'Customize interface elements and settings', 0),
-            ('TOOLPRESETS', 'Tool Presets', 'Manage tool presets and change their shortcuts', 1),
-            ('RESETLIST', 'Reset List', 'Choose some UI and tools to restore in one click', 2),
+            ('GPSETTINGS', 'GP Settings', 'Grease Pencil settings', 1),
+            ('TOOLPRESETS', 'Tool Presets', 'Manage tool presets and change their shortcuts', 2),
+            ('RESETLIST', 'Reset List', 'Choose some UI and tools to restore in one click', 3),
             ),
         )
 
@@ -280,6 +284,8 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
 
     ### --- Grease pencil settings
 
+    gp : PointerProperty(type=STORYTOOLS_PGT_gp_settings) # gp local settings
+
     default_edit_line_opacity : FloatProperty(
         name='Default Edit Line Opacity',
         description="Edit line opacity for newly created objects\
@@ -296,13 +302,6 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         name='Default Layer Use Light',
         description="Choose if layers should have use light on when creating a grease pencil object using popup",
         default=False)
-
-    gp_frame_offset : IntProperty(
-        name='Grease Pencil Frame Offset',
-        description="Frame offset to apply when creating new frame above an existing one\
-            \nOr when applying offset to all subsequents frames",
-        default=12,
-        min=1, soft_max=300, max=16000)
 
     default_placement : EnumProperty(
         name='Placement',
@@ -353,7 +352,6 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         name='Set Storytools Tab',
         description="Name of the Tab to set (respect case)",
         default='Storytools')
-
 
     set_edit_line_opacity : BoolProperty(
         name='Set Edit Line Opacity',
@@ -435,29 +433,16 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
 
             tool_col.active = self.active_toolbar
 
-            col.separator()
-
-            col.label(text='Tools Settings:', icon='MESH_CIRCLE')
-            # col.label(text='Move In Depth', icon='EMPTY_SINGLE_ARROW')
-            col.prop(self, 'use_visual_hint', text='Move Object Visual Hints')
-            subcol = col.column(align=True)
+            box = col.box()
+            bcol = box.column()
+            bcol.label(text='Tools Settings:', icon='MESH_CIRCLE')
+            # bcol.label(text='Move In Depth', icon='EMPTY_SINGLE_ARROW')
+            bcol.prop(self, 'use_visual_hint', text='Move Object Visual Hints')
+            subcol = bcol.column(align=True)
             subcol.prop(self, 'visual_hint_start_color', text='Near Color')
             subcol.prop(self, 'visual_hint_end_color', text='Far Color')
             subcol.active = self.use_visual_hint
 
-            col.separator()
-            ## GP setttings
-            col.label(text='Grease Pencil Settings:', icon='GREASEPENCIL')
-            row = col.row(align=True)
-            row.prop(self, 'default_placement', text='Set Placement / Orientation')
-            row.prop(self, 'default_orientation', text='')
-            ## placement and orientation on two lines
-            # col.prop(self, 'default_placement')
-            # col.prop(self, 'default_orientation')
-            col.prop(self, 'use_autolock_layers')
-            col.prop(self, 'use_lights')
-            col.prop(self, 'default_edit_line_opacity')
-            col.prop(self, 'gp_frame_offset')
 
             box = col.box()
             bcol = box.column()
@@ -475,6 +460,46 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             # tool_col.prop(self, 'map_toolbar_gap_size', text='Buttons Spread')
             # tool_col.prop(self, 'map_toolbar_backdrop_size')
 
+            ## Git update code
+            if self.is_git_repo:
+                box = col.box()
+                box.label(text='Addon Update')
+                if self.is_git_repo and self.has_git:
+                    box.operator('storytools.git_pull', text='Pull Last Update Using Git', icon='PLUGIN')
+                else:
+                    box.label(text='Addon can be updated using git')
+                    row = box.row()
+                    row.operator('wm.url_open', text='Download and install git here', icon='URL').url = 'https://git-scm.com/download/'
+                    row.label(text='then restart blender')
+
+        elif self.pref_tab == 'GPSETTINGS':
+            ## GP setttings
+            col.label(text='Grease Pencil Settings:', icon='GREASEPENCIL')
+            row = col.row(align=True)
+            row.prop(self, 'default_placement', text='Set Placement / Orientation')
+            row.prop(self, 'default_orientation', text='')
+            ## placement and orientation on two lines
+            # col.prop(self, 'default_placement')
+            # col.prop(self, 'default_orientation')
+            col.prop(self, 'use_autolock_layers')
+            col.prop(self, 'use_lights')
+            col.prop(self, 'default_edit_line_opacity')
+            
+            ## gp local settings
+            ## GP properties that are also in scene through property group
+            ## single options
+            # col.prop(self.gp, 'frame_offset')
+
+            col.separator()
+            col.label(text='GP control bar behavior:')
+            col.label(text='Following settings are replicated in scene on new files', icon='INFO')
+            ## All at once
+            for prop_name in self.gp.bl_rna.properties.keys():
+                if prop_name in ('name', 'rna_type'):
+                    continue
+                if prop_name.startswith('sync'):
+                    continue
+                col.prop(self.gp, prop_name)
 
         elif self.pref_tab == 'TOOLPRESETS':
 
@@ -579,18 +604,6 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
                 toolset_edit_ui(col)
         """
 
-        ## Git update code
-        if self.is_git_repo:
-            box = layout.box()
-            box.label(text='Addon Update')
-            if self.is_git_repo and self.has_git:
-                box.operator('storytools.git_pull', text='Pull Last Update Using Git', icon='PLUGIN')
-            else:
-                box.label(text='Addon can be updated using git')
-                row = box.row()
-                row.operator('wm.url_open', text='Download and install git here', icon='URL').url = 'https://git-scm.com/download/'
-                row.label(text='then restart blender')
-
 class STORYTOOLS_OT_restore_keymap_item(bpy.types.Operator):
     bl_idname = "storytools.restore_keymap_item"
     bl_label = "Restore keymap item"
@@ -660,6 +673,32 @@ class STORYTOOLS_OT_open_addon_prefs(bpy.types.Operator):
         return {'FINISHED'}
 
 
+### Handler for prefs to scene properties replications
+@persistent
+def replicate_preference_settings(dummy):
+    ## only on new file ?
+    # if bpy.data.filepath != "":
+    #     return
+
+    ## Instead of doing only on new file, use local scene sync user choice
+    prefs = get_addon_prefs()
+
+    ## On register, overwrite scene gp settings property with preferences ones (only on new files)
+    for scene in bpy.data.scenes:
+        if scene.storytools_gp_settings.sync_mode != 'SYNC_GLOBAL':
+            print('Skip setting replication on scene:', scene.name) #dbg
+            continue
+
+        for prop_name in prefs.gp.bl_rna.properties.keys():
+            if prop_name in ('name', 'rna_type', 'sync_mode'):
+                continue
+
+            print(f'scene {scene.name} -> replicating {prop_name}') #dbg
+
+            # setattr(scene.storytools_gp_settings, prop_name, getattr(prefs.gp, prop_name)) # Setattr Trigger update !
+            
+            scene.storytools_gp_settings[prop_name] = getattr(prefs.gp, prop_name) # Do not trigger update !
+
 ### --- REGISTER ---
 
 classes = (
@@ -680,6 +719,12 @@ def register():
     prefs.is_git_repo = (Path(__file__).parent / '.git').exists()
     prefs.has_git = bool(which('git'))
 
+    if not 'replicate_preference_settings' in [hand.__name__ for hand in bpy.app.handlers.load_post]:
+        bpy.app.handlers.load_post.append(replicate_preference_settings)
+
 def unregister():
+    if not 'replicate_preference_settings' in [hand.__name__ for hand in bpy.app.handlers.load_post]:
+        bpy.app.handlers.load_post.remove(replicate_preference_settings)
+
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

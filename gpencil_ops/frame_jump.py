@@ -49,25 +49,28 @@ class STORYTOOLS_OT_greasepencil_frame_jump(Operator):
 
     target : EnumProperty(
         name="Target layer", description="Choose wich layer to consider for keyframe change", 
-        default='ACTIVE', options={'HIDDEN', 'SKIP_SAVE'},
+        default='FILTERED', options={'HIDDEN', 'SKIP_SAVE'}, # default should be ACTIVE if not in filtered mode
         items=(
-            ('ACTIVE', 'Active and selected', 'jump in keyframes of active and other selected layers ', 0),
-            ('VISIBLE', 'Visibles layers', 'jump in keyframes of visibles layers', 1),   
-            ('ACCESSIBLE', 'Visible and unlocked layers', 'jump in keyframe of all layers', 2),   
+            ('ACTIVE', 'Active and selected', 'Jump in keyframes of active and other selected layers ', 0),
+            ('VISIBLE', 'Visibles layers', 'Jump in keyframes of visibles layers', 1),   
+            ('ACCESSIBLE', 'Visible and unlocked layers', 'Jump in keyframe of all layers', 2),   
             ('ALL', 'All', 'All layer, even locked and hidden', 3),   
+            ('FILTERED', 'Filtered', 'Use layer filter from storytools GP settings', 4),
             ))
 
     keyframe_type : EnumProperty(
         name="Keyframe Filter", description="Filter jump to specific keyframe type",
-        default='ALL', options={'HIDDEN', 'SKIP_SAVE'},
+        default='FILTERED', options={'HIDDEN', 'SKIP_SAVE'},
         items=(
-            ('ALL', 'All', '', 0),
-            ('KEYFRAME', 'Keyframe', '', 'KEYTYPE_KEYFRAME_VEC', 1),
-            ('BREAKDOWN', 'Breakdown', '', 'KEYTYPE_BREAKDOWN_VEC', 2),
-            ('MOVING_HOLD', 'Moving Hold', '', 'KEYTYPE_MOVING_HOLD_VEC', 3),
-            ('EXTREME', 'Extreme', '', 'KEYTYPE_EXTREME_VEC', 4),
-            ('JITTER', 'Jitter', '', 'KEYTYPE_JITTER_VEC', 5),
-            # ('NONE', 'Use UI Filter', '', 6), # 'KEYFRAME' # UI filter was used in GP toolbox
+            ('ALL', 'All', 'All keyframe types', 'KEYFRAME', 0),
+            ('CURRENT', 'Use Current Type', 'Use currently hovered type', 'ACTION_TWEAK', 1),
+            ('FILTERED', 'Use UI Filter', 'Use storytools gp settings choice', 'FILTER', 2),
+            ('KEYFRAME', 'Keyframe', '', 'KEYTYPE_KEYFRAME_VEC', 3),
+            ('BREAKDOWN', 'Breakdown', '', 'KEYTYPE_BREAKDOWN_VEC', 4),
+            ('MOVING_HOLD', 'Moving Hold', '', 'KEYTYPE_MOVING_HOLD_VEC', 5),
+            ('EXTREME', 'Extreme', '', 'KEYTYPE_EXTREME_VEC', 6),
+            ('JITTER', 'Jitter', '', 'KEYTYPE_JITTER_VEC', 7),
+            ('GENERATED', 'Generated', '', 'KEYTYPE_GENERATED_VEC', 8),
             ))
 
     # sent_by_gizmo : BoolProperty(
@@ -91,6 +94,9 @@ class STORYTOOLS_OT_greasepencil_frame_jump(Operator):
     def invoke(self, context, event):
         # self.prefs = fn.get_addon_prefs()
         ## If there is a clic event, consider that it was launched using gizmo button
+        if self.target == 'FILTERED':
+            self.target = context.scene.storytools_gp_settings.frame_target_layers
+            
         if event.type == 'LEFTMOUSE':
             if event.shift:
                 self.target = 'ACCESSIBLE'
@@ -114,7 +120,7 @@ class STORYTOOLS_OT_greasepencil_frame_jump(Operator):
         if self.target == 'ACTIVE':
             gpl = [l for l in context.object.data.layers if l.select and not l.hide]
             if not context.object.data.layers.active in gpl:
-                gpl.append(context.object.data.layers.active)   
+                gpl.append(context.object.data.layers.active)
         
         elif self.target == 'VISIBLE':
             gpl = [l for l in context.object.data.layers if not l.hide]
@@ -125,15 +131,31 @@ class STORYTOOLS_OT_greasepencil_frame_jump(Operator):
         elif self.target == 'ALL':
             gpl = [l for l in context.object.data.layers]
 
+        ## Always put active layer first in list (if in list) for keyframe_type checking
+        active_layer = context.object.data.layers.active
+        if active_layer and active_layer in gpl:
+            gpl.insert(0, gpl.pop(gpl.index(active_layer)))
+
         current = context.scene.frame_current
         p = n = None
 
         mins = []
         maxs = []
+
+        ## Filter key_type according to preferences
+        key_type = self.keyframe_type
+        if key_type == 'FILTERED':
+            key_type = context.scene.storytools_gp_settings.keyframe_type
+        
+        ## Filter key_type by hovered one
+        if key_type == 'CURRENT':
+            ## Find current hover type (fallback to all)
+            key_type = next((f.keyframe_type for l in gpl for f in l.frames if f.frame_number == current), 'ALL')
+
         for l in gpl:
             for f in l.frames:
                 # keyframe type filter
-                if self.keyframe_type != 'ALL' and self.keyframe_type != f.keyframe_type:
+                if key_type != 'ALL' and key_type != f.keyframe_type:
                     continue
 
                 if f.frame_number < current:
@@ -164,7 +186,9 @@ class STORYTOOLS_OT_greasepencil_frame_jump(Operator):
         else:
             direction = 'next' if self.direction == 'NEXT' else 'previous'
             plural = '' if self.target == 'ACTIVE' else 's'
-            self.report({'INFO'}, f'No {direction} keyframe on {self.target.lower()} layer{plural}')
+            kt_hint = f' ({key_type.title()} type)' if key_type not in ('ALL',) else ''
+                
+            self.report({'INFO'}, f'No {direction} keyframe on {self.target.lower()} layer{plural}{kt_hint}')
             return {"CANCELLED"}
 
         return {"FINISHED"}
