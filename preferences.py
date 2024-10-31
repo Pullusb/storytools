@@ -686,14 +686,14 @@ def replicate_preference_settings(dummy):
     ## On register, overwrite scene gp settings property with preferences ones (only on new files)
     for scene in bpy.data.scenes:
         if scene.storytools_gp_settings.sync_mode != 'SYNC_GLOBAL':
-            print('Skip setting replication on scene:', scene.name) #dbg
+            # print('Skip setting replication on scene:', scene.name) #dbg
             continue
 
         for prop_name in prefs.gp.bl_rna.properties.keys():
             if prop_name in ('name', 'rna_type', 'sync_mode'):
                 continue
 
-            print(f'scene {scene.name} -> replicating {prop_name}') #dbg
+            # print(f'scene {scene.name} -> replicating {prop_name}') #dbg
 
             # setattr(scene.storytools_gp_settings, prop_name, getattr(prefs.gp, prop_name)) # Setattr Trigger update !
             
