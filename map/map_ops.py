@@ -42,7 +42,7 @@ class STORYTOOLS_OT_select_map_object(Operator):
         ob.select_set(True)
 
     def execute(self, context):
-        objects = [o for o in context.scene.objects if o.type in ('GPENCIL',) and o.visible_get()]
+        objects = [o for o in context.scene.objects if o.type in ('GREASEPENCIL',) and o.visible_get()]
         if not objects:
             return {'CANCELLED'}
         

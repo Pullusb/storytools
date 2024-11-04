@@ -134,7 +134,7 @@ def draw_map_callback_2d():
     cam = bpy.context.scene.camera
     ### Trace GP objects 
     color = (0.8, 0.8, 0.0, 0.9)
-    # gps = [o for o in bpy.context.scene.objects if o.type == 'GPENCIL' and o.visible_get()]
+    # gps = [o for o in bpy.context.scene.objects if o.type == 'GREASEPENCIL' and o.visible_get()]
 
     # scale = context.region_data.view_distance # TODO: define scaling
     radius = settings.map_dot_size * context.preferences.system.ui_scale
@@ -142,10 +142,10 @@ def draw_map_callback_2d():
     # for gp in gps:
     #     draw_circle_2d(fn.location_to_region(gp.matrix_world.translation), color, scale)
     # active = context.object
-    # if active and active.type == 'GPENCIL':
+    # if active and active.type == 'GREASEPENCIL':
     #     draw_circle_2d(fn.location_to_region(active.matrix_world.translation), (0.9, 0.9, 0.0, 0.9), scale)
 
-    gp_list = [o for o in bpy.context.scene.objects if o.type == 'GPENCIL' and o.visible_get()]
+    gp_list = [o for o in bpy.context.scene.objects if o.type == 'GREASEPENCIL' and o.visible_get()]
 
     ## Always recenter map (expensive! Need better object-frame function)
     # if settings.map_always_frame_objects:
@@ -397,10 +397,10 @@ def draw_map_callback():
     ## Reorient to top view ?
 
     ## Should be the same but give wrong order
-    lines = [o.matrix_world @ v for o in bpy.context.scene.objects if o.type == 'GPENCIL' and o.visible_get() for v in line_vecs]
+    lines = [o.matrix_world @ v for o in bpy.context.scene.objects if o.type == 'GREASEPENCIL' and o.visible_get() for v in line_vecs]
     ## Equivalent to:
     # lines = []
-    # for o in [o for o in bpy.context.scene.objects if o.type == 'GPENCIL' and o.visible_get()]:
+    # for o in [o for o in bpy.context.scene.objects if o.type == 'GREASEPENCIL' and o.visible_get()]:
     #     lines += [o.matrix_world @ v for v in line_vecs]
     
     gp_lines = batch_for_shader(shader_uniform, 'LINES', {"pos": lines})
@@ -416,8 +416,8 @@ def draw_map_callback():
     # text_offset_vec = Vector((0, radius + 0.04, 0))
     # text_offset_vec.rotate(context.region_data.view_rotation)
 
-    # lines = [o.matrix_world @ v for o in bpy.context.scene.objects if o.type == 'GPENCIL' and o.visible_get() for v in line_vecs]
-    for ob in [o for o in bpy.context.scene.objects if o.type == 'GPENCIL' and o.visible_get()]:
+    # lines = [o.matrix_world @ v for o in bpy.context.scene.objects if o.type == 'GREASEPENCIL' and o.visible_get() for v in line_vecs]
+    for ob in [o for o in bpy.context.scene.objects if o.type == 'GREASEPENCIL' and o.visible_get()]:
         if context.object and context.object == ob:
             color = (0.9, 0.9, 0.6, 0.9)
         else:

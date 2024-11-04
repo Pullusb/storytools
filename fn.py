@@ -694,7 +694,7 @@ def update_ui_prop_index(context):
     if scn.camera:
         scn.st_camera_props['index'] = next((i for i, c in enumerate(scn.objects) if scn.camera == c), 1)
 
-    gp_index = next((i for i, o in enumerate(scn.objects) if o.type == 'GPENCIL' and context.object == o), None)
+    gp_index = next((i for i, o in enumerate(scn.objects) if o.type == 'GREASEPENCIL' and context.object == o), None)
     if gp_index is not None:
         scn.gp_object_props['index'] = gp_index
 
@@ -1204,12 +1204,12 @@ def frame_objects(context, target='NONE', objects=None):
     objects (list, default:None): alternatively, a list of object to frame can be passed
     '''
     if objects is None:
-        objects = [o for o in context.scene.objects if o.type in ('GPENCIL',) and o.visible_get()]
+        objects = [o for o in context.scene.objects if o.type in ('GREASEPENCIL',) and o.visible_get()]
 
         if target == 'ALL' and context.scene.camera:
             objects.append(context.scene.camera)
 
-        # objects = [o for o in context.view_layer.objects if o.type in ('GPENCIL',) and o.visible_get()]
+        # objects = [o for o in context.view_layer.objects if o.type in ('GREASEPENCIL',) and o.visible_get()]
     if not objects:
         return {'CANCELLED'}
 

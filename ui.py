@@ -46,7 +46,7 @@ class STORYTOOLS_PT_storytools_ui(Panel):
 
         col.label(text='Layers:')
         ob = context.object
-        if not ob or ob.type != 'GPENCIL':
+        if not ob or ob.type != 'GREASEPENCIL':
             col.label(text=f'No Grease Pencil Active')
             return
 
@@ -108,7 +108,7 @@ class STORYTOOLS_PT_layers_ui(Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.object and context.object.type == 'GPENCIL'
+        return context.object and context.object.type == 'GREASEPENCIL'
 
     ## Add autolock value
     # def draw_header_preset(self, context):
@@ -130,7 +130,7 @@ class STORYTOOLS_PT_materials_ui(Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.object and context.object.type == 'GPENCIL'
+        return context.object and context.object.type == 'GREASEPENCIL'
 
     def draw(self, context):
         col = self.layout.column()
@@ -149,7 +149,7 @@ class STORYTOOLS_PT_tool_ui(Panel):
 
     # @classmethod
     # def poll(cls, context):
-    #     return context.object and context.object.type == 'GPENCIL'
+    #     return context.object and context.object.type == 'GREASEPENCIL'
 
     def draw(self, context):
         col = self.layout.column()
@@ -504,7 +504,7 @@ class STORYTOOLS_PT_brushes_ui(Panel):
     @classmethod
     def poll(cls, context):
         # Check draw mode to hide panel when not in draw (or just display message ?)
-        return context.object and context.object.type == 'GPENCIL'# and context.mode == 'PAINT_GPENCIL'
+        return context.object and context.object.type == 'GREASEPENCIL'# and context.mode == 'PAINT_GREASE_PENCIL'
 
     def draw(self, context):
         layout = self.layout
@@ -529,7 +529,7 @@ class STORYTOOLS_PT_colors_ui(Panel):
     @classmethod
     def poll(cls, context):
         # Check draw mode to hide panel when not in draw (or just display message ?)
-        return context.object and context.object.type == 'GPENCIL'# and context.mode == 'PAINT_GPENCIL'
+        return context.object and context.object.type == 'GREASEPENCIL'# and context.mode == 'PAINT_GREASE_PENCIL'
 
     def draw(self, context):
         layout = self.layout
@@ -553,7 +553,7 @@ class STORYTOOLS_PT_palette_ui(Panel):
     @classmethod
     def poll(cls, context):
         # Check draw mode to hide panel when not in draw (or just display message ?)
-        return context.object and context.object.type == 'GPENCIL'# and context.mode == 'PAINT_GPENCIL'
+        return context.object and context.object.type == 'GREASEPENCIL'# and context.mode == 'PAINT_GREASE_PENCIL'
 
     def draw(self, context):
         layout = self.layout
@@ -612,7 +612,7 @@ class STORYTOOLS_OT_info_note(Operator):
 #     """Palette menu to append in existing menu"""
 #     # GPENCIL_MT_material_context_menu
 #     layout = self.layout
-#     # {'EDIT_GPENCIL', 'PAINT_GPENCIL','SCULPT_GPENCIL','WEIGHT_GPENCIL', 'VERTEX_GPENCIL'}
+#     # {'EDIT_GREASE_PENCIL', 'PAINT_GREASE_PENCIL','SCULPT_GREASE_PENCIL','WEIGHT_GREASE_PENCIL', 'VERTEX_GPENCIL'}
 #     layout.separator()
 #     prefs = get_addon_prefs()
 #     layout.operator("", text='do stuff from material submenu', icon='MATERIAL')

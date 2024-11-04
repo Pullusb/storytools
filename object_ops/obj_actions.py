@@ -55,8 +55,8 @@ class STORYTOOLS_OT_create_object(Operator):
 
     def invoke(self, context, event):
         ## Suggest a numbered default name for quick use
-        # gp_ct = len([o for o in context.scene.objects if o.type == 'GPENCIL'])
-        gp_ct = len([o for o in bpy.data.objects if o.type == 'GPENCIL'])
+        # gp_ct = len([o for o in context.scene.objects if o.type == 'GREASEPENCIL'])
+        gp_ct = len([o for o in bpy.data.objects if o.type == 'GREASEPENCIL'])
         self.name = f'Drawing_{gp_ct+1:03d}'
         settings = context.scene.storytools_settings
         
@@ -185,11 +185,11 @@ class STORYTOOLS_OT_create_object(Operator):
         fn.update_ui_prop_index(context)
 
         # Enter Draw mode
-        bpy.ops.object.mode_set(mode='PAINT_GPENCIL')
+        bpy.ops.object.mode_set(mode='PAINT_GREASE_PENCIL')
         fn.reset_draw_settings(context=context)
 
         ## Show canvas if first GP created on scene (or always enable at creation)
-        if len([o for o in context.scene.objects if o.type == 'GPENCIL']) == 1:
+        if len([o for o in context.scene.objects if o.type == 'GREASEPENCIL']) == 1:
             context.space_data.overlay.use_gpencil_grid = True
         # context.space_data.overlay.use_gpencil_grid = True
 
@@ -261,7 +261,7 @@ class STORYTOOLS_OT_object_draw(Operator):
             return {"FINISHED"}
 
         ## If active object is a GP, go in draw mode or do nothing
-        if context.object and context.object.type == 'GPENCIL':
+        if context.object and context.object.type == 'GREASEPENCIL':
             if not context.object.visible_get():
                 ## Show error if object is invisible
                 mess = [f'Active object "{context.object.name}" is not visible',
@@ -272,9 +272,9 @@ class STORYTOOLS_OT_object_draw(Operator):
                 fn.show_message_box(_message=mess, _icon='ERROR')
                 return {"CANCELLED"}
 
-            if context.mode != 'PAINT_GPENCIL':
-                # bpy.ops.storytools.make_active_and_select(name = context.object.name, mode='PAINT_GPENCIL')
-                bpy.ops.object.mode_set(mode='PAINT_GPENCIL')
+            if context.mode != 'PAINT_GREASE_PENCIL':
+                # bpy.ops.storytools.make_active_and_select(name = context.object.name, mode='PAINT_GREASE_PENCIL')
+                bpy.ops.object.mode_set(mode='PAINT_GREASE_PENCIL')
             else:
                 # bpy.ops.storytools.make_active_and_select(name = context.object.name)
                 bpy.ops.object.mode_set(mode='OBJECT')
@@ -284,15 +284,15 @@ class STORYTOOLS_OT_object_draw(Operator):
             return {"FINISHED"}
 
         ## First GP object
-        # gp = next((o for o in context.scene.objects if o.type == 'GPENCIL'), None)
+        # gp = next((o for o in context.scene.objects if o.type == 'GREASEPENCIL'), None)
         
         ## First (visible) GP objects
-        gp = next((o for o in context.scene.objects if o.type == 'GPENCIL' if o.visible_get()), None)
+        gp = next((o for o in context.scene.objects if o.type == 'GREASEPENCIL' if o.visible_get()), None)
         if gp:
             ## Set as active and select this gp object
             context.view_layer.objects.active = gp
             gp.select_set(True)
-            bpy.ops.object.mode_set(mode='PAINT_GPENCIL')
+            bpy.ops.object.mode_set(mode='PAINT_GREASE_PENCIL')
             return {"FINISHED"}
 
         else:
@@ -306,13 +306,13 @@ class STORYTOOLS_OT_object_draw(Operator):
 def update_object_change(self, context):
     ob = context.scene.objects[self.index]
     # print('Switch to object', ob.name)
-    if ob.type != 'GPENCIL' or context.object is ob:
+    if ob.type != 'GREASEPENCIL' or context.object is ob:
         return
 
     prev_mode = context.mode
     possible_gp_mods = ('OBJECT', 
-                        'EDIT_GPENCIL', 'SCULPT_GPENCIL', 'PAINT_GPENCIL',
-                        'WEIGHT_GPENCIL', 'VERTEX_GPENCIL')
+                        'EDIT_GREASE_PENCIL', 'SCULPT_GREASE_PENCIL', 'PAINT_GREASE_PENCIL',
+                        'WEIGHT_GREASE_PENCIL', 'VERTEX_GPENCIL')
 
     if prev_mode not in possible_gp_mods:
         prev_mode = None
@@ -344,7 +344,7 @@ def update_object_change(self, context):
         if not ob.hide_viewport and prev_mode is not None and context.mode != prev_mode:
             bpy.ops.object.mode_set(mode=prev_mode)
 
-    for o in [o for o in context.scene.objects if o.type == 'GPENCIL']:
+    for o in [o for o in context.scene.objects if o.type == 'GREASEPENCIL']:
         o.select_set(o == ob) # select only active (when not in object mode)
     
     # if not ob.visible_get():
@@ -458,11 +458,11 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
 
             if context.mode == 'OBJECT':
                 icon = 'OBJECT_DATA'
-            elif context.mode == 'WEIGHT_GPENCIL':
+            elif context.mode == 'WEIGHT_GREASE_PENCIL':
                 icon = 'MOD_VERTEX_WEIGHT'
-            elif context.mode == 'SCULPT_GPENCIL':
+            elif context.mode == 'SCULPT_GREASE_PENCIL':
                 icon = 'SCULPTMODE_HLT'
-            elif context.mode == 'EDIT_GPENCIL':
+            elif context.mode == 'EDIT_GREASE_PENCIL':
                 icon = 'EDITMODE_HLT'
             else:
                 icon = 'GREASEPENCIL'
@@ -545,7 +545,7 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
         objs = getattr(data, propname)
         # objs: scene objects collection
 
-        flt_flags = [self.bitflag_filter_item if o.type == 'GPENCIL'
+        flt_flags = [self.bitflag_filter_item if o.type == 'GREASEPENCIL'
                      and not o.name.startswith('.') else 0 for o in objs]
 
         ## By name

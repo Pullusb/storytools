@@ -15,7 +15,7 @@ class STORYTOOLS_OT_load_default_palette(bpy.types.Operator):
     # path_to_pal : bpy.props.StringProperty(name="paht to palette", description="path to the palette", default="")
     @classmethod
     def poll(cls, context):
-        return context.object and context.object.type == 'GPENCIL'
+        return context.object and context.object.type == 'GREASEPENCIL'
 
     def execute(self, context):
         # Cleanup

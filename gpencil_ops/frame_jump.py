@@ -13,7 +13,7 @@ from bpy.types import Operator
 from .. import fn
 
 def check_for_frames(ob, active_only=True):
-    if ob.type != 'GPENCIL':
+    if ob.type != 'GREASEPENCIL':
         return 'Not a Grease Pencil object'
 
     if not (layer := ob.data.layers.active):
@@ -34,7 +34,7 @@ class STORYTOOLS_OT_greasepencil_frame_jump(Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.object and context.object.type == 'GPENCIL'
+        return context.object and context.object.type == 'GREASEPENCIL'
 
     # next : BoolProperty(
     #     name="Next GP frame", description="Go to next or previous grease pencil frame", 
@@ -203,7 +203,7 @@ class STORYTOOLS_OT_flip_frames(Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.object and context.object.type == 'GPENCIL'
+        return context.object and context.object.type == 'GREASEPENCIL'
 
     def invoke(self, context, event):
         self.ob = context.object

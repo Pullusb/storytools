@@ -206,7 +206,7 @@ class STORYTOOLS_OT_align_view_to_object(Operator):
     def execute(self, context):
         r3d = context.space_data.region_3d
         init_persp = r3d.view_perspective
-        if context.object.type != 'GPENCIL':
+        if context.object.type != 'GREASEPENCIL':
             bpy.ops.view3d.view_axis(align_active=True, type='FRONT', relative=False)
 
         else:

@@ -49,7 +49,7 @@ class STORYTOOLS_OT_setup_drawing(bpy.types.Operator):
 
         ## Set select tool (in edit / sculpt)
         if (tool_id := prefs.set_selection_tool) != 'NONE':
-            if context.mode in ("EDIT_GPENCIL", "SCULPT_GPENCIL", "EDIT_GREASE_PENCIL", "SCULPT_GREASE_PENCIL"):
+            if context.mode in ("EDIT_GREASE_PENCIL", "SCULPT_GREASE_PENCIL", "EDIT_GREASE_PENCIL", "SCULPT_GREASE_PENCIL"):
                 if bpy.context.workspace.tools.from_space_view3d_mode(bpy.context.mode, create=False).idname != tool_id:
                     bpy.ops.wm.tool_set_by_id(name=tool_id)
         
@@ -89,24 +89,24 @@ class STORYTOOLS_OT_setup_drawing(bpy.types.Operator):
         # Iterate in objects
         # for o in scn.objects:
         #     ## Disable use light at object level
-        #     if o.type == 'GPENCIL':
+        #     if o.type == 'GREASEPENCIL':
         #         o.use_grease_pencil_lights = False
 
         ## Set data name from object name if single user ?
         # for obj in bpy.data.objects:
-        #     if obj.type in ('GPENCIL', 'GREASEPENCIL'):
+        #     if obj.type in ('GREASEPENCIL', 'GREASEPENCIL'):
         #         gpd = obj.data
         #         if gpd.users == 1 and gpd.name != gp.name:
         #             gpd.name = gp.name
 
         ## Set Draw mode if current object is selected
-        # if context.object.type == 'GPENCIL':
+        # if context.object.type == 'GREASEPENCIL':
         #     if self.force:
-        #         if context.mode != "PAINT_GPENCIL":
-        #             bpy.ops.object.mode_set(mode='PAINT_GPENCIL')
+        #         if context.mode != "PAINT_GREASE_PENCIL":
+        #             bpy.ops.object.mode_set(mode='PAINT_GREASE_PENCIL')
         
         ## Set Draw tool
-        # if context.mode == "PAINT_GPENCIL":
+        # if context.mode == "PAINT_GREASE_PENCIL":
         #     tool = 'builtin_brush.Draw'
         #     if bpy.context.workspace.tools.from_space_view3d_mode(bpy.context.mode, create=False).idname != tool:
         #         # print('Set lasso tool')

@@ -12,7 +12,7 @@ def layer_change_callback():
         return
 
     ob = bpy.context.object
-    if not ob or ob.type != 'GPENCIL':
+    if not ob or ob.type != 'GREASEPENCIL':
         return
     if not ob.data.layers.active:
         return
@@ -66,7 +66,7 @@ def material_change_callback():
         return
 
     ob = bpy.context.object
-    if not ob or ob.type != 'GPENCIL':
+    if not ob or ob.type != 'GREASEPENCIL':
         return
     if not ob.data.layers.active:
         return
@@ -136,7 +136,7 @@ def subscribe_material_handler(dummy):
 def brush_change_callback():
     print('Brush has changed!')
     ob = bpy.context.object
-    if not ob or ob.type != 'GPENCIL':
+    if not ob or ob.type != 'GREASEPENCIL':
         return
     if not ob.data.layers.active:
         return

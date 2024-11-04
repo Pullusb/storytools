@@ -19,7 +19,7 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.object and context.object.type == 'GPENCIL'
+        return context.object and context.object.type == 'GREASEPENCIL'
 
     name : StringProperty(
         name="Name", description="Name that define this preset (Optional).\
@@ -28,11 +28,11 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
 
     mode : EnumProperty(
         name="Mode", description="Using shortcut will change to this mode", 
-        default='PAINT_GPENCIL', options={'HIDDEN', 'SKIP_SAVE'},
+        default='PAINT_GREASE_PENCIL', options={'HIDDEN', 'SKIP_SAVE'},
         items=(
-            ('PAINT_GPENCIL', 'Draw', 'Switch to draw mode', 0),
-            ('EDIT_GPENCIL', 'Edit', 'Switch to edit mode', 1),
-            ('SCULPT_GPENCIL', 'Sculpt', 'Switch to Sculpt mode', 2),
+            ('PAINT_GREASE_PENCIL', 'Draw', 'Switch to draw mode', 0),
+            ('EDIT_GREASE_PENCIL', 'Edit', 'Switch to edit mode', 1),
+            ('SCULPT_GREASE_PENCIL', 'Sculpt', 'Switch to Sculpt mode', 2),
             ('OBJECT', 'Object', 'Switch to Object mode', 3),
             ('NONE', 'Current', 'No change', 4),
             ))
@@ -194,13 +194,13 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
     # path_to_pal : bpy.props.StringProperty(name="paht to palette", description="path to the palette", default="")
     @classmethod
     def poll(cls, context):
-        return context.object and context.object.type == 'GPENCIL'
+        return context.object and context.object.type == 'GREASEPENCIL'
 
     preset : bpy.props.IntProperty(name='Preset number', default=1, options={'SKIP_SAVE'})
 
     def execute(self, context):
         # if context.mode != 'OBJECT':
-        #     bpy.ops.object.mode_set(mode='PAINT_GPENCIL')
+        #     bpy.ops.object.mode_set(mode='PAINT_GREASE_PENCIL')
         
         presets = {
             1: {'tool': 'builtin_brush.Draw', 'layer':'Sketch', 'mat': 'line'},
@@ -244,7 +244,7 @@ def register_keymap():
 
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='ONE', value='PRESS')
     kmi.properties.name = 'Sketch Draw'
-    kmi.properties.mode = 'PAINT_GPENCIL'
+    kmi.properties.mode = 'PAINT_GREASE_PENCIL'
     kmi.properties.tool = 'builtin_brush.Draw'
     kmi.properties.brush = 'Pencil'
     kmi.properties.layer = 'Sketch'
@@ -256,7 +256,7 @@ def register_keymap():
 
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='TWO', value='PRESS')
     kmi.properties.name = 'Line Draw'
-    kmi.properties.mode = 'PAINT_GPENCIL'
+    kmi.properties.mode = 'PAINT_GREASE_PENCIL'
     kmi.properties.tool = 'builtin_brush.Draw'
     kmi.properties.brush = 'Ink Pen'
     kmi.properties.layer = 'Line'
@@ -267,7 +267,7 @@ def register_keymap():
     
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='THREE', value='PRESS')
     kmi.properties.name = 'Bucket Fill'
-    kmi.properties.mode = 'PAINT_GPENCIL'
+    kmi.properties.mode = 'PAINT_GREASE_PENCIL'
     kmi.properties.tool = 'builtin_brush.Fill'
     kmi.properties.layer = 'Color'
     # kmi.properties.material = '' # fill_white
@@ -277,7 +277,7 @@ def register_keymap():
     
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='FOUR', value='PRESS')
     kmi.properties.name = 'Fill Draw'
-    kmi.properties.mode = 'PAINT_GPENCIL'
+    kmi.properties.mode = 'PAINT_GREASE_PENCIL'
     kmi.properties.tool = 'builtin_brush.Draw'
     kmi.properties.layer = 'Color'
     kmi.properties.icon = 'GPBRUSH_MARKER' if bpy.app.version < (4,3,0) else 'NODE_MATERIAL'
@@ -287,7 +287,7 @@ def register_keymap():
     
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='FIVE', value='PRESS')
     kmi.properties.name = 'Eraser by points'
-    kmi.properties.mode = 'PAINT_GPENCIL'
+    kmi.properties.mode = 'PAINT_GREASE_PENCIL'
     kmi.properties.tool = 'builtin_brush.Erase'
     kmi.properties.brush = 'Eraser Point'
     kmi.properties.icon = 'GPBRUSH_ERASE_HARD' if bpy.app.version < (4,3,0) else 'CLIPUV_DEHLT'
@@ -296,7 +296,7 @@ def register_keymap():
     
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='SIX', value='PRESS')
     kmi.properties.name = 'Eraser by strokes'
-    kmi.properties.mode = 'PAINT_GPENCIL'
+    kmi.properties.mode = 'PAINT_GREASE_PENCIL'
     kmi.properties.tool = 'builtin_brush.Erase'
     kmi.properties.brush = 'Eraser Stroke'
     kmi.properties.icon = 'GPBRUSH_ERASE_STROKE' if bpy.app.version < (4,3,0) else 'CON_TRACKTO'

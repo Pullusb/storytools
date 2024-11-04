@@ -50,7 +50,7 @@ class STORYTOOLS_OT_new_frame(Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.object and context.object.type == 'GPENCIL'
+        return context.object and context.object.type == 'GREASEPENCIL'
 
     duplicate : BoolProperty(name='Duplicate', default=False,
                              description='Create new keys with content of the previous one',

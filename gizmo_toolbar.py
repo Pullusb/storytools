@@ -307,7 +307,7 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
 
         ## --- Set upper line
 
-        gpencil_hide_state = not context.object or context.object.type != 'GPENCIL'
+        gpencil_hide_state = not context.object or context.object.type != 'GREASEPENCIL'
 
         ## Second line at center        
         # gp_bar_width = (len(self.gpencil_gizmos) - 1) * (gap_size * px_scale) # + (section_separator * 2) * px_scale
@@ -340,7 +340,7 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         self.gz_lock_view.color_highlight = rgb_active_higlight if r3d.lock_rotation else cam_color_hl
         
         ## Paint toggle color
-        is_in_draw = context.mode == 'PAINT_GPENCIL'
+        is_in_draw = context.mode == 'PAINT_GREASE_PENCIL'
         self.gz_draw.color = rgb_active if is_in_draw else obj_color
         self.gz_draw.color_highlight = rgb_active_higlight if is_in_draw else obj_color_hl
 

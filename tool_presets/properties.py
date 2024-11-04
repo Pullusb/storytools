@@ -44,11 +44,11 @@ class STORYTOOLS_PGT_tool_preset(PropertyGroup):
 
     mode : EnumProperty(
         name="Mode", description="Using shortcut will change to this mode", 
-        default='PAINT_GPENCIL', options={'HIDDEN', 'SKIP_SAVE'},
+        default='PAINT_GREASE_PENCIL', options={'HIDDEN', 'SKIP_SAVE'},
         items=(
-            ('PAINT_GPENCIL', 'Draw', 'Switch to draw mode', 0),
-            ('EDIT_GPENCIL', 'Edit', 'Switch to edit mode', 1),
-            ('SCULPT_GPENCIL', 'Sculpt', 'Switch to Sculpt mode', 2),
+            ('PAINT_GREASE_PENCIL', 'Draw', 'Switch to draw mode', 0),
+            ('EDIT_GREASE_PENCIL', 'Edit', 'Switch to edit mode', 1),
+            ('SCULPT_GREASE_PENCIL', 'Sculpt', 'Switch to Sculpt mode', 2),
             ('OBJECT', 'Object', 'Switch to Object mode', 3),
             ('NONE', 'Current', 'No mode switch', 4),
             ))
@@ -94,11 +94,11 @@ class STORYTOOLS_PG_tool_presets(PropertyGroup):
 class STORYTOOLS_PGT_km_preset(PropertyGroup):
     mode : EnumProperty(
         name="Mode", description="Using shortcut will change to this mode", 
-        default='PAINT_GPENCIL', options={'HIDDEN', 'SKIP_SAVE'},
+        default='PAINT_GREASE_PENCIL', options={'HIDDEN', 'SKIP_SAVE'},
         items=(
-            ('PAINT_GPENCIL', 'Draw', 'Switch to draw mode', 0),
-            ('EDIT_GPENCIL', 'Edit', 'Switch to edit mode', 1),
-            ('SCULPT_GPENCIL', 'Sculpt', 'Switch to Sculpt mode', 2),
+            ('PAINT_GREASE_PENCIL', 'Draw', 'Switch to draw mode', 0),
+            ('EDIT_GREASE_PENCIL', 'Edit', 'Switch to edit mode', 1),
+            ('SCULPT_GREASE_PENCIL', 'Sculpt', 'Switch to Sculpt mode', 2),
             ('OBJECT', 'Object', 'Switch to Object mode', 3),
             ))
 

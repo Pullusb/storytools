@@ -75,13 +75,13 @@ class STORYTOOLS_GGT_gp_gizmos(GizmoGroup):
     # @classmethod
     # def poll(cls, context):
     #     # ob = context.object
-    #     # return ob and ob.type == 'GPENCIL'
+    #     # return ob and ob.type == 'GREASEPENCIL'
     #     return context.object.type == 'MESH'
     
     @classmethod
     def poll(cls, context):
         # if context.scene 
-        return any(ob.type == 'GPENCIL' for ob in context.scene.objects)
+        return any(ob.type == 'GREASEPENCIL' for ob in context.scene.objects)
 
     def setup(self, context):
         ob = context.object
@@ -128,12 +128,12 @@ class STORYTOOLS_GGT_gp_gizmos(GizmoGroup):
     @classmethod
     def poll(cls, context):
         # if context.scene 
-        return any(ob.type == 'GPENCIL' for ob in context.scene.objects)
+        return any(ob.type == 'GREASEPENCIL' for ob in context.scene.objects)
 
     def setup(self, context):
         self.gizs = []
         view_mat = context.space_data.region_3d.view_matrix.inverted()
-        for ob in [o for o in context.scene.objects if o.type == 'GPENCIL' and o.visible_get()]:
+        for ob in [o for o in context.scene.objects if o.type == 'GREASEPENCIL' and o.visible_get()]:
             # gz = self.gizmos.new("GIZMO_GT_button_2d")
             gz = self.gizmos.new("GIZMO_GT_dial_3d")
             gz.draw_options = {'FILL'} # 'FILL_SELECT'
@@ -256,7 +256,7 @@ class STORYTOOLS_GGT_map_gizmos(GizmoGroup):
         return True
 
     def setup(self, context):
-        visible_gp = [o for o in bpy.context.scene.objects if o.type == 'GPENCIL' and o.visible_get()]
+        visible_gp = [o for o in bpy.context.scene.objects if o.type == 'GREASEPENCIL' and o.visible_get()]
         # visible_gp = [bpy.context.object]
         # lines = [o.matrix_world @ vec for vec in gp_plane for o in visible_gp]
         

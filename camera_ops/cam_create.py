@@ -120,7 +120,7 @@ class STORYTOOLS_OT_create_camera(Operator):
         fn.update_ui_prop_index(context)
         # context.scene.st_camera_props['index'] = next((i for i, c in enumerate(scn.objects) if scn.camera == c), 0)
 
-        # new_gp_index = next((i for i, o in enumerate(scn.objects) if o.type == 'GPENCIL' and context.object == o), None)
+        # new_gp_index = next((i for i, o in enumerate(scn.objects) if o.type == 'GREASEPENCIL' and context.object == o), None)
         # if new_gp_index is not None:
         #     scn.gp_object_props['index'] = new_gp_index
 
