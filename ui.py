@@ -118,8 +118,7 @@ class STORYTOOLS_PT_layers_ui(Panel):
     #     # layout.prop(context.object.data, 'use_autolock_layers')
 
     def draw(self, context):
-        col = self.layout.column()
-        layers_layout(col, context)
+        layers_layout(self.layout, context.grease_pencil)
 
 class STORYTOOLS_PT_materials_ui(Panel):
     bl_space_type = "VIEW_3D"
@@ -372,39 +371,36 @@ def object_layout(layout, context):
     # col_lateral.menu("STORYTOOLS_MT_gp_objects_list_options", icon='DOWNARROW_HLT', text='')
     col_lateral.popover(panel="STORYTOOLS_PT_gp_objects_list_options", text="", icon='DOWNARROW_HLT')
 
-def layers_layout(col, context):
-    gpd = context.object.data
-    row=col.row()
-    row.template_list("GPENCIL_UL_layer", "", gpd, "layers", gpd.layers, "active_index",
-                    rows=4, sort_reverse=True, sort_lock=True)
-    layer_side(row, context)
 
+def layers_layout(layout, grease_pencil):
+    layer = grease_pencil.layers.active
+    is_layer_active = layer is not None
+    is_group_active = grease_pencil.layer_groups.active is not None
 
-def layer_side(layout, context):
-    gpd = context.object.data
-    gpl = gpd.layers.active
+    row = layout.row()
+    row.template_grease_pencil_layer_tree()
 
-    col = layout.column()
+    col = row.column()
     sub = col.column(align=True)
-    sub.operator("gpencil.layer_add", icon='ADD', text="")
-    sub.operator("gpencil.layer_remove", icon='REMOVE', text="")
-    # sub.separator()
+    sub.operator_context = 'EXEC_DEFAULT'
+    sub.operator("grease_pencil.layer_add", icon='ADD', text="")
+    sub.operator("grease_pencil.layer_group_add", icon='NEWFOLDER', text="")
+    sub.separator()
 
-    if gpl:
-        sub.menu("GPENCIL_MT_layer_context_menu", icon='DOWNARROW_HLT', text="")
+    if is_layer_active:
+        sub.operator("grease_pencil.layer_remove", icon='REMOVE', text="")
+    if is_group_active:
+        sub.operator("grease_pencil.layer_group_remove", icon='REMOVE', text="").keep_children = True
 
-        if len(gpd.layers) > 1:
-            # col.separator()
+    sub.separator()
 
-            sub = col.column(align=True)
-            sub.operator("gpencil.layer_move", icon='TRIA_UP', text="").type = 'UP'
-            sub.operator("gpencil.layer_move", icon='TRIA_DOWN', text="").type = 'DOWN'
+    sub.menu("GREASE_PENCIL_MT_grease_pencil_add_layer_extra", icon='DOWNARROW_HLT', text="")
 
-            # col.separator()
+    col.separator()
 
-            # sub = col.column(align=True)
-            # sub.operator("gpencil.layer_isolate", icon='RESTRICT_VIEW_ON', text="").affect_visibility = True
-            # sub.operator("gpencil.layer_isolate", icon='LOCKED', text="").affect_visibility = False
+    sub = col.column(align=True)
+    sub.operator("grease_pencil.layer_move", icon='TRIA_UP', text="").direction = 'UP'
+    sub.operator("grease_pencil.layer_move", icon='TRIA_DOWN', text="").direction = 'DOWN'
 
 def materials_layout(layout, context):
     layout = layout
@@ -447,8 +443,8 @@ def materials_layout(layout, context):
         # col.separator()
 
         # sub = col.column(align=True)
-        # sub.operator("gpencil.material_isolate", icon='RESTRICT_VIEW_ON', text="").affect_visibility = True
-        # sub.operator("gpencil.material_isolate", icon='LOCKED', text="").affect_visibility = False
+        # sub.operator("grease_pencil.material_isolate", icon='RESTRICT_VIEW_ON', text="").affect_visibility = True
+        # sub.operator("grease_pencil.material_isolate", icon='LOCKED', text="").affect_visibility = False
     
     ## Material sync mode
     col = layout.column()

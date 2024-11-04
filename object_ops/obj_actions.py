@@ -119,7 +119,7 @@ class STORYTOOLS_OT_create_object(Operator):
 
         ## Clean name
         self.name = self.name.strip()
-        gp = bpy.data.grease_pencils.new(self.name)
+        gp = bpy.data.grease_pencils_v3.new(self.name)
         ob_name = self.name
 
         ob = bpy.data.objects.new(ob_name, gp)
@@ -318,7 +318,7 @@ def update_object_change(self, context):
         prev_mode = None
 
     mode_swap = False
-    
+
     ## TODO optional: Option to stop mode sync ?
     ## Set in same mode as previous object
     if context.scene.tool_settings.lock_object_mode:
@@ -326,7 +326,6 @@ def update_object_change(self, context):
         ## Error changing mode if in draw mode then hidden
         if context.mode != 'OBJECT':
             mode_swap = True
-            
             bpy.ops.object.mode_set(mode='OBJECT')
 
         ## Set active
@@ -334,6 +333,7 @@ def update_object_change(self, context):
 
         ## Keep same mode accross objects
         if not ob.hide_viewport and mode_swap and prev_mode is not None:
+            prev_mode = 'EDIT' if prev_mode == 'EDIT_GREASE_PENCIL' else prev_mode
             bpy.ops.object.mode_set(mode=prev_mode)
 
         context.scene.tool_settings.lock_object_mode = True
@@ -342,6 +342,7 @@ def update_object_change(self, context):
         ## Keep same mode accross objects
         context.view_layer.objects.active = ob
         if not ob.hide_viewport and prev_mode is not None and context.mode != prev_mode:
+            prev_mode = 'EDIT' if prev_mode == 'EDIT_GREASE_PENCIL' else prev_mode
             bpy.ops.object.mode_set(mode=prev_mode)
 
     for o in [o for o in context.scene.objects if o.type == 'GREASEPENCIL']:
