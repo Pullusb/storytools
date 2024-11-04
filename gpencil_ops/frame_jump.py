@@ -20,7 +20,7 @@ def check_for_frames(ob, active_only=True):
         return "No active layer on grease pencil object"
 
     if not len(layer.frames):
-        return f'No frames on active layer {layer.info}'
+        return f'No frames on active layer {layer.name}'
 
     return False
 
@@ -213,7 +213,7 @@ class STORYTOOLS_OT_flip_frames(Operator):
             return {'CANCELLED'}
 
         if not len(self.layer.frames):
-            self.report({'ERROR'}, f'No frames on active layer {self.layer.info}')
+            self.report({'ERROR'}, f'No frames on active layer {self.layer.name}')
             return {'CANCELLED'}
 
         self.shift_pressed = event.shift

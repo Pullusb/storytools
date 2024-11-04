@@ -29,14 +29,14 @@ def layer_change_callback():
         #     return
         ## set_material_by_name(ob, ob.data.layers.active['material'])
         
-        key_name = LAYERMAT_PREFIX + ob.data.layers.active.info
+        key_name = LAYERMAT_PREFIX + ob.data.layers.active.name
         if key_name in ob.keys():
             set_material_by_name(ob, ob[key_name])
     else:
         scn = bpy.context.scene
         if not hasattr(scn, 'gp_mat_by_layer'):
             return
-        set_material_by_name(ob, scn.gp_mat_by_layer.get(ob.data.layers.active.info))
+        set_material_by_name(ob, scn.gp_mat_by_layer.get(ob.data.layers.active.name))
 
 def subscribe_layer():
     subscribe_to = (bpy.types.GreasePencilLayers, "active_index")
@@ -84,14 +84,14 @@ def material_change_callback():
         # ob.data.layers.active['material'] = ob.active_material.name
 
         ## custom prop method
-        # if ob.data.layers.active.info not in ob.data.keys():
+        # if ob.data.layers.active.name not in ob.data.keys():
 
-        ob[LAYERMAT_PREFIX + ob.data.layers.active.info] = ob.active_material.name
+        ob[LAYERMAT_PREFIX + ob.data.layers.active.name] = ob.active_material.name
         
         ## cleanup ?
         all_keys = [k for k in ob.keys() if k.startswith(LAYERMAT_PREFIX)] # if in loop, error IDpropgroup size has changed
         for k in all_keys:
-            if k.split(LAYERMAT_PREFIX)[1] not in [l.info for l in ob.data.layers]: # k[len('lmat--'):]
+            if k.split(LAYERMAT_PREFIX)[1] not in [l.name for l in ob.data.layers]: # k[len('lmat--'):]
                 del ob[k]
         
         ## using LayerType prop
@@ -106,7 +106,7 @@ def material_change_callback():
             bpy.types.Scene.gp_mat_by_layer = {}
 
         layer_dict = scn.gp_mat_by_layer
-        layer_dict[ob.data.layers.active.info] = ob.active_material.name
+        layer_dict[ob.data.layers.active.name] = ob.active_material.name
 
 
     ## Set selection to active object ot avoid un-sync selection on Layers stack

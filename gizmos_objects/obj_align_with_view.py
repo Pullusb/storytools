@@ -225,7 +225,7 @@ class STORYTOOLS_OT_align_view_to_object(Operator):
                 if not ob.data.layers.active:
                     bpy.ops.view3d.view_axis(align_active=True, type='FRONT', relative=False)
                 else:
-                    _co, no = fn.get_frame_coord_and_normal(ob, ob.data.layers.active.active_frame)
+                    _co, no = fn.get_frame_coord_and_normal(ob, ob.data.layers.active.current_frame())
                     
                     ## Align with 
                     align_view_to_vector(-no) # inverted ? (probably not always right)

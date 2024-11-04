@@ -292,9 +292,9 @@ def get_coplanar_stroke_vector(obj, s, ensure_colplanar=True, tol=0.0003):
     # obj = bpy.context.object
     mat = obj.matrix_world
     pct = len(s.points)
-    a = mat @ s.points[0].co
-    b = mat @ s.points[pct//3].co
-    c = mat @ s.points[pct//3*2].co
+    a = mat @ s.points[0].position
+    b = mat @ s.points[pct//3].position
+    c = mat @ s.points[pct//3*2].position
     ab = b-a
     ac = c-a
     
@@ -303,34 +303,34 @@ def get_coplanar_stroke_vector(obj, s, ensure_colplanar=True, tol=0.0003):
 
     if ensure_colplanar:
         for p in s.points:
-            if abs(geometry.distance_point_to_plane(mat @ p.co, a, plane_no)) > tol:
+            if abs(geometry.distance_point_to_plane(mat @ p.position, a, plane_no)) > tol:
                 return
     return plane_no
 
 def get_normal(obj, frame, tol=0.0003):
-    ct =  len(frame.strokes)
+    ct =  len(frame.drawing.strokes)
     if ct == 0:
         return
     if ct < 3:
-        return get_coplanar_stroke_vector(obj, frame.strokes[0], ensure_colplanar=False)
+        return get_coplanar_stroke_vector(obj, frame.drawing.strokes[0], ensure_colplanar=False)
     
     ## Use first point of 3 first strokes
     mat = obj.matrix_world
-    a = mat @ frame.strokes[0].points[0].co
-    b = mat @ frame.strokes[1].points[0].co
-    c = mat @ frame.strokes[-1].points[0].co
+    a = mat @ frame.drawing.strokes[0].points[0].position
+    b = mat @ frame.drawing.strokes[1].points[0].position
+    c = mat @ frame.drawing.strokes[-1].points[0].position
     ab = b-a
     ac = c-a
 
     plane_no = ab.cross(ac)
     ## Verify coplanar ? # want to return even if it's not...
     # for p in s.points:
-    #     if abs(geometry.distance_point_to_plane(mat @ p.co, a, plane_no)) > tol:
+    #     if abs(geometry.distance_point_to_plane(mat @ p.position, a, plane_no)) > tol:
     #         return
     return plane_no
 
 def get_coord(obj, frame):
-    coords = [p.co for s in frame.strokes for p in s.points]
+    coords = [p.position for s in frame.drawing.strokes for p in s.points]
     mean_coord = sum(coords, Vector()) / len(coords)
     return obj.matrix_world @ mean_coord
 
@@ -348,7 +348,7 @@ def get_frame_coord_and_normal(obj, frame, tol=0.0003):
     #     ## Get bbox center
     #     bbox_center = sum([obj.matrix_world @ Vector(corner[:]) for corner in obj.bound_box], Vector()) / 8
     #     ## Project on plane found plane normal
-    #     plane_co = geometry.intersect_line_plane(bbox_center, bbox_center + plane_no, obj.matrix_world @ frame.strokes[0].co, plane_no)
+    #     plane_co = geometry.intersect_line_plane(bbox_center, bbox_center + plane_no, obj.matrix_world @ frame.drawing.strokes[0].position, plane_no)
     #     plane_co = plane_co or bbox_center
 
     return plane_co, plane_no
@@ -430,10 +430,10 @@ def set_material_association(ob, layer, mat_name):
     Create custom prop for layer material association if possible
     '''
     if not ob.data.materials.get(mat_name):
-        print(f'/!\ material "{mat_name}" not found (for association with layer "{layer.info}")')
+        print(f'/!\ material "{mat_name}" not found (for association with layer "{layer.name}")')
         return
     # create custom prop at object level
-    ob[LAYERMAT_PREFIX + layer.info] = mat_name
+    ob[LAYERMAT_PREFIX + layer.name] = mat_name
 
 def set_material_by_name(ob, mat_name):
     if mat_name is None or mat_name == '':
@@ -451,7 +451,7 @@ def set_layer_by_name(ob, name):
     if name is None or name == '':
         return
     for i, layer in enumerate(ob.data.layers):
-        if layer.info == name:
+        if layer.name == name:
             # print(f':{i}:', m.name, ob.active_material_index)
             ob.data.layers.active_index = i
             return
