@@ -500,15 +500,20 @@ class STORYTOOLS_PT_brushes_ui(Panel):
     @classmethod
     def poll(cls, context):
         # Check draw mode to hide panel when not in draw (or just display message ?)
-        return context.object and context.object.type == 'GREASEPENCIL'# and context.mode == 'PAINT_GREASE_PENCIL'
+        return context.object and context.object.type == 'GREASEPENCIL'
+
+    @staticmethod
+    def paint_settings(context):
+        if hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_v3_brush_select"):
+            return bpy.types.VIEW3D_PT_tools_grease_pencil_v3_brush_select.paint_settings(context)
 
     def draw(self, context):
         layout = self.layout
-        if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_brush_select"):
-            layout.label(text='could not found Brushes select class')
+        if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_v3_brush_select"):
+            layout.label(text='Could not find Brushes select class')
             return
 
-        brush_cls = bpy.types.VIEW3D_PT_tools_grease_pencil_brush_select
+        brush_cls = bpy.types.VIEW3D_PT_tools_grease_pencil_v3_brush_select
         if not hasattr(brush_cls, "poll") or brush_cls.poll(context):
             brush_cls.draw(self, context)
         else:
@@ -524,15 +529,14 @@ class STORYTOOLS_PT_colors_ui(Panel):
 
     @classmethod
     def poll(cls, context):
-        # Check draw mode to hide panel when not in draw (or just display message ?)
         return context.object and context.object.type == 'GREASEPENCIL'# and context.mode == 'PAINT_GREASE_PENCIL'
 
     def draw(self, context):
         layout = self.layout
-        if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_brush_mixcolor"):
+        if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_v3_brush_mixcolor"):
             return
         
-        mixcolor_cls = bpy.types.VIEW3D_PT_tools_grease_pencil_brush_mixcolor
+        mixcolor_cls = bpy.types.VIEW3D_PT_tools_grease_pencil_v3_brush_mixcolor
         if not hasattr(mixcolor_cls, "poll") or mixcolor_cls.poll(context):
             mixcolor_cls.draw(self, context)
         else:
@@ -548,7 +552,6 @@ class STORYTOOLS_PT_palette_ui(Panel):
 
     @classmethod
     def poll(cls, context):
-        # Check draw mode to hide panel when not in draw (or just display message ?)
         return context.object and context.object.type == 'GREASEPENCIL'# and context.mode == 'PAINT_GREASE_PENCIL'
 
     def draw(self, context):
