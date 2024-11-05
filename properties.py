@@ -29,7 +29,6 @@ def apply_on_all_scene(self, context):
         return
 
     for scn in bpy.data.scenes:
-        print(scn.name)
         if scn == context.scene:
             # print('> same scene, skip') # Dbg
             continue

@@ -15,15 +15,18 @@ class STORYTOOLS_PT_gp_settings_ui(Panel):
 
     def draw(self, context):
         layout = self.layout
-        # layout.use_property_split = True
         layout.use_property_decorate = False
-        # prefs = fn.get_addon_prefs()
         col = layout.column() # align=True
         ## Full display
         # col.prop(prefs, "nested_level", text='Nested Level')
-        col.label(text='Grease Pencil')
-        # col.prop(context.object.data, 'edit_line_color')
-        col.prop(context.object.data.grid, 'color')
+        # col.label(text='Grease Pencil')
+        
+        ## Hack: Disabled col property to avoid clicking on propertie
+        sub = col.row()
+        op = sub.operator('storytools.info_note', text='Grease Pencil', emboss=False)
+        op.text = ''
+        op.title = ''
+        sub.enabled = False
         
         col.separator()
         col.label(text='Frame Settings:')

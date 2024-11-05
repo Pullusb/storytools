@@ -30,8 +30,7 @@ def add_frame(available_layers, frame_number, reference_num=None, duplicate=Fals
 
         else:
             # Copy from previous key
-            new_frame = l.frames.copy(prev_frame)
-            new_frame.frame_number = frame_number
+            l.frames.copy(prev_frame.frame_number, frame_number)
         
         l.frames.update()
 
