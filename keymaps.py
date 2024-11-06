@@ -4,6 +4,7 @@ from bpy.props import (StringProperty,
                         BoolProperty,
                         EnumProperty,)
 from bpy.types import Context, OperatorProperties
+from pathlib import Path
 from . import fn
 
 def get_blender_icons_as_enum():
@@ -40,7 +41,7 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
     tool : StringProperty(
         name="Tool", description="Tool to set\
             \nEmpty field = no change",
-        default="", # builtin_brush.Draw
+        default="", # builtin.brush
         options={'SKIP_SAVE'})
     
     brush : StringProperty(
@@ -135,6 +136,16 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
 
         return '\n'.join(desc)
 
+    @staticmethod
+    def get_brush_from_blend(brush_name, blend_file):
+        '''Load brush from blend file by name, return brush object if found'''
+        with bpy.data.libraries.load(str(blend_file), assets_only=True, link=False) as (data_from, data_to):
+            if brush_name in data_from.brushes:
+                print(f'Load brush {brush_name} from {blend_file}')
+                data_to.brushes = [brush_name]
+        if data_to.brushes:
+            return data_to.brushes[0]
+
     def execute(self, context):
         ## Mode needs to add shortcut to generic Gpencil (would conflict with Selection mask)
         # if self.mode != 'NONE' and context.mode != self.mode:
@@ -163,16 +174,57 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
                 bpy.ops.wm.tool_set_by_id(name=self.tool)
                 # self.report({'INFO'}, f'Tool {self.tool}')
             except:
-                self.report({'ERROR'}, f'Cannot set tool {self.tool}, need identifier (ex: "builtin_brush.Draw")')
+                self.report({'ERROR'}, f'Cannot set tool {self.tool}, need identifier (ex: "builtin.brush")')
                 return {"CANCELLED"}
         
         if self.brush:
-                br = bpy.data.brushes.get(self.brush)
+            ## self.brush is brush name as str here
+            br = bpy.data.brushes.get(self.brush)
+
+            if not br:
+                ## Try to load brush
+                ## First search in brush from essential lib (Problem ! when used this way it does not)
+                
+                essential_brush_lib = Path(bpy.utils.resource_path('LOCAL')) / 'datafiles' / 'assets' / 'brushes' / 'essentials_brushes-gp_draw.blend'
+                ## /!\ Loading directly duplicate the brush if then used from asset shelf ! (Using operator)
+                # br = self.get_brush_from_blend(self.brush, essential_brush_lib)
+                # if br:
+                #     print('Essential brush found')
+
+                ## Load using "asset_activate" operator
+                with bpy.data.libraries.load(str(essential_brush_lib), assets_only=True, link=False) as (data_from, data_to):
+                    if self.brush in data_from.brushes:
+                        ## Just True to know tha brush exists in essential pack, activate and skip next search
+                        br = True
+                if br:
+                    bpy.ops.brush.asset_activate(asset_library_type='ESSENTIALS', 
+                    asset_library_identifier="", 
+                    relative_asset_identifier=f"brushes/essentials_brushes-gp_draw.blend/Brush/{self.brush}")
+
+            if not br:
+                ## Search in user libs
+                asset_libs = bpy.context.preferences.filepaths.asset_libraries
+                for asset_library in asset_libs:
+                    library_path = Path(asset_library.path)
+                    blend_files = [fp for fp in library_path.glob("**/*.blend") if fp.is_file()]
+                    print('blend_files: ', blend_files)
+                    for blend_file in blend_files:
+                        br = self.get_brush_from_blend(self.brush, blend_file)
+                        if br:
+                            print('Found brush in ', blend_file)
+                            break
+                    if br:
+                        break
+            
+            if not isinstance(br, bool):
                 if br:
                     context.scene.tool_settings.gpencil_paint.brush = br
                 else:
                     self.report({'WARNING'}, f'Could not find brush named {self.brush}')
                     # return {"CANCELLED"}
+
+                    ## Using name, can directly try to load brush from essential library ?
+                    # bpy.data.libraries['es`sentials_brushes-gp_draw.blend'].users_id[0]
 
         if self.layer:
             fn.set_layer_by_name(ob, self.layer)
@@ -203,9 +255,9 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
         #     bpy.ops.object.mode_set(mode='PAINT_GREASE_PENCIL')
         
         presets = {
-            1: {'tool': 'builtin_brush.Draw', 'layer':'Sketch', 'mat': 'line'},
+            1: {'tool': 'builtin.brush', 'layer':'Sketch', 'mat': 'line'},
             2: {'tool': 'builtin_brush.Fill', 'layer':'Color', 'mat': 'fill_white'},
-            3: {'tool': 'builtin_brush.Draw', 'layer':'Color', 'mat': 'fill_white'},
+            3: {'tool': 'builtin.brush', 'layer':'Color', 'mat': 'fill_white'},
             4: {'tool': 'builtin_brush.Erase'},
         }
 
@@ -245,7 +297,7 @@ def register_keymap():
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='ONE', value='PRESS')
     kmi.properties.name = 'Sketch Draw'
     kmi.properties.mode = 'PAINT_GREASE_PENCIL'
-    kmi.properties.tool = 'builtin_brush.Draw'
+    kmi.properties.tool = 'builtin.brush'
     kmi.properties.brush = 'Pencil'
     kmi.properties.layer = 'Sketch'
     # kmi.properties.material = '' # line
@@ -257,7 +309,7 @@ def register_keymap():
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='TWO', value='PRESS')
     kmi.properties.name = 'Line Draw'
     kmi.properties.mode = 'PAINT_GREASE_PENCIL'
-    kmi.properties.tool = 'builtin_brush.Draw'
+    kmi.properties.tool = 'builtin.brush'
     kmi.properties.brush = 'Ink Pen'
     kmi.properties.layer = 'Line'
     kmi.properties.icon = 'LINE_DATA'
@@ -278,7 +330,7 @@ def register_keymap():
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='FOUR', value='PRESS')
     kmi.properties.name = 'Fill Draw'
     kmi.properties.mode = 'PAINT_GREASE_PENCIL'
-    kmi.properties.tool = 'builtin_brush.Draw'
+    kmi.properties.tool = 'builtin.brush'
     kmi.properties.layer = 'Color'
     kmi.properties.icon = 'NODE_MATERIAL'
     # kmi.properties.description = 'Set draw tool "Color" layer'
@@ -308,7 +360,7 @@ def register_keymap():
 
     # kmi = km.keymap_items.new('storytools.set_draw_tool', type='SEVEN', value='PRESS')
     # kmi.properties.name = 'Notes'
-    # kmi.properties.tool = 'builtin_brush.Draw'
+    # kmi.properties.tool = 'builtin.brush'
     # kmi.properties.layer = 'Line'
     # kmi.properties.material = 'line_red' # Sync override material
     # addon_keymaps.append((km, kmi))

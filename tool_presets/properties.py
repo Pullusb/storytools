@@ -61,7 +61,7 @@ class STORYTOOLS_PGT_tool_preset(PropertyGroup):
 
     tool : StringProperty(
         name="Tool", description="Tool to set",
-        default="builtin_brush.Draw")
+        default="builtin.brush")
     
     layer : StringProperty(
         name="Layer", description="Layer to set (exact name, case sensitive)\
@@ -104,7 +104,7 @@ class STORYTOOLS_PGT_km_preset(PropertyGroup):
 
     tool : StringProperty(
         name="Tool", description="Tool to set",
-        default="builtin_brush.Draw")
+        default="builtin.brush")
     
     layer : StringProperty(
         name="Layer", description="Layer to set (exact name, case sensitive)\

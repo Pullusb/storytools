@@ -657,7 +657,7 @@ class STORYTOOLS_OT_add_tool_preset_shortcut(bpy.types.Operator):
         ## Set default values 
         kmi.properties.name = name
         kmi.properties.mode = 'PAINT_GREASE_PENCIL'
-        kmi.properties.tool = 'builtin_brush.Draw'
+        kmi.properties.tool = 'builtin.brush'
         return {'FINISHED'}
 
 

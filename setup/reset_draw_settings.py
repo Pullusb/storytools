@@ -107,7 +107,7 @@ class STORYTOOLS_OT_setup_drawing(bpy.types.Operator):
         
         ## Set Draw tool
         # if context.mode == "PAINT_GREASE_PENCIL":
-        #     tool = 'builtin_brush.Draw'
+        #     tool = 'builtin.brush'
         #     if bpy.context.workspace.tools.from_space_view3d_mode(bpy.context.mode, create=False).idname != tool:
         #         # print('Set lasso tool')
         #         bpy.ops.wm.tool_set_by_id(name=tool)
