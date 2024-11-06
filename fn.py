@@ -457,11 +457,8 @@ def set_material_by_name(ob, mat_name) -> None:
 def set_layer_by_name(ob, name):
     if name is None or name == '':
         return
-    for i, layer in enumerate(ob.data.layers):
-        if layer.name == name:
-            # print(f':{i}:', m.name, ob.active_material_index)
-            ob.data.layers.active_index = i
-            return
+    if target_layer := ob.data.layers.get(name):
+        ob.data.layers.active = target_layer
 
 ## ---
 ## Brushes
