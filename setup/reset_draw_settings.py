@@ -73,10 +73,10 @@ class STORYTOOLS_OT_setup_drawing(bpy.types.Operator):
             # context.area.regions.update()
             # context.screen.update_tag()
             if sidebar := next((r for r in context.area.regions if r.type == 'UI'), None):
-                # sidebar.tag_redraw()
                 try:
-                    # for now, just by pass the error, a second call works...
+                    # For now, just by pass the error, a second call works...
                     sidebar.active_panel_category = tab
+                    sidebar.tag_redraw()
                 except AttributeError:
                     pass
 

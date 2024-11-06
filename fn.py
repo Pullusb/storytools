@@ -435,7 +435,14 @@ def set_material_association(ob, layer, mat_name):
     # create custom prop at object level
     ob[LAYERMAT_PREFIX + layer.name] = mat_name
 
-def set_material_by_name(ob, mat_name):
+def set_material_by_name(ob, mat_name) -> None:
+    """
+    Sets the active material of an object by its name.
+    Parameters:
+    ob (Object): The object whose material is to be set.
+    mat_name (str): The name of the material to set as active. If None or an empty string, the function returns without making any changes.
+    """
+
     if mat_name is None or mat_name == '':
         return
     for i, ms in enumerate(ob.material_slots):

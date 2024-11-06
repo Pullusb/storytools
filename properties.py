@@ -115,7 +115,7 @@ class STORYTOOLS_PGT_gp_settings(PropertyGroup):
 
     sync_mode : EnumProperty(
         name='GP Settings Sync',
-        description="Control how scene storytools GP settings interact with global preferences and other scenes",
+        description="Control how above GP settings interact in current scene with global preferences and other scenes",
         items=(
             ('SYNC_GLOBAL', "Sync Preferences & Scenes", "Settings are restored from global preference when opening files and synchronized across scenes"),
             ('SYNC_SCENES', "Sync Only Between Scenes", "Synchronize settings with other scenes when changed, but ignore global preferences"),

@@ -6,8 +6,8 @@ from .fn import get_addon_prefs, set_material_by_name
 def layer_change_callback():
     # print('Layer has changed!')
 
-    ## Disable Sync when sidebar is not visible
-    ## TODO: add the settings also in material settings panel to keep sync when panel is disabled
+    ## Disable Sync when sidebar is not visible ?
+    ## TODO: Add the settings also in material settings panel to keep sync when panel is disabled
     if not get_addon_prefs().show_sidebar_ui:
         return
 
@@ -21,8 +21,8 @@ def layer_change_callback():
     if mode == 'DISABLED':
         return
     
-    # mode = 'INDIVIDUAL'
-    
+    ## FIXME store the material name in the layer custom property now that it's possible ?
+    ## Maybe it's better to keep at object level to avoid sync issue using global mode..
     if mode == 'INDIVIDUAL':
         ## using custom prop
         # if not hasattr(ob.data.layers.active, 'material'):
@@ -39,12 +39,12 @@ def layer_change_callback():
         set_material_by_name(ob, scn.gp_mat_by_layer.get(ob.data.layers.active.name))
 
 def subscribe_layer():
-    subscribe_to = (bpy.types.GreasePencilLayers, "active_index")
+    subscribe_to = (bpy.types.GreasePencilv3Layers, "active")
     bpy.msgbus.subscribe_rna(
         key=subscribe_to,
         # owner of msgbus subcribe (for clearing later)
         # owner=handle,
-        owner=bpy.types.GreasePencil, # <-- can attach to an ID during all it's lifetime...
+        owner=bpy.types.GreasePencilv3, # <-- can attach to an ID during all it's lifetime...
         # Args passed to callback function (tuple)
         args=(),
         # Callback function for property update
