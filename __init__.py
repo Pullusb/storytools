@@ -5,7 +5,7 @@ bl_info = {
     "description": "Set of tools for Storyboarding",
     "author": "Samuel Bernou",
     "version": (1, 92, 0),
-    "blender": (4, 0, 0),
+    "blender": (4, 3, 0),
     "location": "View3D",
     "warning": "",
     "doc_url": "https://github.com/Pullusb/storytools",
