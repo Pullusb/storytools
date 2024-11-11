@@ -230,9 +230,13 @@ def draw_map_callback_2d():
         shader_uniform.uniform_float("color", (0.5, 0.5, 1.0, 0.5))
         cam_lines.draw(shader_uniform)
 
+    ## return here to skip viewport frustum display
     return
-    # FIXME: refresh view trace
+    # FIXME: Works by setting a property in loop. need a proper method to refresh view trace
+    gpu.state.line_width_set(1.0)
+
     ## Iterate over non-minimap viewports
+
     # current_region = next((region for region in context.area.regions if region.type == 'WINDOW'), None)
     current_rv3d = context.space_data.region_3d
     
@@ -295,7 +299,16 @@ def draw_map_callback_2d():
                 # current_rv3d.update()
 
                 hue_offset += 0.25
-    
+
+                ## Dirty : Change a property to force refresh current minimap window
+                # rv3d.view_perspective = rv3d.view_perspective
+
+
+    ## Dirty refresh method: Change a property to force refresh windows...
+    # current_rv3d.view_perspective = current_rv3d.view_perspective
+
+    ## /!\ Following refresh tests are not working:
+    '''
     ## Redraw minimap areas
     # for a, r in minimap_areas:
     #     a.tag_redraw()
@@ -306,8 +319,9 @@ def draw_map_callback_2d():
 
     # current_rv3d.update()
     # context.area.tag_redraw()
-    ## 
-    # context.scene.cursor.location = context.scene.cursor.location # UGLY TEST to make it work
+    '''
+
+
 
 
 def circle_3d(x, y, radius, segments):
