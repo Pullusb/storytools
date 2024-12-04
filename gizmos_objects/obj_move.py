@@ -432,11 +432,14 @@ class STORYTOOLS_OT_object_rotate(Operator):
     @classmethod
     def description(self, context, properties):
         if properties.camera:
+            if context.region_data and context.region_data.view_perspective != 'CAMERA':
+                return "Rotate View (Roll)\
+                    \nReset rotation on single click (If Grease pencil tools addon is active)"
+
             return "Rotate Camera\
                     \n+ Ctrl : Snap on 15 degrees angles\
                     \n+ Shift : Precision mode\
-                    \nSingle click : Reset rotation\
-                    \nRotate View when out of camera"
+                    \nSingle click : Reset rotation"
 
         return "Rotate active object on camera axis\
                     \n+ Ctrl : Snap on 15 degrees angles\
