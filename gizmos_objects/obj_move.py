@@ -435,7 +435,8 @@ class STORYTOOLS_OT_object_rotate(Operator):
             return "Rotate Camera\
                     \n+ Ctrl : Snap on 15 degrees angles\
                     \n+ Shift : Precision mode\
-                    \nDouble click : reset rotation"
+                    \nSingle click : Reset rotation\
+                    \nRotate View when out of camera"
 
         return "Rotate active object on camera axis\
                     \n+ Ctrl : Snap on 15 degrees angles\
@@ -465,11 +466,18 @@ class STORYTOOLS_OT_object_rotate(Operator):
 
     def invoke(self, context, event):
         if self.camera:
-            ## Need a custom implementation
-            # if context.region_data.view_perspective != 'CAMERA':
-            #     # bpy.ops.view3d.rotate_canvas('INVOKE_DEFAULT')
-            #     bpy.ops.view3d.view_roll('INVOKE_DEFAULT')
-            #     return {"FINISHED"}
+            if context.region_data.view_perspective != 'CAMERA':
+                ## When out of camera - more usefull to rotate free view
+                if hasattr(bpy.types, 'VIEW3D_OT_rotate_canvas'):
+                    ## If "Grease pencil tools" addon is activated, use rotate canvas (allow reset rotation on click)
+                    bpy.ops.view3d.rotate_canvas('INVOKE_DEFAULT')
+                else:
+                    ## use Native view roll
+                    bpy.ops.view3d.view_roll('INVOKE_DEFAULT')
+                ## Cancel to avoid showing redo panel
+                return {"CANCELLED"}
+            
+            ## In camera view, rotate camera (implicitly on view axis)
             self.ob = context.scene.camera
         else:
             self.ob = context.object
@@ -499,14 +507,9 @@ class STORYTOOLS_OT_object_rotate(Operator):
         self.snap_step = radians(15)
         self.init_mouse_x = event.mouse_x
         
-        ## Check previous time to detect double click
+        ## Init time to detect if should reset or not
         # if event.alt: # Alt not accessible
-
-        if self.camera and (last_rotate_call_time := context.window_manager.get('last_rotate_call_time')):
-            if time() - last_rotate_call_time < 0.25:
-                self.reset_rotation(context)
-                fn.key_object(self.ob, use_autokey=True)
-                return {'FINISHED'}
+        self.start_time = time()
 
         ## Optional handler to show origin and ghost
         args = (self, context) # Dcb
@@ -516,8 +519,9 @@ class STORYTOOLS_OT_object_rotate(Operator):
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
-    # def draw(self, context):
-    #     return
+    def draw(self, context):
+        # self.layout.label(text='Rotated')
+        return
 
     def update_rotation(self, context, event):
         ## Adjust rotation speed according to precision mode
@@ -559,11 +563,17 @@ class STORYTOOLS_OT_object_rotate(Operator):
         if event.type == 'LEFTMOUSE':
             fn.key_object(self.ob, use_autokey=True)
             if self.camera:
-                context.window_manager['last_rotate_call_time'] = time()
-                if self.init_mat == self.ob.matrix_world:
-                    ## Avoid undo stack push if there was on moves
-                    self.exit_modal(context)
-                    return {'CANCELLED'}
+                if context.region_data.view_perspective == 'CAMERA':
+                    ## in camera, reset rotation and key if necessary
+                    ## release in less than 0.25 second and moved less than 5px : reset cam rotation
+                    if time() - self.start_time < 0.25 and abs(self.init_mouse_x - event.mouse_x) < 5:
+                        self.reset_rotation(context)
+                        fn.key_object(self.ob, use_autokey=True)
+                    
+                    if self.init_mat == self.ob.matrix_world:
+                        ## Avoid undo stack push if there was no moves
+                        self.exit_modal(context)
+                        return {'CANCELLED'}
             self.exit_modal(context)
 
             return {'FINISHED'}
