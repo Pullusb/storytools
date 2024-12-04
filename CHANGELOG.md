@@ -2,6 +2,14 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.21.0
+
+- changed: in camera `Rotate gizmo` button reset rotation on single click (Previously double click)
+- changed: when out of camera `Rotate gizmo` button now affect free view (view roll)
+  - note: if `Grease pencil tools` addon (on extension platform) is active, use it's custom `rotate canvas` feature (allow to reset free view rotation on single click + fixed angle rotation on `shift`)
+
+--- GPv2 split -- at this point upper change are not on main branch (GPv3), most are backport from the main branch
+
 1.20.0
 
 - added: Preferences for GP settings behavior.
