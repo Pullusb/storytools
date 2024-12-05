@@ -214,10 +214,12 @@ def empty_at(pos, name='Empty', type='PLAIN_AXES', size=1.0, link=True):
     link (Bool,default True): Link to active collection
     i.e : empty_at((0,0,1), 'ARROWS', 2) creates "Empty" at Z+1, of type gyzmo and size 2
     '''
-
-    mire = bpy.data.objects.new(name, None)
-    if link:
-        bpy.context.collection.objects.link(mire)
+    
+    mire = bpy.data.objects.get(name)
+    if not mire:
+        mire = bpy.data.objects.new(name, None)
+        if link:
+            bpy.context.collection.objects.link(mire)
     mire.empty_display_type = type
     mire.empty_display_size = size
     mire.location = pos

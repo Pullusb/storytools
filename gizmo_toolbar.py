@@ -163,7 +163,7 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         
         self.interact_gizmos = []
         
-        # ## Lock view
+        # ## Lock view (moved to camera category)
         # self.gz_lock_view = self.gizmos.new("GIZMO_GT_button_2d")
         # fn.set_gizmo_settings(self.gz_lock_view, 'LOCKVIEW_ON')
         # self.gz_lock_view.target_set_operator("storytools.lock_view")
@@ -174,6 +174,12 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         # fn.set_gizmo_settings(self.gz_autokey, 'RECORD_OFF')
         # self.gz_autokey.target_set_operator("storytools.autokey_switch")
         # self.interact_gizmos.append(self.gz_autokey)
+
+        ## Cursor Snapping
+        # self.gz_cursor_snap = self.gizmos.new("GIZMO_GT_button_2d")
+        # fn.set_gizmo_settings(self.gz_cursor_snap, 'CURSOR')
+        # self.gz_cursor_snap.target_set_operator("storytools.snap_3d_cursor")
+        # self.interact_gizmos.append(self.gz_cursor_snap)
 
         ## Draw
         self.gz_draw = self.gizmos.new("GIZMO_GT_button_2d")

@@ -1,7 +1,6 @@
 import bpy
 
 from bpy.types import Operator
-from .. import fn
 
 class STORYTOOLS_OT_autokey_switch(Operator):
     bl_idname = "storytools.autokey_switch"
