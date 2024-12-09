@@ -33,7 +33,7 @@ class STORYTOOLS_GGT_toolpreset_bar(GizmoGroup):
 
         ## Object Pan
         user_keymaps = bpy.context.window_manager.keyconfigs.user.keymaps
-        # km = user_keymaps['Grease Pencil Stroke Paint Mode']
+        # km = user_keymaps['Grease Pencil Paint Mode']
 
         ## Only display addon keymap :
         # from .keymaps import addon_keymaps

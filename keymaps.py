@@ -281,7 +281,7 @@ addon_keymaps = []
 
 def register_keymap():
     addon = bpy.context.window_manager.keyconfigs.addon
-    km = addon.keymaps.new(name = "Grease Pencil Paint Mode", space_type = "EMPTY")
+    km = addon.keymaps.new(name="Grease Pencil Paint Mode", space_type="EMPTY")
 
     '''
     ## Hardcoded
