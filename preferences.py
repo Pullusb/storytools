@@ -13,7 +13,8 @@ from bpy.props import (FloatProperty,
 
 from bpy.app.handlers import persistent
 
-from .fn import get_addon_prefs, open_addon_prefs, draw_kmi_custom, refresh_areas
+from .fn import get_addon_prefs, open_addon_prefs, draw_kmi_custom, get_tool_presets_keymap
+# from rna_keymap_ui import draw_km, draw_kmi
 from .properties import STORYTOOLS_PGT_gp_settings # gp local settings
 # from .tool_presets.properties import STORYTOOLS_PG_tool_presets
 
@@ -502,26 +503,29 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
                 col.prop(self.gp, prop_name)
 
         elif self.pref_tab == 'TOOLPRESETS':
-
-            user_keymaps = bpy.context.window_manager.keyconfigs.user.keymaps
-            ## Note: list only in 'Grease Pencil Paint Mode' as other modes are not supported yet
-            km = user_keymaps.get('Grease Pencil Paint Mode')
-
-            ## search only based on addon keymaps
-            # from . keymaps import addon_keymaps
-            # # user_kms = []
-            # for akm in set([kms[0] for kms in addon_keymaps]):
-            #     km = user_keymaps.get(akm.name)
-            #     if not km:
-            #         continue
-            ## Search on all keymaps
             
-            ## TODO: list and reoder based on order (or use dynamic UI list)
-
+            
+            """ # Direct draw
+            kc = bpy.context.window_manager.keyconfigs.user
+            user_keymaps = kc.keymaps
+            km = user_keymaps.get('Grease Pencil Paint Mode') # limit to paint mode
             for kmi in reversed(km.keymap_items):
                 if kmi.idname == 'storytools.set_draw_tool':
+                    ## native kmi draw not needed, using custom
+                    # if kmi.is_user_defined:
+                    #     # col.template_keymap_item_properties(kmi)
+                    #     # draw_kmi(kc, kc.keymaps, km, kmi, col, 0) # native template do not allow removal
+                    #     # continue
                     draw_kmi_custom(km, kmi, col)
                     # user_kms.append((km, kmi))
+
+            # for km, kmi in sorted(user_kms, key=lambda x: x[1].type):
+            #     draw_kmi_custom(km, kmi, col)
+            """
+
+            col.label(text='First number is for ordering (order based on shortcut when 0)', icon='INFO')
+            for km, kmi in get_tool_presets_keymap():
+                draw_kmi_custom(km, kmi, col)
 
             col.separator()
             row = col.row()
@@ -534,8 +538,6 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             bcol.label(text='After any "Tool Presets" is added or changed', icon='INFO')
             bcol.label(text='a click on "Reload UI Presets" button above is needed', icon='BLANK1')
             bcol.label(text='for the modification to take effect in viewport buttons', icon='BLANK1')
-            # for km, kmi in sorted(user_kms, key=lambda x: x[1].type):
-            #     draw_kmi_custom(km, kmi, col)
         
         elif self.pref_tab == 'RESETLIST':
             box = col.box()
@@ -634,19 +636,51 @@ class STORYTOOLS_OT_restore_keymap_item(bpy.types.Operator):
         #     self.report({'ERROR'}, f'No key item {self.kmi_name} found')
         #     return {"CANCELLED"}
         km.restore_item_to_default(kmi)
+        ## prefs have changed, set dirty flag
+        context.preferences.is_dirty = True
+        return {"FINISHED"}
 
+class STORYTOOLS_OT_remove_keymap_item(bpy.types.Operator):
+    bl_idname = "storytools.remove_keymap_item"
+    bl_label = "Remove keymap item"
+    bl_description = "Remove keymap item"
+    bl_options = {"REGISTER", "INTERNAL"}
+
+    @classmethod
+    def poll(cls, context):
+        return True
+    
+    km_name : StringProperty()
+    # kmi_name : StringProperty()
+    kmi_id : IntProperty()
+
+    def execute(self, context):
+        km = bpy.context.window_manager.keyconfigs.user.keymaps.get(self.km_name)
+        if not km:
+            self.report({'ERROR'}, f'No keymap {self.km_name} found')
+            return {"CANCELLED"}
+        
+        kmi = next((i for i in km.keymap_items if i.id == self.kmi_id), None)
+        if not kmi:
+            self.report({'ERROR'}, f'Keymap item not found')
+            return {"CANCELLED"}
+        
+        # kmi = km.keymap_items.from_id(self.item_id)
+        km.keymap_items.remove(kmi)
+        context.preferences.is_dirty = True
         return {"FINISHED"}
 
 class STORYTOOLS_OT_add_tool_preset_shortcut(bpy.types.Operator):
     bl_idname = "storytools.add_tool_preset_shortcut"
     bl_label = "Add Tool Preset Shortcut"
-    bl_description = "Add a tool preset shortcut\
+    bl_description = "Add a tool preset shortcut in user keymap\
         \nAdd new keymap entry: Grease pencil > Grease Pencil Paint Mode\
-        \nWith opertor id storytools.set_draw_tool and default value"
+        \nWith operator idname 'storytools.set_draw_tool' and default value"
     bl_options = {"REGISTER", "INTERNAL"}
 
     def execute(self, context):
-        user_km = bpy.context.window_manager.keyconfigs.addon
+        ## Add keymap entry to USER keymap (not ADDON), treated differently in preference display 
+        user_km = bpy.context.window_manager.keyconfigs.user
         # km = user_km.keymaps.get('Grease Pencil Paint Mode') 
         km = user_km.keymaps.new(name="Grease Pencil Paint Mode", space_type="EMPTY")
         # km.keymap_items
@@ -705,6 +739,7 @@ classes = (
     STORYTOOLS_prefs,
     STORYTOOLS_OT_open_addon_prefs,
     STORYTOOLS_OT_restore_keymap_item,
+    STORYTOOLS_OT_remove_keymap_item,
     STORYTOOLS_OT_reload_toolpreset_ui,
     STORYTOOLS_OT_add_tool_preset_shortcut,
 )

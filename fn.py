@@ -15,6 +15,36 @@ from mathutils import Matrix, Vector, geometry, Quaternion
 from .constants import LAYERMAT_PREFIX
 
 
+### -- mapping --
+## Mapping of keymap items to their id
+KEYNUM_MAP = {
+    # Top row numbers
+    "ONE": "1",
+    "TWO": "2",
+    "THREE": "3",
+    "FOUR": "4",
+    "FIVE": "5",
+    "SIX": "6",
+    "SEVEN": "7",
+    "EIGHT": "8",
+    "NINE": "9",
+    "ZERO": "0",
+    
+    # Numpad numbers
+    "NUMPAD_1": "1",
+    "NUMPAD_2": "2",
+    "NUMPAD_3": "3",
+    "NUMPAD_4": "4",
+    "NUMPAD_5": "5",
+    "NUMPAD_6": "6",
+    "NUMPAD_7": "7",
+    "NUMPAD_8": "8",
+    "NUMPAD_9": "9",
+    "NUMPAD_0": "0"
+}
+
+### -- prefs --
+
 def get_addon_prefs():
     return bpy.context.preferences.addons[__package__].preferences
 
@@ -36,7 +66,7 @@ def snap_to_step(value, step):
     # return (value//step)*step # Also valid
     return round(value / step) * step
 
-## Vector
+### -- Vector --
 
 def location_to_region(worldcoords) -> Vector:
     '''return 2d location'''
@@ -202,7 +232,7 @@ def get_view_orientation_from_matrix(view_matrix):
 
     return orientation_dict.get(tuple(map(r, view_rot)), 'UNDEFINED')
 
-## Object
+### -- Object --
 
 def empty_at(pos, name='Empty', type='PLAIN_AXES', size=1.0, link=True):
     '''
@@ -225,7 +255,7 @@ def empty_at(pos, name='Empty', type='PLAIN_AXES', size=1.0, link=True):
     mire.location = pos
     return mire
 
-## GP
+### -- GP --
 
 def get_gp_draw_plane(context):
     ''' return tuple with plane coordinate and normal
@@ -381,7 +411,7 @@ def reset_gp_toolsettings():
     context.tool_settings.gpencil_sculpt.guide.use_guide = False
 
 
-## -- Palette --
+### -- Palette --
 
 def load_palette(filepath, ob=None):
     with open(filepath, 'r') as fd:
@@ -480,8 +510,7 @@ def create_brush(name, context=None):
 
     # context.scene.tool_settings.gpencil_paint.brush = brush
 
-## ---
-## Animation
+### -- Animation --
 
 def key_object(ob, loc=True, rot=True, scale=True, use_autokey=False, mode=None, options=set(), context=None):
     '''Keyframe object location, rotation, scale 
@@ -552,7 +581,7 @@ def key_object(ob, loc=True, rot=True, scale=True, use_autokey=False, mode=None,
     return
 
 
-## UI
+### -- UI --
 
 def refresh_areas():
     for area in bpy.context.screen.areas:
@@ -704,7 +733,34 @@ def update_ui_prop_index(context):
     if gp_index is not None:
         scn.gp_object_props['index'] = gp_index
 
-## keymap UI
+### -- keymap UI --
+
+def get_tool_presets_keymap():
+    '''Return ordered list of tool_presets operator keymap
+    list of tuple (keymap, keymap_item)'''
+    kc = bpy.context.window_manager.keyconfigs.user
+    user_keymaps = kc.keymaps
+    
+    ## limit to  paint mode kms ? (List only in 'Grease Pencil Paint Mode' as other modes are not supported yet ?)
+    # km = user_keymaps.get('Grease Pencil Paint Mode')
+    # tool_preset_kmis = [(km, kmi) for kmi in km.keymap_items if kmi.idname == 'storytools.set_draw_tool']
+    
+    ## On the whole keymap
+    tool_preset_kmis = [(km, kmi) for km in user_keymaps for kmi in km.keymap_items if kmi.idname == 'storytools.set_draw_tool']
+    
+    ## Sort depending on order prop (when order is specified, put first)
+    ordered_kmis = [k for k in tool_preset_kmis if k[1].properties.order != 0]
+    undordered_kmis = [k for k in tool_preset_kmis if k[1].properties.order == 0]
+
+    ordered_kmis.sort(key=lambda x: x[1].properties.order)
+    
+    ## Sort unordered (number, then letters)
+    ## Note: Can't order "ONE" "TWO" etc, So map them to "1", "2", etc
+    undordered_kmis.sort(key=lambda x: KEYNUM_MAP.get(x[1].type, x[1].type))
+
+    tool_preset_kmis = ordered_kmis + undordered_kmis
+    return tool_preset_kmis
+
 
 def _indented_layout(layout, level):
     indentpx = 16
@@ -718,6 +774,7 @@ def _indented_layout(layout, level):
     return col
 
 def draw_kmi_custom(km, kmi, layout):
+    ## modified from rna_keymap_ui import draw_km, draw_kmi
     col = _indented_layout(layout, 0)
     # col = layout.column()
     if kmi.show_expanded:
@@ -729,6 +786,13 @@ def draw_kmi_custom(km, kmi, layout):
     split = box.split()
 
     row = split.row(align=True)
+
+    ## / Specific to Storytools keymap show order prop
+    if hasattr(kmi.properties, "order"):
+        subrow = row.row(align=True)
+        subrow.prop(kmi.properties, "order", text="")
+        subrow.scale_x = 0.2
+    ## end keymap order /
     row.prop(kmi, "show_expanded", text="", emboss=False)
     row.prop(kmi, "active", text="", emboss=False)
 
@@ -768,14 +832,34 @@ def draw_kmi_custom(km, kmi, layout):
     # row.label(text='+ Click')
 
     if (not kmi.is_user_defined) and kmi.is_user_modified:
+        ## Not defined by user and has been modified : allow revert to initial state
+        
+        ## User 
+        ## Native keyitem_restore is not accessible in addon prefs
+        # row.operator('preferences.keyitem_restore', text="", icon='BACK').item_id = kmi.id
+
         ops = row.operator("storytools.restore_keymap_item", text="", icon='BACK') # modified
         ops.km_name = km.name
         ops.kmi_id = kmi.id
-        # ops.kmi_name = kmi.idname
 
-        ## keyitem_restore is not accessible in addon prefs
-        # row.operator('preferences.keyitem_restore', text="", icon='BACK').item_id = kmi.id
+    elif kmi.is_user_defined:
+        ## Defined by user : allow removal
+        
+        ## Native remove operator do not allow to remove when diplayed out of keymap window
+        # row.operator(
+        #     "preferences.keyitem_remove",
+        #     text="",
+        #     # Abusing the tracking icon, but it works pretty well here.
+        #     icon=('TRACKING_CLEAR_BACKWARDS' if kmi.is_user_defined else 'X')
+        # ).item_id = kmi.id
+
+        ## Use a custom one
+        ops = row.operator("storytools.remove_keymap_item", text="", icon='X') # modified
+        ops.km_name = km.name
+        ops.kmi_id = kmi.id
+
     else:
+        # Not defined by user and not modified : no action (do not expose remove on addon listing it's own keymaps)
         row.label(text='', icon='BLANK1')
 
     # Expanded, additional event settings
@@ -834,7 +918,7 @@ def draw_kmi_custom(km, kmi, layout):
         box.template_keymap_item_properties(kmi)
 
 
-## Property dump
+### -- Property dump --
 
 def convert_attr(Attr):
     '''Convert given value to a Json serializable format'''
@@ -1065,8 +1149,6 @@ def get_version_name():
                                                 # includes=[],
                                                 excludes=excl)
 """
-
-
 
 ## -- Fit view with sidebars (Unused yet)
 

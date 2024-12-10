@@ -81,7 +81,7 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
                             description='For internal use only',
                             options={'SKIP_SAVE', 'HIDDEN'})
 
-    order : IntProperty(default=0)
+    order : IntProperty(default=0, step=1)
 
     @classmethod
     def description(cls, context, properties) -> str:
@@ -303,6 +303,7 @@ def register_keymap():
     # kmi.properties.material = '' # line
     # kmi.properties.icon = 'GPBRUSH_PEN'
     kmi.properties.icon = 'GREASEPENCIL'
+    kmi.properties.order = 10
     # kmi.properties.description = 'Set Pencil brush on "Sketch" layer'
     addon_keymaps.append((km, kmi))
 
@@ -313,6 +314,7 @@ def register_keymap():
     kmi.properties.brush = 'Ink Pen'
     kmi.properties.layer = 'Line'
     kmi.properties.icon = 'LINE_DATA'
+    kmi.properties.order = 20
     # kmi.properties.description = 'Set Ink Brush on "Line" layer'
     # kmi.properties.material = '' # line
     addon_keymaps.append((km, kmi))
@@ -324,6 +326,7 @@ def register_keymap():
     kmi.properties.layer = 'Color'
     # kmi.properties.material = '' # fill_white
     kmi.properties.icon = 'SHADING_SOLID'
+    kmi.properties.order = 30
     # kmi.properties.description = 'Set Fill tool on "Color" layer'
     addon_keymaps.append((km, kmi))
     
@@ -333,6 +336,7 @@ def register_keymap():
     kmi.properties.tool = 'builtin.brush'
     kmi.properties.layer = 'Color'
     kmi.properties.icon = 'NODE_MATERIAL'
+    kmi.properties.order = 40
     # kmi.properties.description = 'Set draw tool "Color" layer'
     # kmi.properties.material = '' # fill_white
     addon_keymaps.append((km, kmi))
@@ -343,6 +347,7 @@ def register_keymap():
     kmi.properties.tool = 'builtin_brush.Erase'
     kmi.properties.brush = 'Eraser Point'
     kmi.properties.icon = 'CLIPUV_DEHLT'
+    kmi.properties.order = 50
     # kmi.properties.description = 'Set Point Eraser'
     addon_keymaps.append((km, kmi))
     
@@ -352,6 +357,7 @@ def register_keymap():
     kmi.properties.tool = 'builtin_brush.Erase'
     kmi.properties.brush = 'Eraser Stroke'
     kmi.properties.icon = 'CON_TRACKTO'
+    kmi.properties.order = 60
     # kmi.properties.description = 'Set Stroke Eraser'
     addon_keymaps.append((km, kmi))
 
@@ -363,6 +369,8 @@ def register_keymap():
     # kmi.properties.tool = 'builtin.brush'
     # kmi.properties.layer = 'Line'
     # kmi.properties.material = 'line_red' # Sync override material
+    # kmi.properties.order = 70
+    # kmi.properties.icon = 'SYNTAX_ON'
     # addon_keymaps.append((km, kmi))
 
 def unregister_keymap():

@@ -45,32 +45,35 @@ class STORYTOOLS_GGT_toolpreset_bar(GizmoGroup):
         ## List available icons to use fallback
         # available_icons = [i.identifier for i in bpy.types.UILayout.bl_rna.functions['prop'].parameters['icon'].enum_items]
 
-        ## TODO: reorder keymap item from "properties.order"
         ## List all set_draw_tools keymap
-        for km in user_keymaps:
-            for kmi in reversed(km.keymap_items):
-                if kmi.idname == 'storytools.set_draw_tool':
-                    props = kmi.properties
-                    if not kmi.active or not props.show:
-                        continue
-                    gz = self.gizmos.new("GIZMO_GT_button_2d")
-                    
-                    # fallback_icon = 'GPBRUSH_PEN' if bpy.app.version < (4,3,0) else 'GREASEPENCIL'
-                    # icon = props.icon if props.icon in available_icons else fallback_icon
-                    # fn.set_gizmo_settings(gz, icon=icon, alpha=0, alpha_highlight=0.2)
+        toolpreset_kmis = fn.get_tool_presets_keymap()
 
-                    fn.set_gizmo_settings(gz, icon=props.icon, alpha=0, alpha_highlight=0.2)
-                    
-                    op = gz.target_set_operator("storytools.set_draw_tool")
-                    op.name = props.name
-                    # op.mode = props.mode # Default Keymap currently limited to Paint mode
-                    op.tool = props.tool
-                    op.layer = props.layer
-                    op.material = props.material
-                    op.brush = props.brush
-                    op.description = props.description
-                    op.shortcut = kmi.to_string() # Shortcut text for description
-                    self.tool_preset_gizmos.append(gz)
+        # for km in user_keymaps:
+        #     for kmi in reversed(km.keymap_items):
+        #         if kmi.idname == 'storytools.set_draw_tool':
+
+        for _km, kmi in toolpreset_kmis:
+            props = kmi.properties
+            if not kmi.active or not props.show:
+                continue
+            gz = self.gizmos.new("GIZMO_GT_button_2d")
+
+            # fallback_icon = 'GPBRUSH_PEN' if bpy.app.version < (4,3,0) else 'GREASEPENCIL'
+            # icon = props.icon if props.icon in available_icons else fallback_icon
+            # fn.set_gizmo_settings(gz, icon=icon, alpha=0, alpha_highlight=0.2)
+
+            fn.set_gizmo_settings(gz, icon=props.icon, alpha=0, alpha_highlight=0.2)
+
+            op = gz.target_set_operator("storytools.set_draw_tool")
+            op.name = props.name
+            # op.mode = props.mode # Default Keymap currently limited to Paint mode
+            op.tool = props.tool
+            op.layer = props.layer
+            op.material = props.material
+            op.brush = props.brush
+            op.description = props.description
+            op.shortcut = kmi.to_string() # Shortcut text for description
+            self.tool_preset_gizmos.append(gz)
 
     def draw_prepare(self, context):
         prefs = fn.get_addon_prefs()
