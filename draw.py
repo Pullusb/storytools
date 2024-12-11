@@ -4,7 +4,7 @@ import gpu
 
 from mathutils import Vector
 from gpu_extras.batch import batch_for_shader
-# from .preferences import get_addon_prefs
+from . import fn
 
 ## Draw utils
 
@@ -24,10 +24,7 @@ def lock_axis_draw_callback(self, context):
     gpu.state.blend_set('ALPHA')
     gpu.state.line_width_set(2)
 
-    if bpy.app.version <= (3,6,0):
-        shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-    else:
-        shader = gpu.shader.from_builtin('UNIFORM_COLOR')
+    shader = gpu.shader.from_builtin('UNIFORM_COLOR')
 
     batch = batch_for_shader(shader, 'LINES', {"pos": coords})
     shader.uniform_float("color", color)
@@ -40,13 +37,54 @@ def stop_callback(self, context):
     # Remove draw handler and text set
     context.area.header_text_set(None) # Reset header
     context.window.cursor_set("DEFAULT")
-    if hasattr(self, '_handle'):
-        bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
-    if hasattr(self, '_pos_handle'):
-        bpy.types.SpaceView3D.draw_handler_remove(self._pos_handle, 'WINDOW')
-    if hasattr(self, '_guide_handle'):
-        bpy.types.SpaceView3D.draw_handler_remove(self._guide_handle, 'WINDOW')
+    if handle := getattr(self, '_handle', None):
+        bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
+    if handle := getattr(self, '_pos_handle', None):
+        bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
+    if handle := getattr(self, '_guide_handle', None):
+        bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
+    if handle := getattr(self, '_grid_handle', None):
+        bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
     context.area.tag_redraw()
+
+def draw_callback_wall(self, context):
+    '''Draw a color wall to filter what's behind position
+    
+    
+    self.coords : coordinate of the wall. world behind appears tinted
+    self.front_coords : coordinate of front wall. world in front appears tinted in another color
+    if self.current_area exists, only draw in current area
+    '''
+    ## Restrict to current viewport
+    if hasattr(self, 'current_area') and context.area != self.current_area:
+        return
+
+    prefs = fn.get_addon_prefs()
+    shader = gpu.shader.from_builtin('UNIFORM_COLOR')
+
+    shader.bind()
+
+    previous_depth_test_value = gpu.state.depth_test_get()
+    # gpu.state.depth_mask_set(True)
+    gpu.state.blend_set('ALPHA')
+
+    ## Draw behind zone
+    gpu.state.depth_test_set('LESS')
+    shader.uniform_float("color", prefs.visual_hint_end_color)
+    batch = batch_for_shader(shader, 'TRIS', {"pos": self.coords})
+    batch.draw(shader)
+
+    if context.space_data.region_3d.view_perspective == 'CAMERA':
+        ## Draw front zone (only in camera view to avoid flicking)
+        gpu.state.depth_test_set('GREATER')
+        shader.uniform_float("color", prefs.visual_hint_start_color)
+        batch = batch_for_shader(shader, 'TRIS', {"pos": self.front_coords})
+        batch.draw(shader)
+
+    # Restore values
+    gpu.state.blend_set('NONE')
+    gpu.state.depth_test_set(previous_depth_test_value)
+    # gpu.state.depth_mask_set(False)
 
 def origin_position_callback(self, context):
     """Draw origin position and init position as ghost"""
@@ -185,6 +223,35 @@ def text_draw_callback_px(self, context):
     # blf.draw(font_id, self.message)
     blf.draw(font_id, 'Test draw')
 
+
+def gp_plane_callback(self, context):
+    '''Draw a grid plane in 3D view'''
+    if not self.drag_mode:
+        return
+    if not self.coords:
+        return
+    ## Restrict to current viewport
+    if hasattr(self, 'current_area') and context.area != self.current_area:
+        return
+
+    gpu.state.blend_set('ALPHA')
+    gpu.state.line_width_set(1) # should be at one already
+
+    shader = gpu.shader.from_builtin('UNIFORM_COLOR')
+    
+    # coords = [
+    #     self.coords[0], self.coords[1], self.coords[2],
+    #     self.coords[3], self.coords[0], self.coords[2]
+    # ]
+
+    shader.uniform_float("color", (0.0, 0.7, 0.4, 0.2)) # green
+    # shader.uniform_float("color", (0.8, 0.5, 0.4, 0.2))
+
+    batch = batch_for_shader(shader, 'LINES', {"pos": self.coords})
+    batch.draw(shader)
+
+    gpu.state.line_width_set(1)
+    gpu.state.blend_set('NONE')
 
 ## Not used yet
 def ob_lock_location_cam_draw_panel(self, context):

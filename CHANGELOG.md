@@ -2,6 +2,13 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.1.0
+
+- added: Snap cursor gizmo button:
+  - `Click`: Cursor to selected
+  - `Shift + Click`: Send Selection to cursor
+  - `Click-Drag`: Cursor on GP drawing plane or geometry
+
 2.0.0
 
 - Most feature are now ready for gpv3 4.3+ (still wip)

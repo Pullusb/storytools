@@ -41,39 +41,6 @@ from .. import draw
         #     self.ob = context.object
         #     self.init_world_loc = self.ob.matrix_world.to_translation()
 
-def draw_callback_wall(self, context):
-    ## Restrict to current viewport
-    if context.area != self.current_area:
-        return
-
-    prefs = fn.get_addon_prefs()
-    shader = gpu.shader.from_builtin('UNIFORM_COLOR')
-
-    shader.bind()
-
-    previous_depth_test_value = gpu.state.depth_test_get()
-    # gpu.state.depth_mask_set(True)
-    gpu.state.blend_set('ALPHA')
-
-    ## Draw behind zone
-    gpu.state.depth_test_set('LESS')
-    shader.uniform_float("color", prefs.visual_hint_end_color)
-    batch = batch_for_shader(shader, 'TRIS', {"pos": self.coords})
-    batch.draw(shader)
-
-    if context.space_data.region_3d.view_perspective == 'CAMERA':
-        ## Draw front zone (only in camera view to avoid flicking)
-        gpu.state.depth_test_set('GREATER')
-        shader.uniform_float("color", prefs.visual_hint_start_color)
-        batch = batch_for_shader(shader, 'TRIS', {"pos": self.front_coords})
-        batch.draw(shader)
-
-
-    # Restore values
-    gpu.state.blend_set('NONE')
-    gpu.state.depth_test_set(previous_depth_test_value)
-    # gpu.state.depth_mask_set(False)
-
 def store_and_disable_child_of(objects: list) -> dict:
     '''get a list of objects, store enabled child of constraint and disable them'''
     
@@ -307,7 +274,7 @@ class STORYTOOLS_OT_object_depth_move(Operator):
         
         self.current_area = context.area # gpuDraw
         if fn.get_addon_prefs().use_visual_hint:
-            self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_callback_wall, (self, context), 'WINDOW', 'POST_VIEW') # gpuDraw
+            self._handle = bpy.types.SpaceView3D.draw_handler_add(draw.draw_callback_wall, (self, context), 'WINDOW', 'POST_VIEW') # gpuDraw
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 

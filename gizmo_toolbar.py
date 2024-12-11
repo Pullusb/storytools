@@ -176,10 +176,10 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         # self.interact_gizmos.append(self.gz_autokey)
 
         ## Cursor Snapping
-        # self.gz_cursor_snap = self.gizmos.new("GIZMO_GT_button_2d")
-        # fn.set_gizmo_settings(self.gz_cursor_snap, 'CURSOR')
-        # self.gz_cursor_snap.target_set_operator("storytools.snap_3d_cursor")
-        # self.interact_gizmos.append(self.gz_cursor_snap)
+        self.gz_cursor_snap = self.gizmos.new("GIZMO_GT_button_2d")
+        fn.set_gizmo_settings(self.gz_cursor_snap, 'CURSOR')
+        self.gz_cursor_snap.target_set_operator("storytools.snap_3d_cursor")
+        self.interact_gizmos.append(self.gz_cursor_snap)
 
         ## Draw
         self.gz_draw = self.gizmos.new("GIZMO_GT_button_2d")
