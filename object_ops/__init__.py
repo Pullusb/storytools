@@ -2,12 +2,14 @@ from . import (
     obj_actions,
     autolock_switch,
     snap_cursor,
+    set_origin,
 )
 
 modules = (
     obj_actions,
     autolock_switch,
     snap_cursor,
+    set_origin,
 )
 
 def register():

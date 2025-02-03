@@ -454,16 +454,10 @@ def tool_layout(self, layout, context):
     row = layout.row(align=True)
     row.operator('storytools.align_view_to_object', text='Align View To Object')
     row.operator('storytools.opposite_view', text='', icon='FORCE_MAGNETIC') # CON_ROTLIMIT
-
-    ## -- Workspace setup
-    ## Export / Restore settings
-    # layout.operator('storytools.save_load_settings_preset', text='View Settings Presets', icon='PRESET').category = 'view_settings'
-    # layout.operator('storytools.save_load_settings_preset', text='Tool Settings Presets', icon='PRESET').category = 'tool_settings'
-    # ## Load workspace from file
-    # show_workspace_switch = context.window.workspace.name != 'Storyboard'
-    # if show_workspace_switch:
-    #     layout.label(text='Workspace:')
-    #     layout.operator('storytools.set_storyboard_workspace', text='Storyboard Workspace', icon='WORKSPACE')
+    
+    ## Set origin to bottom : disabled for now...
+    ## maybe we want the origin to move down in "local space" (on GP axis depending on drawing plane)
+    # layout.operator('storytools.set_origin_bottom', text='Set Origin to Bottom')
 
     ## -- Check for grease pencil tools addon
 
