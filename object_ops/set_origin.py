@@ -29,18 +29,28 @@ class STORYTOOLS_OT_set_origin_bottom(Operator):
 
         # if obj.animation_data:
         #     self.report({'WARNING'}, "Object has animation data. Changing the origin may cause unexpected results.")
+        current_loc = obj.matrix_world.to_translation()
 
         # Get the bounding box of the object
         bbox_corners = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
         
         # Find the minimum Z coordinate of the bounding box
         min_z = min(corner.z for corner in bbox_corners)
-        new_origin = Vector((0, 0, min_z))
         
+        move_to_bottom = Vector((0, 0, min_z - current_loc.z))
+        new_loc = current_loc + move_to_bottom
+
+        old_cursor_loc = context.scene.cursor.location.copy()
+
         # Set the origin to the bottom of the bounding box
-        obj.location = obj.location - new_origin
+        context.scene.cursor.location = new_loc
+        
+        ## Set origin using operator
         bpy.ops.object.origin_set(type='ORIGIN_CURSOR', center='MEDIAN')
-        obj.location = obj.location + new_origin
+        
+        # obj.location = obj.location + new_origin
+
+        context.scene.cursor.location = old_cursor_loc
 
         return {"FINISHED"}
 
