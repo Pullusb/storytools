@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.2.0
+
+- added: `Annotate` layer in top of default stack (synced with `line_red` material)
+- added: new tool-preset to select Pen tool > "Annotate" layer > line red material.
+
 2.1.2
 
 - fixed: error with 4.4

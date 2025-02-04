@@ -364,14 +364,14 @@ def register_keymap():
     # kmi = km.keymap_items.new('storytools.set_draw_tool', type='SEVEN', value='PRESS')
     # addon_keymaps.append((km, kmi))
 
-    # kmi = km.keymap_items.new('storytools.set_draw_tool', type='SEVEN', value='PRESS')
-    # kmi.properties.name = 'Notes'
-    # kmi.properties.tool = 'builtin.brush'
-    # kmi.properties.layer = 'Line'
-    # kmi.properties.material = 'line_red' # Sync override material
-    # kmi.properties.order = 70
-    # kmi.properties.icon = 'SYNTAX_ON'
-    # addon_keymaps.append((km, kmi))
+    kmi = km.keymap_items.new('storytools.set_draw_tool', type='SEVEN', value='PRESS')
+    kmi.properties.name = 'Annotate'
+    kmi.properties.tool = 'builtin.brush'
+    kmi.properties.layer = 'Annotate'
+    kmi.properties.material = 'line_red' # Sync override material
+    kmi.properties.order = 70
+    kmi.properties.icon = 'SYNTAX_ON' # CURRENT_FILE, TEXT
+    addon_keymaps.append((km, kmi))
 
 def unregister_keymap():
     for km, kmi in addon_keymaps:

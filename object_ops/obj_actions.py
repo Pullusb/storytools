@@ -170,17 +170,22 @@ class STORYTOOLS_OT_create_object(Operator):
         # gp.edit_line_color[3] = prefs.default_edit_line_opacity # Bl default is 0.5
         gp.use_autolock_layers = prefs.use_autolock_layers
         
-        for l_name in reversed(['Sketch', 'Line', 'Color']):
+        for l_name in ['Color', 'Line', 'Sketch', 'Annotate']:
             layer = gp.layers.new(l_name)
             layer.frames.new(scn.frame_current)
             layer.use_lights = prefs.use_lights
         
             ## Set default association
-            ## TODO: Set default name as string in prefs ?
+            ## TODO: Set default name as string in prefs (implemented with a layer customisation feature)
             if l_name in ['Line', 'Sketch']:
                 fn.set_material_association(ob, layer, 'line')
             elif l_name == 'Color':
                 fn.set_material_association(ob, layer, 'fill_white')
+            elif l_name == 'Annotate':
+                fn.set_material_association(ob, layer, 'line_red')
+        
+        ## Set default layer (Could also be a preference)
+        gp.layers.active = gp.layers.get('Sketch')
 
         ## update UI
         fn.update_ui_prop_index(context)
