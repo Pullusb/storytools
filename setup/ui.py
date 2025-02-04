@@ -60,11 +60,10 @@ class STORYTOOLS_PT_viewport_setup(bpy.types.Panel):
 
             col.separator()
             ## -- Workspace load
-            show_workspace_switch = context.window.workspace.name != 'Storyboard'
-            if show_workspace_switch:
-
-                col.label(text='Workspace:')
-                col.operator('storytools.set_storyboard_workspace', text='Storyboard Workspace', icon='WORKSPACE')
+            # show_workspace_switch = context.window.workspace.name != 'Storyboard'
+            # if show_workspace_switch:
+            col.label(text='Workspace:')
+            col.operator('storytools.set_storyboard_workspace', text='Storyboard Workspace', icon='WORKSPACE')
 
             ## -- Open addon preferences
             col.separator()

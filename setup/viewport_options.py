@@ -154,6 +154,7 @@ class STORYTOOLS_OT_save_load_settings_preset(bpy.types.Operator):
 def load_preset(preset_file): # , target='ALL'
     '''Receive a preset_file Path object and load contained preset'''
     # prop_dic = json.load(str(preset_file))
+    print(f'Loading {str(preset_file)}')
     with preset_file.open('r') as fd:
         prop_dic = json.load(fd)
 
@@ -168,7 +169,11 @@ def load_preset(preset_file): # , target='ALL'
         #     continue
 
         for k, v in dic.items():
-            current_value = eval(k)
+            try:
+                current_value = eval(k)
+            except Exception as e:
+                print(f'{e} -> trying to access "{k}"')
+                continue
 
             data_path, prop = k.rsplit('.', 1)
             obj = eval(data_path)

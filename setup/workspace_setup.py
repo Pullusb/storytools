@@ -1,50 +1,77 @@
 import bpy
 from pathlib import Path
 from typing import List, Sequence, Tuple
+from .. constants import APP_TEMPLATES_DIR
 from bpy.types import (
-    Context,
-    MetaSequence,
-    Operator,
-    PropertyGroup,
-    SceneSequence,
     Window,
     WindowManager,
 )
 
 from .. import fn
 
+def set_sidebar(area=None):
+    if not area:
+        area = bpy.context.area
+    prefs = fn.get_addon_prefs()
+    context = bpy.context
+    sidebar = None
+    # with bpy.context.temp_override(area=area):
+    ## Set sidebar visibility
+    if prefs.show_sidebar != 'NONE':
+        if context.space_data.show_region_ui and prefs.show_sidebar == 'HIDE':
+            context.space_data.show_region_ui = False
+            # context.area.spaces.update()
+        if not context.space_data.show_region_ui and prefs.show_sidebar == 'SHOW':
+            context.space_data.show_region_ui = True
+            # context.area.spaces.update()
+
+    ## Set sidebar panel tab
+    if bpy.app.version >= (4,2,0) and prefs.set_sidebar_tab and context.space_data.show_region_ui:
+        tab = prefs.sidebar_tab_target
+        if not tab.strip():
+            tab = 'Storytools'
+
+        ## 'active_panel_category' is readonly at first (Then goes to false after operator has finished)
+        ## Not working: Try to refresh UI to fix that once sidebar is opened
+        # context.area.regions.update()
+        # context.screen.update_tag()
+        if sidebar := next((r for r in area.regions if r.type == 'UI'), None):
+            with bpy.context.temp_override(window=bpy.context.window, area=bpy.context.area, region=sidebar):
+                try:
+                    # For now, just bypass the error, a second call works after full interface reload...
+                    sidebar.active_panel_category = tab
+                    sidebar.tag_redraw()
+                    print('sidebar category set to:', tab)
+                except AttributeError:
+                    print('Could not set sidebar category (retry can work)')
+                    pass
+        # print('finished', sidebar)
+
 def activate_workspace(name='Storyboard', context=None):
     if context is None:
         context = bpy.context
 
-    if context.window.workspace.name == name:
-        print(f'Already in {name} workspace')
-        return
+    # if context.window.workspace.name == name:
+    #     print(f'Already in {name} workspace')
+    #     return
 
-    if (render_wkspace := bpy.data.workspaces.get(name)):
-        context.window.workspace = render_wkspace
-        return True
-    
-    # Same name with spaces as underscore
-    dir_name = name.replace(' ', '_')
-    filepath = Path(__file__).parent / 'templates' / dir_name / 'startup.blend'
-    
-    ret = bpy.ops.workspace.append_activate(idname=name, filepath=str(filepath))
-    if ret != {'FINISHED'}:
-        print(f'Could not found "{name}" at {filepath}')
-        message = [f'Could not found "{name}" workspace at:',
-                   str(filepath)]
-        fn.show_message_box(_message=message, _title='Workspace Not found', _icon='ERROR')
-
-        return False
+    if (searched_wkspace := bpy.data.workspaces.get(name)):
+        context.window.workspace = searched_wkspace
+        # return True
+    else:
+        # Same name with spaces as underscore
+        dir_name = name.replace(' ', '_')
+        filepath = APP_TEMPLATES_DIR / dir_name / 'startup.blend'
+        
+        ret = bpy.ops.workspace.append_activate(idname=name, filepath=str(filepath))
+        if ret != {'FINISHED'}:
+            print(f'Could not found "{name}" at {filepath}')
+            message = [f'Could not found "{name}" workspace at:',
+                    str(filepath)]
+            fn.show_message_box(_message=message, _title='Workspace Not found', _icon='ERROR')
+            # return False
 
     ## Get biggest viewport and set category toolbar to Storytools:
-    viewports = [a for a in bpy.context.screen.areas if a.type == 'VIEW_3D']
-    if viewports:
-        vp_area = viewports.sort(key=lambda x: x.width)
-        if sidebar := next((r for r in vp_area.regions if r.type == 'UI'), None):
-            sidebar.active_panel_category = 'Storytools'
-
     return context.window.workspace
 
 class STORYTOOLS_OT_set_storyboard_workspace(bpy.types.Operator):
@@ -54,7 +81,13 @@ class STORYTOOLS_OT_set_storyboard_workspace(bpy.types.Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):
+        # ret = bpy.ops.workspace.append_activate(idname=name, filepath=str(filepath))
         activate_workspace(context=context)
+        areas_3d = [a for a in bpy.context.screen.areas if a.type == 'VIEW_3D']
+        if not areas_3d:
+            return {"FINISHED"}
+        areas_3d.sort(key=lambda x: x.width)
+        set_sidebar(areas_3d[-1])
         return {"FINISHED"}
 
 
@@ -201,6 +234,7 @@ def set_workspace_on_dual_window(context=None):
     print('main_window: ', main_window, main_window.workspace.name)
     with context.temp_override(window=main_window, scene=bpy.data.scenes['Scene']):
         activate_workspace(name='Storyboard')
+        set_sidebar()
 
     ## Works, go to edit as planned
     secondary_window = get_secondary_window(wm)
@@ -319,6 +353,7 @@ class STORYTOOLS_OT_setup_storypencil(bpy.types.Operator):
 
         bpy.app.timers.register(set_workspace_on_dual_window, first_interval=1.5)
         return {"FINISHED"}
+
 
 classes=(
     STORYTOOLS_OT_set_storyboard_workspace,

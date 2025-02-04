@@ -6,6 +6,7 @@ from .fn import get_addon_prefs
 # from bl_ui.utils import PresetPanel
 
 from . import fn
+from .constants import STORYBOARD_TEMPLATE
 
 class STORYTOOLS_PT_storytools_ui(Panel):
     bl_space_type = "VIEW_3D"
@@ -14,7 +15,7 @@ class STORYTOOLS_PT_storytools_ui(Panel):
     bl_label = "Storytools"
 
     def draw(self, context):
-        
+        return
         """ # Old
         layout = self.layout
         ob = context.object
@@ -610,6 +611,12 @@ class STORYTOOLS_OT_info_note(Operator):
 #     prefs = get_addon_prefs()
 #     layout.operator("", text='do stuff from material submenu', icon='MATERIAL')
 
+def storyboard_file_new(self, context):
+    self.layout.separator()
+    op = self.layout.operator('wm.read_homefile', text="Storyboard")
+    op.filepath = str(STORYBOARD_TEMPLATE)
+    op.load_ui = True
+
 #-# REGISTER
 
 panel_classes = (
@@ -638,6 +645,7 @@ def register():
         for cls in panel_classes:
             bpy.utils.register_class(cls)    
 
+    bpy.types.TOPBAR_MT_file_new.append(storyboard_file_new)
     # bpy.types.GPENCIL_MT_material_context_menu.append(palette_manager_menu)
 
 def unregister():
@@ -649,3 +657,5 @@ def unregister():
             bpy.utils.unregister_class(cls)    
 
     bpy.utils.unregister_class(STORYTOOLS_MT_material_context_menu)
+
+    bpy.types.TOPBAR_MT_file_new.remove(storyboard_file_new)

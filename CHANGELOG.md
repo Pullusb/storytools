@@ -2,6 +2,12 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.1.2
+
+- fixed: error with 4.4
+- fixed: workspace load
+- fixed: error when loading toolsettings
+
 2.1.0
 
 - added: Snap cursor gizmo button:
