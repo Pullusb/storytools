@@ -170,10 +170,10 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         # self.interact_gizmos.append(self.gz_lock_view)
 
         ## Autokey
-        # self.gz_autokey = self.gizmos.new("GIZMO_GT_button_2d")
-        # fn.set_gizmo_settings(self.gz_autokey, 'RECORD_OFF')
-        # self.gz_autokey.target_set_operator("storytools.autokey_switch")
-        # self.interact_gizmos.append(self.gz_autokey)
+        self.gz_autokey = self.gizmos.new("GIZMO_GT_button_2d")
+        fn.set_gizmo_settings(self.gz_autokey, 'RECORD_OFF')
+        self.gz_autokey.target_set_operator("storytools.autokey_switch")
+        self.interact_gizmos.append(self.gz_autokey)
 
         ## Cursor Snapping
         self.gz_cursor_snap = self.gizmos.new("GIZMO_GT_button_2d")
@@ -351,8 +351,8 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         self.gz_draw.color_highlight = rgb_active_higlight if is_in_draw else obj_color_hl
 
         ## Autokey toggle color
-        # self.gz_autokey.color = red if context.scene.tool_settings.use_keyframe_insert_auto else obj_color
-        # self.gz_autokey.color_highlight = red_hl if context.scene.tool_settings.use_keyframe_insert_auto else obj_color_hl
+        self.gz_autokey.color = red if context.scene.tool_settings.use_keyframe_insert_auto else obj_color
+        self.gz_autokey.color_highlight = red_hl if context.scene.tool_settings.use_keyframe_insert_auto else obj_color_hl
 
 
     # def refresh(self, context):

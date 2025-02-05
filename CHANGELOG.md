@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.3.0
+
+- added: Autokey gizmo button (special behavior : set the same autokey state in all scenes)
+
 2.2.0
 
 - added: `Annotate` layer in top of default stack (synced with `line_red` material)
@@ -428,7 +432,7 @@ GPV3
 - added: Button in sidebar to Attach/Detach object to/from camera
 - added: UI _chain_ icon to show when object is parented in object stack
 - added: UI show _grid overlay_ toggle (often used)
-- added: when doing moving actions, key object/cam (respect autokey setting)
+- added: when doing moving actions, key object/cam (respect autokey button settinggizmo ). 
 
 0.6.0
 
