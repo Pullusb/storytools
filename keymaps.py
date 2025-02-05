@@ -194,7 +194,7 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
                 ## Load using "asset_activate" operator
                 with bpy.data.libraries.load(str(essential_brush_lib), assets_only=True, link=False) as (data_from, data_to):
                     if self.brush in data_from.brushes:
-                        ## Just True to know tha brush exists in essential pack, activate and skip next search
+                        ## Just True to know brush exists in essential pack, activate and skip next search
                         br = True
                 if br:
                     bpy.ops.brush.asset_activate(asset_library_type='ESSENTIALS', 
@@ -217,8 +217,16 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
                         break
             
             if not isinstance(br, bool):
+                # when found in blend (not a boolean value from checks above)
                 if br:
-                    context.scene.tool_settings.gpencil_paint.brush = br
+                    # Use asset-activate operator, instead of deprecated : context.scene.tool_settings.gpencil_paint.brush = br
+                    
+                    ## FIXME: brush source hardcoded to essential for now, but will miserably fail if user set brush name from another library
+                    ## Need to find a way to get library type and relative_asset_identifier from brush object
+                    bpy.ops.brush.asset_activate(asset_library_type='ESSENTIALS', 
+                    asset_library_identifier="", 
+                    relative_asset_identifier=f"brushes/essentials_brushes-gp_draw.blend/Brush/{self.brush}")
+
                 else:
                     self.report({'WARNING'}, f'Could not find brush named {self.brush}')
                     # return {"CANCELLED"}

@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.3.1
+
+- fixed: error relative to asset brush in 4.4: use asset_activate ops instead of deprecated `context.scene.tool_settings.gpencil_paint.brush = br`
+
 2.3.0
 
 - added: Autokey gizmo button (special behavior : set the same autokey state in all scenes)
