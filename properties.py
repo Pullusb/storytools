@@ -5,6 +5,7 @@ from bpy.props import (FloatProperty,
                         BoolProperty,
                         EnumProperty,
                         StringProperty,
+                        FloatVectorProperty,
                         IntProperty,
                         PointerProperty,
                         CollectionProperty)
@@ -212,6 +213,50 @@ class STORYTOOLS_PGT_main_settings(PropertyGroup):
         description="Show object user data when object has multiple user (when object have multiple users)",
         default='AUTO',
         items=display_choice_items
+        )
+
+    ## -- Scale figure settings
+
+    use_scale_figure : BoolProperty(
+        name='Show Scale Figure',
+        description="Show scale figure on GP canvas in 3D view for real world scale size reference",
+        default=False
+        )
+
+    scale_figure_type : EnumProperty(
+        name='Scale Figure type',
+        description="Type of scale figure to display",
+        default='NONE',
+        items=(
+                ('NONE', 'Nothing', 'Hide the scale figure drawing', 0),
+                ('HEIGHT', 'height', 'Show lines defining a median adult human size', 1),
+                # ('HUMAN', 'Human', 'Show human male adult silhouette at 1.75m', 2),
+                # ('CAT', 'Cat', 'Show cat silhouette', 3),
+            )
+        )
+
+    ## color and opacity in one go
+    # scale_figure_color : FloatVectorProperty(
+    #     name="Scale Figure Color",
+    #     description="Color of the Scale reference overlay when scale figure is enabled",
+    #     default=(0.5, 0.5, 1.0, 0.3), min=0, max=1.0, step=3, precision=2,
+    #     subtype='COLOR_GAMMA', size=4)
+
+    scale_figure_color : FloatVectorProperty(
+        name="Scale Figure Color",
+        description="Color of the Scale reference overlay",
+        default=(0.5, 0.5, 1.0), min=0, max=1.0, step=3, precision=2,
+        subtype='COLOR_GAMMA', size=3)
+
+    scale_figure_opacity : FloatProperty(
+        name="Scale Figure Opacity",
+        description="Opacity of the Scale reference overlay",
+        default=0.4, min=0, max=1.0, step=3, precision=2, subtype='FACTOR')
+
+    use_scale_figure_xray : BoolProperty(
+        name='Show Scale Figure',
+        description="Show scale figure on GP canvas in 3D view for real world scale size reference",
+        default=False
         )
 
     ## Storyboard Keymap items

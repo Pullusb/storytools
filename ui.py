@@ -167,6 +167,7 @@ class STORYTOOLS_PT_gp_objects_list_options(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         settings = context.scene.storytools_settings
+        # layout.prop(settings, 'show_scale_figure', text='Scale Helper') # Added in overlay
         row = layout.row()
         row.label(text='Drawing List Display Toggles')
         info = row.operator('storytools.info_note', text='', icon='QUESTION', emboss=False)
@@ -611,11 +612,29 @@ class STORYTOOLS_OT_info_note(Operator):
 #     prefs = get_addon_prefs()
 #     layout.operator("", text='do stuff from material submenu', icon='MATERIAL')
 
+def additional_gp_overlay_options(self, context):
+    layout = self.layout
+    settings = context.scene.storytools_settings
+    layout.separator()
+    layout.label(text='Scale Figure')
+    col = layout.column()
+    col.active = settings.use_scale_figure
+    row = col.row(align=True)
+    row.prop(settings, 'use_scale_figure', text='')
+    row.prop(settings, 'scale_figure_opacity', text='')
+    row.prop(settings, 'use_scale_figure_xray', text='', icon='XRAY')
+    col.prop(settings, 'scale_figure_color', text='')
+    
+    # col.prop(settings, 'scale_figure_type', text='') # not used yet
+
+
 def storyboard_file_new(self, context):
     self.layout.separator()
     op = self.layout.operator('wm.read_homefile', text="Storyboard")
     op.filepath = str(STORYBOARD_TEMPLATE)
     op.load_ui = True
+
+
 
 #-# REGISTER
 
@@ -646,6 +665,7 @@ def register():
             bpy.utils.register_class(cls)    
 
     bpy.types.TOPBAR_MT_file_new.append(storyboard_file_new)
+    bpy.types.VIEW3D_PT_overlay_grease_pencil_options.append(additional_gp_overlay_options)
     # bpy.types.GPENCIL_MT_material_context_menu.append(palette_manager_menu)
 
 def unregister():
@@ -659,3 +679,4 @@ def unregister():
     bpy.utils.unregister_class(STORYTOOLS_MT_material_context_menu)
 
     bpy.types.TOPBAR_MT_file_new.remove(storyboard_file_new)
+    bpy.types.VIEW3D_PT_overlay_grease_pencil_options.remove(additional_gp_overlay_options)

@@ -4,7 +4,7 @@ bl_info = {
     "name": "Storytools - Storyboard Tools",
     "description": "Set of tools for Storyboarding",
     "author": "Samuel Bernou",
-    "version": (2, 3, 1),
+    "version": (2, 4, 0),
     "blender": (4, 3, 0),
     "location": "View3D",
     "warning": "",
@@ -25,6 +25,7 @@ from . import gizmos_objects
 from . import gizmos_camera
 from . import gizmo_toolbar
 from . import map
+from . import scale_figure
 from . import handles
 from . import ui
 from . import keymaps
@@ -33,6 +34,7 @@ from .fn import get_addon_prefs
 
 modules = (
     map,
+    scale_figure,
     setup,
     properties,
     # tool_presets, # abandonned tool preset system

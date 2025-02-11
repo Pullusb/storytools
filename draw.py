@@ -158,6 +158,7 @@ def origin_position_callback(self, context):
     gpu.state.blend_set('NONE')
 
 
+## guide on transform - Not used yet
 def guide_callback(self, context):
     """Draw pseudo shadow to better see object, WIP TEST"""
 
