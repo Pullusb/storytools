@@ -2,6 +2,14 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.4.0
+
+- added: new feature `Scale figure` overlay:
+  - Toggle and options are located in GP overlay popover
+  - Default mode display a ruler with a customizable size and subdivision
+  - Alternatively can show silhouette of human male/female or cat
+  - possible to convert as GP layers on active object to further customize silhouette
+
 2.3.1
 
 - fixed: error relative to asset brush in 4.4: use asset_activate ops instead of deprecated `context.scene.tool_settings.gpencil_paint.brush = br`

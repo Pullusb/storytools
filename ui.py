@@ -615,17 +615,26 @@ class STORYTOOLS_OT_info_note(Operator):
 def additional_gp_overlay_options(self, context):
     layout = self.layout
     settings = context.scene.storytools_settings
+    
     layout.separator()
     layout.label(text='Scale Figure')
+    
     col = layout.column()
     col.active = settings.use_scale_figure
-    row = col.row(align=True)
+    row = col.row(align=False)
     row.prop(settings, 'use_scale_figure', text='')
-    row.prop(settings, 'scale_figure_opacity', text='')
-    row.prop(settings, 'use_scale_figure_xray', text='', icon='XRAY')
+    subrow = row.row(align=True)
+    subrow.prop(settings, 'scale_figure_opacity', text='Opacity')
+    subrow.prop(settings, 'use_scale_figure_xray', text='', icon='XRAY')
+    subrow.operator('storytools.bake_scale_figure_as_layer', text='', icon='OUTLINER_DATA_GP_LAYER')
     col.prop(settings, 'scale_figure_color', text='')
     
-    # col.prop(settings, 'scale_figure_type', text='') # not used yet
+    # col.use_property_split = True
+    col.prop(settings, 'scale_figure_type', text='Figure')
+    if settings.scale_figure_type == 'HEIGHT':
+        subcol = col.column(align=True)
+        subcol.prop(settings, 'scale_figure_height', text='Height')
+        subcol.prop(settings, 'scale_figure_subdivision', text='Subdivision')
 
 
 def storyboard_file_new(self, context):

@@ -226,37 +226,43 @@ class STORYTOOLS_PGT_main_settings(PropertyGroup):
     scale_figure_type : EnumProperty(
         name='Scale Figure type',
         description="Type of scale figure to display",
-        default='NONE',
+        default='HEIGHT',
         items=(
-                ('NONE', 'Nothing', 'Hide the scale figure drawing', 0),
-                ('HEIGHT', 'height', 'Show lines defining a median adult human size', 1),
-                # ('HUMAN', 'Human', 'Show human male adult silhouette at 1.75m', 2),
-                # ('CAT', 'Cat', 'Show cat silhouette', 3),
+                ('HEIGHT', 'Custom Height', 'Display adjustable height reference lines', 0),
+                ('HUMAN_MALE', 'Human Male', 'Display adult male silhouette (1.8m height)', 1),
+                ('HUMAN_FEMALE', 'Human Female', 'Display adult female silhouette (1.65m height)', 2),
+                ('CAT', 'Cat', 'Display domestic cat silhouette (0.3m height)', 3),
             )
         )
-
-    ## color and opacity in one go
-    # scale_figure_color : FloatVectorProperty(
-    #     name="Scale Figure Color",
-    #     description="Color of the Scale reference overlay when scale figure is enabled",
-    #     default=(0.5, 0.5, 1.0, 0.3), min=0, max=1.0, step=3, precision=2,
-    #     subtype='COLOR_GAMMA', size=4)
 
     scale_figure_color : FloatVectorProperty(
         name="Scale Figure Color",
         description="Color of the Scale reference overlay",
-        default=(0.5, 0.5, 1.0), min=0, max=1.0, step=3, precision=2,
+        default=(0.0, 0.5, 1.0), min=0, max=1.0, step=3, precision=2,
         subtype='COLOR_GAMMA', size=3)
 
     scale_figure_opacity : FloatProperty(
         name="Scale Figure Opacity",
         description="Opacity of the Scale reference overlay",
-        default=0.4, min=0, max=1.0, step=3, precision=2, subtype='FACTOR')
+        default=0.5, min=0, max=1.0, step=3, precision=2, subtype='FACTOR')
 
     use_scale_figure_xray : BoolProperty(
         name='Show Scale Figure',
         description="Show scale figure on GP canvas in 3D view for real world scale size reference",
         default=False
+        )
+    
+    scale_figure_height : FloatProperty(
+        name='Scale Figure Height',
+        description="Height of scale figure in meter",
+        default=1.8, subtype='DISTANCE', unit='LENGTH', 
+        min=0.001, step=3, precision=4
+        )
+    
+    scale_figure_subdivision : IntProperty(
+        name='Scale Figure Subdivide',
+        description="Subdivision of the scale figure ruler",
+        default=1, min=0, max=20
         )
 
     ## Storyboard Keymap items

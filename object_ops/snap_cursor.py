@@ -30,6 +30,7 @@ class STORYTOOLS_OT_snap_3d_cursor(Operator):
         self.start_time = time()
         button_size = fn.get_addon_prefs().toolbar_backdrop_size
         self.distance_to_drag = button_size * 0.7
+        # self.init_show_cursor = context.space_data.overlay.show_cursor
 
         self.drag_mode = False
 
@@ -125,6 +126,7 @@ class STORYTOOLS_OT_snap_3d_cursor(Operator):
         context.window.cursor_set("DEFAULT")
         context.area.header_text_set(None)
         draw.stop_callback(self, context) # Dcb
+        # context.space_data.overlay.show_cursor = self.init_show_cursor
 
     def modal(self, context, event):
         mouse = Vector((event.mouse_region_x, event.mouse_region_y))
@@ -133,6 +135,8 @@ class STORYTOOLS_OT_snap_3d_cursor(Operator):
             if time() - self.start_time < 0.25 and (mouse - self.init_mouse).length > (self.distance_to_drag * 0.7):
                 ## Pass here once when considered dragged
                 self.drag_mode = True
+                ## when dragged, we consider the user want to see the cursor, activate without restore
+                context.space_data.overlay.show_cursor = True
                 context.window.cursor_set("SCROLL_XY")
 
         if event.type == 'MOUSEMOVE':

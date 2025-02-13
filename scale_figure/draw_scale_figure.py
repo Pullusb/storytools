@@ -8,6 +8,7 @@ from math import radians
 
 from .. import fn
 from .. import draw
+from .figure_shapes import build_scale_figure_shape
 
 ## -- Size references (/guides)
 ## Show lines and circles on GP object origins to aprehend sizes in space
@@ -15,20 +16,6 @@ from .. import draw
 ## show a default cross shape at origin
 
 draw_handle = None
-
-cross_shape = [
-    # Cross
-    Vector((-0.22, 0, 0)),
-    Vector((0.22, 0, 0)),
-    Vector((0, -0.22, 0)),
-    Vector((0, 0.22, 0)),
-    # Point
-    Vector((-0.22, 0, 0)),
-    Vector((0, -0.22, 0)),
-    Vector((0.22, 0, 0)),
-    Vector((0, -0.22, 0)),
-
-]
 
 def get_canvas_scale_figure_matrix(context=None):
     context = context or bpy.context
@@ -48,7 +35,7 @@ def get_canvas_scale_figure_matrix(context=None):
         orient_matrix = context.space_data.region_3d.view_matrix.inverted() @ Matrix.Rotation(radians(-90), 4, 'X')
 
     elif orient == 'AXIS_Y': # front (X-Z)
-        orient_matrix = context.object.matrix_world
+        orient_matrix = context.object.matrix_world.copy()
 
     elif orient == 'AXIS_X': # side (Y-Z)
         orient_matrix = context.object.matrix_world @ Matrix.Rotation(radians(90), 4, 'Z')
@@ -58,13 +45,16 @@ def get_canvas_scale_figure_matrix(context=None):
 
     elif orient == 'CURSOR':
         ## When used on surface, plain Z up is ok. But when placed aligned with view, Y up (rotated) may be better
-        orient_matrix = context.scene.cursor.matrix # @ Matrix.Rotation(radians(-90), 4, 'X')
-
-    orient_matrix = orient_matrix.to_3x3() # Extract rotation component (or decompose)
-    orient_matrix.resize_4x4() # Convert back to 4x4 (keep only rotation)
+        orient_matrix = context.scene.cursor.matrix.copy() # @ Matrix.Rotation(radians(-90), 4, 'X')
+    
+    # remove_translation component
+    orient_matrix = orient_matrix.to_3x3() 
+    orient_matrix.resize_4x4() # Convert back to 4x4 (keeping only rotation and scale)
+    # Reset scale (we always want to show world scale)
+    orient_matrix.normalize()
 
     ## Assemble final canvasmatrix (scale a 1)
-    canvas_matrix = Matrix.Translation(loc) @ orient_matrix
+    canvas_matrix = Matrix.Translation(loc) @ orient_matrix # @ Matrix.Scale(1,4)
 
     return canvas_matrix
 
@@ -101,17 +91,11 @@ def draw_scale_figure_callback():
     
     # co, no = fn.get_gp_draw_plane(bpy.context)
     # canvas_matrix = fn.get_gp_draw_plane_matrix(context) # Truly follow canvas
-    canvas_matrix = get_canvas_scale_figure_matrix(bpy.context) # Custom
+    canvas_matrix = get_canvas_scale_figure_matrix(bpy.context) # Custom function
 
     ## Local shape
     ## TODO: separate local figure builing in a function for external usage
-    height = Vector((0, 0, 1.75))
-
-    lines = [
-        Vector((0, 0, 0)),
-        Vector((0, 0, 1.75))
-    ] + cross_shape + [c + height for c in cross_shape] + [c + height/2 for c in cross_shape]
-
+    lines = build_scale_figure_shape()
 
     ## Apply canvas matrix
     lines = [canvas_matrix @ v for v in lines]
@@ -127,34 +111,6 @@ def draw_scale_figure_callback():
     gpu.state.line_width_set(1.0)
     gpu.state.blend_set('NONE')
     gpu.state.depth_test_set(previous_depth_test_value)
-
-
-def scale_figure_as_layer():
-    ## TODO: add code to add "ScaleFigure" GP layer with tint color and opacity set after
-    # Create the strokes (add key at current frame or at timeline start ?)
-
-    ## Get scale figure settings
-    settings = bpy.context.scene.storytools_settings
-
-    obj = bpy.context.object
-    if not obj:
-        return
-    
-    gp = obj.data
-    if not (layer := gp.layers.get('ScaleFigure')):
-        layer = gp.layers.new('ScaleFigure', set_active=False)
-        ## Set color and opacity
-        layer.tint_factor = 1.0
-        layer.tint_color = settings.scale_figure_color[:3]
-        layer.opacity = max(settings.scale_figure_opacity, 0.1) # ensure visible
-
-    if not (frame := layer.active_frame):
-        frame = layer.frames.new(bpy.context.scene.frame_current)
-    
-    # frame.strokes.clear() # clear existing strokes ?    
-
-    # Create the strokes
-
 
 
 def register():
