@@ -95,33 +95,39 @@ def scale_figure_as_layer():
     drawing = frame.drawing
     drawing.add_strokes(chains_individual_pt_count)
 
+    ### Set points positions -- 3 working methods
+    ### Also set radius to 0.008
 
-    ## Examples
-    # slice a range you can just use the slice syntax in python, e.g. positions[start:end] where positions is the numpy array of positions
-    # start = drawing.curve_offsets[curve_i]
-    # end = drawing.curve_offsets[curve_i + 1]
-    # the length of the curve offsets is always one greater than the number of curves so you don't need to do any checks
+    ### 1. reading, modifying and writing the whole attribute array (https://projects.blender.org/blender/blender/pulls/130287)
+    # # Reading attribute into numpy array
+    # flat_positions = sum(chains, []) # list of vec3
+    # position_attr = drawing.attributes['position']
+    # position_data = np.empty((len(position_attr.data), 3), dtype=np.float32)
+    # position_attr.data.foreach_get("vector", np.ravel(position_data))
+    # # Replace positions in numpy array
+    # start = drawing.curve_offsets[len(drawing.strokes) - len(chains)].value
+    # end = drawing.curve_offsets[len(drawing.strokes)].value
+    # position_data[start:end] = flat_positions
+    # # Write back to the attribute
+    # position_attr.data.foreach_set("vector", np.ravel(position_data))
 
-    ### Set points positions
-
-    # Create the flat list
-    ## Directly apply positions on attribute using slice of the point array... (WIP)
+    ### 2. Apply flattened positions list, iterating on a slice of position attr array
     flat_positions = sum(chains, []) # list of vec3
-    # length of the curve offsets is always one greater than the number of curves
     start = drawing.curve_offsets[len(drawing.strokes) - len(chains)].value
     end = drawing.curve_offsets[len(drawing.strokes)].value
     for i in range(start, end):
         drawing.attributes['position'].data[i].vector = flat_positions[i-start]
+        drawing.attributes['radius'].data[i].value = 0.008
     
-    ## Classic loop method on strokes (Works)
+    ### 3. Classic loop method on strokes
+    ## iterate from the end to affect only strokes at the end of the stack
     # for i in range(1, len(chains) + 1):
-    #     ## iterate from the end to affect only strokes at the end of the stack
     #     idx = -i
     #     chain = chains[idx]
     #     stroke = drawing.strokes[idx]
     #     for pt, coord in zip(stroke.points, chain):
-    #         print(coord)
     #         pt.position = coord
+    #         pt.radius = 0.008
 
     return layer
 
