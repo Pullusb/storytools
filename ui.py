@@ -6,7 +6,7 @@ from .fn import get_addon_prefs
 # from bl_ui.utils import PresetPanel
 
 from . import fn
-from .constants import STORYBOARD_TEMPLATE
+from .constants import STORYBOARD_TEMPLATE_BLEND, DUAL_STORYBOARD_TEMPLATE_BLEND
 
 class STORYTOOLS_PT_storytools_ui(Panel):
     bl_space_type = "VIEW_3D"
@@ -640,9 +640,11 @@ def additional_gp_overlay_options(self, context):
 def storyboard_file_new(self, context):
     self.layout.separator()
     op = self.layout.operator('wm.read_homefile', text="Storyboard")
-    op.filepath = str(STORYBOARD_TEMPLATE)
+    op.filepath = str(STORYBOARD_TEMPLATE_BLEND)
     op.load_ui = True
-
+    op = self.layout.operator('wm.read_homefile', text="Storyboard Dual Window")
+    op.filepath = str(DUAL_STORYBOARD_TEMPLATE_BLEND)
+    op.load_ui = True
 
 
 #-# REGISTER

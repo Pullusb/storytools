@@ -52,6 +52,10 @@ class STORYTOOLS_PT_viewport_setup(bpy.types.Panel):
             # col.label(text='Draw settings')
             # col.operator('storytools.setup_drawing', text='Quick UI Reset', icon='GREASEPENCIL')
 
+            ## -- Open addon preferences
+            col.operator("storytools.open_addon_prefs", text='Open Storytools Preferences', icon='PREFERENCES')
+
+            col.separator()
             col.label(text="Settings Presets")
 
             ## Export / Restore settings
@@ -64,18 +68,15 @@ class STORYTOOLS_PT_viewport_setup(bpy.types.Panel):
             # if show_workspace_switch:
             col.label(text='Workspace:')
             col.operator('storytools.set_storyboard_workspace', text='Storyboard Workspace', icon='WORKSPACE')
-
-            ## -- Open addon preferences
-            col.separator()
-            col.operator("storytools.open_addon_prefs", text='Open Storytools Preferences', icon='PREFERENCES')
+            col.operator('storytools.set_storyboard_dual_window_workspace', text='Storyboard Dual Workspace', icon='WORKSPACE')
+            # col.operator('storytools.setup_spark', text='Storyboard Spark Workspace', icon='WORKSPACE')
 
             ## Minimap
             col.separator()
             if not fn.is_minimap_viewport(context):
-                col.label(text='Minimap: (Work in progress)')
+                col.label(text='Minimap:')
                 col.operator('storytools.setup_minimap_viewport', text='Viewport to minimap', icon='WORLD').split_viewport = False
                 col.operator('storytools.setup_minimap_viewport', text='Split With Minimap', icon='SPLIT_HORIZONTAL').split_viewport = True
-
 
             # show_storypencil_setup = len(context.window_manager.windows) == 1 and context.preferences.addons.get('storypencil')
             # if show_workspace_switch or show_storypencil_setup:        

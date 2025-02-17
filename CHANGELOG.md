@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.4.1
+
+- fixed: workspace loading, now load properly with sidebar set.
+- added: workspace in new menu for dual window storyboard mode
+
 2.4.0
 
 - added: new feature `Scale figure` overlay:
