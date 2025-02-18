@@ -97,27 +97,9 @@ class STORYTOOLS_OT_camera_shift(Operator):
         
         elif event.type == 'LEFTMOUSE':
             context.window.cursor_set("DEFAULT")
-            
-            ## TODO: Need custom function or adapt current key_object to key datapath
-            # fn.key_object(self.cam, scale=False, use_autokey=True)
             draw.stop_callback(self, context)
-            if context.scene.tool_settings.use_keyframe_insert_auto:
-                ## Key shift (only if already keyed ?) !
-                # if self.cam.data.animation_data and (action := self.cam.data.animation_data.action):
-                #     if action.fcurves.find('shift_x'):
-                #         self.cam.data.keyframe_insert('shift_x')
-                #     if action.fcurves.find('shift_y'):
-                #         self.cam.data.keyframe_insert('shift_y')
-
-                ## Only Key:
-                self.cam.data.keyframe_insert('shift_x')
-                self.cam.data.keyframe_insert('shift_y')
-                
-                # Do not key axis if not moved
-                # if self.cam.data.shift_x != self.init_shift_x:
-                #     self.cam.data.keyframe_insert('shift_x')
-                # if self.cam.data.shift_y != self.init_shift_y:
-                #     self.cam.data.keyframe_insert('shift_y')
+            # TODO: Pass active keying set to function : ex: options={'INSERTKEY_AVAILABLE'}
+            fn.key_data_path(self.cam.data, data_path=['shift_x', 'shift_y'], use_autokey=True) 
             return {'FINISHED'}
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:

@@ -45,6 +45,8 @@ def stop_callback(self, context):
         bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
     if handle := getattr(self, '_grid_handle', None):
         bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
+    if handle := getattr(self, '_text_handle', None):
+        bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
     context.area.tag_redraw()
 
 def draw_callback_wall(self, context):
@@ -158,7 +160,7 @@ def origin_position_callback(self, context):
     gpu.state.blend_set('NONE')
 
 
-## guide on transform - Not used yet
+## guide on transform - [Not used yet]
 def guide_callback(self, context):
     """Draw pseudo shadow to better see object, WIP TEST"""
 
@@ -214,15 +216,35 @@ def guide_callback(self, context):
     gpu.state.blend_set('NONE')
 
 
-## Not used yet
 def text_draw_callback_px(self, context):
+    """Draw text
+    Need those variable in text, else fallback to generic values
+    text_body (str)
+    text_position (vector2)
+    text_size (float)
+    text_color (vector3)
+    """
+
+    if hasattr(self, 'current_area') and context.area != self.current_area:
+        return
+
     font_id = 0
-    color = [0.8, 0.1, 0.2]
-    blf.color(0, *color, 1)
-    blf.position(font_id, 15, 100, 0)
-    blf.size(font_id, 25, 72)
-    # blf.draw(font_id, self.message)
-    blf.draw(font_id, 'Test draw')
+    text_body = getattr(self, 'text_body', 'Running')
+    text_size = getattr(self, 'text_size', 25.0)
+    text_color = getattr(self, 'text_color', (0.0, 0.5, 1.0)) # red -> (0.8, 0.1, 0.2)
+    text_position = getattr(self, 'text_position', (120, 120))
+
+    blf.color(0, *text_color, 1) # fix alpha to 1
+    blf.size(font_id, text_size)
+    ## optional : Center X position accordinga to text dimension (may offset a lot on x when text is updating)
+    # dimensions = blf.dimensions(font_id, text_body)
+    # text_position = (text_position[0] - (dimensions[0] / 2), text_position[1])
+    blf.position(font_id, *text_position, 0) # Leave out z at 0
+    
+    ## Shadow (no error but do not see anything)
+    # blf.shadow(font_id, 5, 0.0, 0.0, 0.0, 1.0) # fontid, blur level (0, 3, 5) or outline (6)), r, g, b, a
+    # blf.shadow_offset(fontid, 4, -4) # fontid, x, y
+    blf.draw(font_id, text_body)
 
 
 def gp_plane_callback(self, context):

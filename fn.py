@@ -632,6 +632,37 @@ def key_object(ob, loc=True, rot=True, scale=True, use_autokey=False, mode=None,
         return f'{ob.name}: Insert {", ".join(text)} keyframes'
     return
 
+def key_data_path(ob, data_path, use_autokey=False, options=set(), context=None):
+    '''Keyframe object location, rotation, scale 
+    ob: Object to key
+    data_path (str or list): data path to key, can be multiple data_path for the same object
+    use_autokey: Respect auto_key (if enabled, key only if autokey is activated)
+
+    :options: Set in keyframe insert options:
+    - ``INSERTKEY_NEEDED`` Only insert keyframes where they're needed in the relevant F-Curves.
+    - ``INSERTKEY_VISUAL`` Insert keyframes based on 'visual transforms'.
+    - ``INSERTKEY_XYZ_TO_RGB`` Color for newly added transformation F-Curves (Location, Rotation, Scale) is based on the transform axis.
+    - ``INSERTKEY_REPLACE`` Only replace already existing keyframes.
+    - ``INSERTKEY_AVAILABLE`` Only insert into already existing F-Curves.
+    - ``INSERTKEY_CYCLE_AWARE`` Take cyclic extrapolation into account (Cycle-Aware Keying option).
+    '''
+
+    context = context or bpy.context
+    ## Return if not autokeying
+    if use_autokey and not context.scene.tool_settings.use_keyframe_insert_auto:
+        return False
+    
+    text = []
+    if isinstance(data_path, str):
+        data_path = [data_path]
+    for dp in data_path:
+        res = ob.keyframe_insert(dp, options=options)
+        if res:
+            text += [dp]
+        
+    if text:
+        return f'{ob.name}: Insert {", ".join(text)} keyframes'
+    return
 
 ### -- UI --
 

@@ -13,7 +13,8 @@ class STORYTOOLS_OT_camera_depth(Operator):
     bl_idname = "storytools.camera_depth"
     bl_label = 'Camera Depth Move'
     bl_description = "Move Camera Depth (forward and backward)\
-        \n+ Alt : Lock Z axis movements"
+        \n+ Alt : Lock Z axis movements (After call)\
+        \n+ Ctrl : Adjust focal length / orthographic scale"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     @classmethod
@@ -21,13 +22,21 @@ class STORYTOOLS_OT_camera_depth(Operator):
         return context.scene.camera
 
     def invoke(self, context, event):
+        self.current_area = context.area
         self.cam = context.scene.camera
-        if any(self.cam.lock_location):
+        # Store the initial ctrl state
+        self.is_focal_mode = event.ctrl
+        
+        if not self.is_focal_mode and any(self.cam.lock_location):
             self.report({'ERROR'}, 'Camera location is locked')
             return {'CANCELLED'}
 
         self.init_pos = self.cam.location.copy()
         self.init_mouse_x = event.mouse_x
+        
+        # Store initial camera values
+        self.init_lens = self.cam.data.lens
+        self.init_ortho_scale = self.cam.data.ortho_scale
         
         self.shift_pressed = event.shift
         self.current_delta = 0
@@ -38,33 +47,81 @@ class STORYTOOLS_OT_camera_depth(Operator):
         
         # camera forward vector
         self.cam_forward_vec = self.cam.matrix_world.to_quaternion() @ Vector((0,0,-1))
+        if self.is_focal_mode:
+            self.text_body = "Focal Length" if self.cam.data.type == 'PERSP' else "Orthographic Scale"
+            # ui_scale = context.preferences.system.ui_scale
+            # self.text_position = (context.area.width / 2 - (120 * ui_scale), event.mouse_region_y + (80 * ui_scale)) # mid area x
+            self.text_position = (context.area.width / 2 - 120, event.mouse_region_y + 80) # mid area x
+            # self.text_position = (event.mouse_region_x - 100, event.mouse_region_y + 80) # place x relative to mouse
+            self.text_size = 18.0
+            args = (self, context)    
+            self._text_handle = bpy.types.SpaceView3D.draw_handler_add(draw.text_draw_callback_px, args, 'WINDOW', 'POST_PIXEL')
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
-        fac = 0.01 if event.shift else 0.1
+        if self.is_focal_mode and self.cam.data.type == 'ORTHO':
+            fac = 0.001 if event.shift else 0.01
+        else:
+            fac = 0.01 if event.shift else 0.1
+
+
         if event.shift != self.shift_pressed:
             self.shift_pressed = event.shift
             self.cumulated_delta += self.current_delta
             self.init_mouse_x = event.mouse_x
 
         self.current_delta = (event.mouse_x - self.init_mouse_x) * fac
-
         move_val = self.cumulated_delta + self.current_delta
-
-        new_position = self.init_pos + self.cam_forward_vec * move_val
-        if event.alt:
-            new_position.z = self.init_pos.z
-
-        self.cam.matrix_world.translation = new_position
         
+        if self.is_focal_mode:
+            # Adjust camera parameters
+            if self.cam.data.type == 'ORTHO':
+                # For orthographic camera, adjust ortho_scale
+                # new_scale = self.init_ortho_scale * (1 - move_val)
+                new_scale = self.init_ortho_scale - move_val
+                self.cam.data.ortho_scale = new_scale
+
+                # self.text_body = f"Orthographic Scale: {self.cam.data.ortho_scale:.2f}"
+                self.text_body = f"Orthographic Scale: {self.init_ortho_scale:.1f} -> {self.cam.data.ortho_scale:.2f}"
+                context.area.header_text_set(f'Orthographic Scale Offset: {move_val:.2f}')
+            else:
+                # For perspective camera, adjust focal length
+                # new_focal = self.init_lens * (1 + move_val)
+                new_focal = self.init_lens + move_val
+                self.cam.data.lens = new_focal
+
+                # self.text_body = f"Focal Length: {self.cam.data.lens:.1f}"
+                self.text_body = f"Focal Length: {self.init_lens:.1f} -> {self.cam.data.lens:.1f}"
+                context.area.header_text_set(f'Focal Length Offset: {move_val:.2f}')
+        else:
+            # Position-based behavior
+            new_position = self.init_pos + self.cam_forward_vec * move_val
+            if event.alt:
+                new_position.z = self.init_pos.z
+            self.cam.matrix_world.translation = new_position
+            context.area.header_text_set(f'Camera Offset: {move_val:.2f}')
+
         if event.type == 'LEFTMOUSE':
             context.window.cursor_set("DEFAULT")
-            fn.key_object(self.cam, scale=False, use_autokey=True)
+            if self.is_focal_mode:
+                # Keyframe camera parameters
+                data_path = 'lens' if self.cam.data.type == 'PERSP' else 'ortho_scale'
+                # TODO: pass active keying set ? # options={'INSERTKEY_AVAILABLE'}
+                fn.key_data_path(self.cam.data, data_path=data_path, use_autokey=True)
+                draw.stop_callback(self, context)
+            else:
+                fn.key_object(self.cam, scale=False, use_autokey=True)
             return {'FINISHED'}
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
-            self.cam.location = self.init_pos
+            if self.is_focal_mode:
+                # Restore initial camera parameters
+                self.cam.data.lens = self.init_lens
+                self.cam.data.ortho_scale = self.init_ortho_scale
+            else:
+                self.cam.location = self.init_pos
             context.window.cursor_set("DEFAULT")
+            draw.stop_callback(self, context)
             return {'CANCELLED'}
         
         return {'RUNNING_MODAL'}

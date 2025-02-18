@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.5.0
+
+- added: Adjust focal length or orthographic scale with `Ctrl + Drag` on camera depth move button
+
 2.4.1
 
 - fixed: workspace loading, now load properly with sidebar set.
