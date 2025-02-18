@@ -1,11 +1,11 @@
 from . import (
     cam_move,
-    cam_shift,
+    # cam_shift,
     )
 
 modules = (
     cam_move,
-    cam_shift,
+    # cam_shift,
 )
 
 def register():

@@ -5,6 +5,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 2.5.0
 
 - added: Adjust focal length or orthographic scale with `Ctrl + Drag` on camera depth move button
+- added: Adjust camera shift x/y with `Ctrl + Drag` on camera pan button (auto-lock on `Ctrl` is achieved then by releasing then pressing it again)
 
 2.4.1
 

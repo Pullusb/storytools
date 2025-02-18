@@ -75,6 +75,7 @@ class STORYTOOLS_OT_camera_depth(Operator):
         
         if self.is_focal_mode:
             # Adjust camera parameters
+            decimals = 2 if event.shift else 1
             if self.cam.data.type == 'ORTHO':
                 # For orthographic camera, adjust ortho_scale
                 # new_scale = self.init_ortho_scale * (1 - move_val)
@@ -82,7 +83,7 @@ class STORYTOOLS_OT_camera_depth(Operator):
                 self.cam.data.ortho_scale = new_scale
 
                 # self.text_body = f"Orthographic Scale: {self.cam.data.ortho_scale:.2f}"
-                self.text_body = f"Orthographic Scale: {self.init_ortho_scale:.1f} -> {self.cam.data.ortho_scale:.2f}"
+                self.text_body = f"Orthographic Scale: {self.init_ortho_scale:.1f} -> {self.cam.data.ortho_scale:.{decimals}f}"
                 context.area.header_text_set(f'Orthographic Scale Offset: {move_val:.2f}')
             else:
                 # For perspective camera, adjust focal length
@@ -91,7 +92,7 @@ class STORYTOOLS_OT_camera_depth(Operator):
                 self.cam.data.lens = new_focal
 
                 # self.text_body = f"Focal Length: {self.cam.data.lens:.1f}"
-                self.text_body = f"Focal Length: {self.init_lens:.1f} -> {self.cam.data.lens:.1f}"
+                self.text_body = f"Focal Length: {self.init_lens:.1f} -> {self.cam.data.lens:.{decimals}f}"
                 context.area.header_text_set(f'Focal Length Offset: {move_val:.2f}')
         else:
             # Position-based behavior
@@ -128,9 +129,10 @@ class STORYTOOLS_OT_camera_depth(Operator):
 
 class STORYTOOLS_OT_camera_pan(Operator):
     bl_idname = "storytools.camera_pan"
-    bl_label = 'Object Pan Translate'
+    bl_label = 'Camera Pan/Shift'
     bl_description = "Pan Camera, X/Y to lock on axis\
-                    \n+ Ctrl : Autolock on major axis\
+                    \n+ Ctrl (Start) : Camera Shift instead or Pan\
+                    \n+ Ctrl (During) : Autolock on moved axis\
                     \n+ Shift : Precision mode"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
@@ -142,46 +144,68 @@ class STORYTOOLS_OT_camera_pan(Operator):
         self.cam = context.scene.camera
 
         if any(self.cam.lock_location):
-            # print('locked!')
             self.report({'ERROR'}, 'Camera location is locked')
             return {'CANCELLED'}
 
-            ## redo panel changes crash (probably cause of the mix)
-            self.ob = self.cam # need to assign 'ob' variable
-            return context.window_manager.invoke_props_dialog(self)
-
+        # Set mode based on initial Ctrl state
+        self.shift_mode = event.ctrl
+        if self.shift_mode and self.cam.data.type != 'PERSP':
+            self.shift_mode = False  # Force pan mode for ortho cameras
+            
         self.shift_pressed = event.shift
+        self.ctrl_released = False  # Track if Ctrl was released after start
         self.cumulated_delta = Vector((0, 0))
         self.current_delta = Vector((0, 0))
 
         self.final_lock = self.lock = None
-        self.init_pos = self.cam.location.copy() # to restore if cancelled
+        
+        # Store initial values based on mode
+        if self.shift_mode:
+            self.init_shift_x = self.cam.data.shift_x
+            self.init_shift_y = self.cam.data.shift_y
+            self.lock_text = 'Camera Shift'
+            
+            ## Poka-yoke : Add text so used know immediately know he's not in default mode
+            self.text_body = "Shift X/Y"
+            self.text_position = (context.area.width / 2 - 60, event.mouse_region_y + 80)
+            # self.text_position = (event.mouse_region_x - 100, event.mouse_region_y + 80) # place x relative to mouse
+            self.text_size = 18.0
+            args = (self, context)    
+            self._text_handle = bpy.types.SpaceView3D.draw_handler_add(draw.text_draw_callback_px, args, 'WINDOW', 'POST_PIXEL')
+            ## Optional improvements
+            ## TODO: add point and/or lines to show center of of unshifted camera
+            ## TODO: add method to lock back on 0.1 full value (Would help to reset to 0.0)
+        else:
+            self.init_pos = self.cam.location.copy()
+            self.lock_text = 'Camera Pan'
+
         self.init_mouse = Vector((event.mouse_x, event.mouse_y))
-        self.lock_text = 'Camera Pan'
         self.local_x = self.cam.matrix_world.to_quaternion() @ Vector((1,0,0))
         self.local_y = self.cam.matrix_world.to_quaternion() @ Vector((0,1,0))
         context.window.cursor_set("SCROLL_XY")
 
-        self.update_position(context, event)
-
-        ## Draw handler
+        # Setup draw handler
         center = fn.get_cam_frame_world_center(self.cam)
         self.lock_x_coords = [center + self.local_x * 10000, center + self.local_x * -10000]
         self.lock_y_coords = [center + self.local_y * 10000, center + self.local_y * -10000]
-        wm = context.window_manager
-
+        
         args = (self, context)
         self._handle = bpy.types.SpaceView3D.draw_handler_add(draw.lock_axis_draw_callback, args, 'WINDOW', 'POST_VIEW')
 
-        wm.modal_handler_add(self)
+        self.update_transform(context, event)
+        context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
-    def update_position(self, context, event):
+    def update_transform(self, context, event):
         mouse_co = Vector((event.mouse_x, event.mouse_y))
         lock = self.lock
         
-        ## Slower with shift
-        fac = 0.01 if event.shift else 0.1
+        ## Adjust factor based on mode and shift key (precision) state
+        if self.shift_mode:
+            fac = 0.001 if event.shift else 0.01
+        else:
+            fac = 0.01 if event.shift else 0.1
+
         if event.shift != self.shift_pressed:
             self.shift_pressed = event.shift
             self.cumulated_delta += self.current_delta
@@ -190,44 +214,72 @@ class STORYTOOLS_OT_camera_pan(Operator):
         self.current_delta = (mouse_co - self.init_mouse) * fac
         move_2d = self.cumulated_delta + self.current_delta
         
-        # Ctrl: override lock to "major" direction
+        ## Handle Ctrl for axis locking
         if event.ctrl:
-            if abs(move_2d.x) >= abs(move_2d.y):
-                lock = 'X'
+            if not self.ctrl_released and self.shift_mode:
+                # Don't apply autolock until Ctrl has been released and pressed again
+                # Only for shift mode
+                lock = self.lock
             else:
-                lock = 'Y'
+                if abs(move_2d.x) >= abs(move_2d.y):
+                    lock = 'X'
+                else:
+                    lock = 'Y'
+        elif not self.ctrl_released:
+            ## Detected released once, kept as flag for next Ctrl press
+            self.ctrl_released = True
 
-        move_vec = Vector((0,0,0))
-        if not lock or lock == 'X': 
-            move_vec += self.local_x * (move_2d.x)
-        if not lock or lock == 'Y': 
-            move_vec += self.local_y * (move_2d.y)
+        # Apply transformation based on mode
+        if self.shift_mode:
+            move_vec = Vector((0, 0))
+            if not lock or lock == 'X': 
+                move_vec.x = move_2d.x
+            if not lock or lock == 'Y': 
+                move_vec.y = move_2d.y
+
+            self.cam.data.shift_x = self.init_shift_x + move_vec.x
+            self.cam.data.shift_y = self.init_shift_y + move_vec.y
+            decimals = 3 if event.shift else 2
+            self.text_body = f"Shift X: {self.cam.data.shift_x:.{decimals}f}\nShift Y: {self.cam.data.shift_y:.{decimals}f}"
+        else:
+            move_vec = Vector((0,0,0))
+            if not lock or lock == 'X': 
+                move_vec += self.local_x * (move_2d.x)
+            if not lock or lock == 'Y': 
+                move_vec += self.local_y * (move_2d.y)
+
+            self.cam.location = self.init_pos + move_vec
 
         self.final_lock = lock
-        # set location
-        self.cam.location = self.init_pos + move_vec
-        
-        ## set header text (optional)
-        self.lock_text = f'Camera Pan X: {move_2d.x:.3f}, Y: {move_2d.y:.3f}'
+        mode_text = 'Camera Shift' if self.shift_mode else 'Camera Pan'
+        self.lock_text = f'{mode_text} X: {move_2d.x:.3f}, Y: {move_2d.y:.3f}'
         self.lock_text += f' | Lock Axis {lock}' if lock else ''
         context.area.header_text_set(self.lock_text)
 
     def modal(self, context, event):
-        self.update_position(context, event)
+        self.update_transform(context, event)
         
         if event.type in ('X','Y') and event.value == 'PRESS':
             self.lock = event.type if self.lock != event.type else None
         
-        elif event.type == 'LEFTMOUSE': # and event.value == 'RELEASE'
+        elif event.type == 'LEFTMOUSE':
             context.window.cursor_set("DEFAULT")
-            
-            fn.key_object(self.cam, scale=False, use_autokey=True)
-
             draw.stop_callback(self, context)
+            
+            if self.shift_mode:
+                fn.key_data_path(self.cam.data, data_path=['shift_x', 'shift_y'], use_autokey=True)
+            else:
+                fn.key_object(self.cam, scale=False, use_autokey=True)
+            
             return {'FINISHED'}
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
-            self.cam.location = self.init_pos
+            if self.shift_mode:
+                self.cam.data.shift_x = self.init_shift_x
+                self.cam.data.shift_y = self.init_shift_y
+            else:
+                self.cam.location = self.init_pos
+            
             draw.stop_callback(self, context)
             return {'CANCELLED'}
         
