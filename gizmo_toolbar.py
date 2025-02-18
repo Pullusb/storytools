@@ -122,10 +122,16 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         
         ## Camera Pan
         self.gz_cam_pan = self.gizmos.new("GIZMO_GT_button_2d")
-        fn.set_gizmo_settings(self.gz_cam_pan, 'VIEW_PAN', show_drag=True) # ARROW_LEFTRIGHT
+        fn.set_gizmo_settings(self.gz_cam_pan, 'VIEW_PAN', show_drag=True)
         self.gz_cam_pan.target_set_operator("storytools.camera_pan")
         self.camera_gizmos.append(self.gz_cam_pan)
-        
+
+        ## Camera Shift
+        # self.gz_cam_shift = self.gizmos.new("GIZMO_GT_button_2d")
+        # fn.set_gizmo_settings(self.gz_cam_shift, 'CON_OBJECTSOLVER', show_drag=True)
+        # self.gz_cam_shift.target_set_operator("storytools.camera_shift")
+        # self.camera_gizmos.append(self.gz_cam_shift)
+
         ## Camera Depth
         self.gz_cam_depth = self.gizmos.new("GIZMO_GT_button_2d")
         fn.set_gizmo_settings(self.gz_cam_depth, 'EMPTY_SINGLE_ARROW', show_drag=True)
@@ -150,7 +156,6 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         fn.set_gizmo_settings(self.gz_lock_view, 'LOCKVIEW_ON')
         self.gz_lock_view.target_set_operator("storytools.lock_view")
         self.camera_gizmos.append(self.gz_lock_view)
-
 
         ## Camera key position
         self.gz_key_cam = self.gizmos.new("GIZMO_GT_button_2d")
