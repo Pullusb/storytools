@@ -41,7 +41,9 @@ def stop_callback(self, context):
         bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
     if handle := getattr(self, '_pos_handle', None):
         bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
-    if handle := getattr(self, '_guide_handle', None):
+    # if handle := getattr(self, '_guide_handle', None):
+    #     bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
+    if handle := getattr(self, '_line_handle', None):
         bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
     if handle := getattr(self, '_grid_handle', None):
         bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
@@ -159,7 +161,6 @@ def origin_position_callback(self, context):
     gpu.state.line_width_set(1)
     gpu.state.blend_set('NONE')
 
-
 ## guide on transform - [Not used yet]
 def guide_callback(self, context):
     """Draw pseudo shadow to better see object, WIP TEST"""
@@ -216,8 +217,51 @@ def guide_callback(self, context):
     gpu.state.blend_set('NONE')
 
 
+## shift callback
+def line_draw_callback(self, context):
+    """generic 3D line draw callback for line drawing
+    need following variable in self:
+    line_coords (flat list of vector3 pairs)
+    line_color (vector4)
+    line_width (float)
+
+    line_blend (default NONE, str) choice in: 
+        NONE No blending.
+        ALPHA The original color channels are interpolated according to the alpha value.
+        ALPHA_PREMULT The original color channels are interpolated according to the alpha value with the new colors pre-multiplied by this value.
+        ADDITIVE The original color channels are added by the corresponding ones.
+        ADDITIVE_PREMULT The original color channels are added by the corresponding ones that are pre-multiplied by the alpha value.
+        MULTIPLY The original color channels are multiplied by the corresponding ones.
+        SUBTRACT The original color channels are subtracted by the corresponding ones.
+        INVERT The original color channels are replaced by its complementary color.
+
+    
+    """
+
+    line_color = getattr(self, 'line_color', (0.0, 0.5, 1.0, 1.0)) # blue
+    line_width = getattr(self, 'line_width', 1.0)
+    line_blend = getattr(self, 'line_blend', 'NONE')
+
+    gpu.state.blend_set(line_blend)
+    gpu.state.line_width_set(line_width)
+
+    ## old compatibility (kept for reference)
+    # if bpy.app.version <= (3,6,0):
+    #     shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+    # else:
+    #     shader = gpu.shader.from_builtin('UNIFORM_COLOR')
+    shader = gpu.shader.from_builtin('UNIFORM_COLOR')
+    shader.uniform_float("color", line_color)
+    batch = batch_for_shader(shader, 'LINES', {"pos": self.line_coords})
+    batch.draw(shader)
+
+    ## restore default
+    gpu.state.line_width_set(1)
+    gpu.state.blend_set('NONE')
+
+
 def text_draw_callback_px(self, context):
-    """Draw text
+    """Generic Draw text callback
     Need those variable in text, else fallback to generic values
     text_body (str)
     text_position (vector2)

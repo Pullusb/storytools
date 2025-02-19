@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.6.0
+
+- added: overlay line hint when tweaking camera shift, show position of the un-shifted frame in grey lines 
+- added: snap on half view-frame using Alt during shift the transform
+
 2.5.0
 
 - added: Adjust focal length or orthographic scale with `Ctrl + Drag` on camera depth move button

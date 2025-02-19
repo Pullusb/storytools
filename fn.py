@@ -107,7 +107,18 @@ def coord_distance_from_view(coord=None, context=None):
         return None
     return (co - view_mat.translation).length
 
+def get_camera_view_vector():
+    '''return active camera view vector (normalized direction)
+    return None if no active camera
+    '''
+    view_vector = Vector((0,0,-1))
+    if not bpy.context.scene.camera:
+        return
+    view_vector.rotate(bpy.context.scene.camera.matrix_world)
+    return view_vector
+
 def coord_distance_from_cam(coord=None, context=None):
+    """Get the distance between the camera and a 3D point, parallel to view vector axis"""
     context = context or bpy.context
     coord = coord or context.scene.cursor.location
 

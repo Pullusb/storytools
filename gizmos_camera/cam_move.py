@@ -5,6 +5,7 @@ from bpy.types import Operator
 from mathutils import Vector
 from gpu_extras.batch import batch_for_shader
 from bpy.app.handlers import persistent
+from mathutils.geometry import intersect_line_plane
 
 from .. import fn
 from .. import draw
@@ -127,13 +128,82 @@ class STORYTOOLS_OT_camera_depth(Operator):
         
         return {'RUNNING_MODAL'}
 
+def shift_lines(context):
+    """Return lines to display camera frame shift"""
+    scene= context.scene
+    camera = context.scene.camera
+
+    shift_x, shift_y = camera.data.shift_x, camera.data.shift_y
+    if shift_x == 0 and shift_y == 0:
+        return []
+
+    # Shift camera to center of frame
+    # center = fn.get_cam_frame_world_center(camera, scene)
+
+    frame = fn.get_cam_frame_world(camera, scene)
+    center = sum(frame, Vector()) / 4
+    # center = fn.get_cam_frame_world_center(camera, scene)
+    if view_vec := fn.get_camera_view_vector():
+        view_vec *=100
+    else:
+        return
+    
+    ## Get translation vector to return frame in unshifted position 
+    unshifted_center = intersect_line_plane(camera.matrix_world.translation, camera.matrix_world.translation + view_vec, frame[0], view_vec)
+    translation_vector = unshifted_center - center
+
+    unshifted_frame = [v + translation_vector for v in frame]
+    
+    ## cam frame
+    # 3-0
+    # 2-1
+
+    ## Add lines from out corners to non-shifted corners
+    index_to_show = set()
+    ## Choose index or corner to display (display corner outside of frame)
+    if shift_x > 0:
+        index_to_show.update([2, 3])
+    elif shift_x < 0:
+        index_to_show.update([0, 1])
+
+    if shift_y > 0:
+        index_to_show.update([1, 2])
+    elif shift_y < 0:
+        index_to_show.update([0, 3])
+
+    index_to_show = sorted(index_to_show) # implicit convert to list
+    # index_to_show = list(index_to_show) # implicit convert to list
+
+    lines = []
+    for idx in index_to_show:
+        lines.extend([unshifted_frame[idx], frame[idx]])
+
+    ## Fully trace non-shifted frame
+    # lines.extend([unshifted_frame[0], unshifted_frame[1], 
+    #               unshifted_frame[1], unshifted_frame[2], 
+    #               unshifted_frame[2], unshifted_frame[3], 
+    #               unshifted_frame[3], unshifted_frame[0]])
+
+    ## Add non-shifted frame border lines
+    ## move index accordingly to avoid diagonals
+    if shift_y < 0:
+        index_to_show.insert(0, index_to_show.pop())
+        if shift_x > 0:
+            index_to_show.insert(0, index_to_show.pop())
+
+    for i in range(len(index_to_show)-1):
+        lines.extend([unshifted_frame[index_to_show[i]], unshifted_frame[index_to_show[i+1]]])
+
+    return lines
+
 class STORYTOOLS_OT_camera_pan(Operator):
     bl_idname = "storytools.camera_pan"
     bl_label = 'Camera Pan/Shift'
     bl_description = "Pan Camera, X/Y to lock on axis\
-                    \n+ Ctrl (Start) : Camera Shift instead or Pan\
+                    \n+ Shift : Precision mode\
                     \n+ Ctrl (During) : Autolock on moved axis\
-                    \n+ Shift : Precision mode"
+                    \n+ Ctrl (Start) : Camera Shift instead of Pan\
+                    \n+ Alt  (During Shift): Snap to half-frame offset"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     @classmethod
@@ -172,9 +242,11 @@ class STORYTOOLS_OT_camera_pan(Operator):
             self.text_size = 18.0
             args = (self, context)    
             self._text_handle = bpy.types.SpaceView3D.draw_handler_add(draw.text_draw_callback_px, args, 'WINDOW', 'POST_PIXEL')
-            ## Optional improvements
-            ## TODO: add point and/or lines to show center of of unshifted camera
-            ## TODO: add method to lock back on 0.1 full value (Would help to reset to 0.0)
+            ## Show no-shifted frame hint lines
+            self.line_coords = shift_lines(context)
+            self.line_color = (0.5, 0.5, 0.5, 0.5)
+            self._line_handle = bpy.types.SpaceView3D.draw_handler_add(draw.line_draw_callback, (self, context), 'WINDOW', 'POST_VIEW')
+
         else:
             self.init_pos = self.cam.location.copy()
             self.lock_text = 'Camera Pan'
@@ -195,6 +267,45 @@ class STORYTOOLS_OT_camera_pan(Operator):
         self.update_transform(context, event)
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
+
+    def snap_shift(self, context, snap_threshold=0.12):
+        '''Snap camera shift to nearest half-frame
+        snap_threshold: float, proximity threshold to trigger snapping to half frame'''
+        # Get render resolution
+        render = context.scene.render
+        res_x = render.resolution_x
+        res_y = render.resolution_y
+        aspect_ratio = res_x / res_y
+
+        # Calculate frame dimensions based on sensor fit
+        if self.cam.data.sensor_fit == 'AUTO':
+            # In AUTO: If res_x > res_y, behaves like HORIZONTAL, else like VERTICAL
+            if res_x >= res_y:
+                frame_width = 1.0
+                frame_height = 1.0 / aspect_ratio
+            else:
+                frame_height = 1.0
+                frame_width = aspect_ratio
+        elif self.cam.data.sensor_fit == 'HORIZONTAL':
+            frame_width = 1.0
+            frame_height = 1.0 / aspect_ratio
+        else:  # VERTICAL
+            frame_height = 1.0
+            frame_width = aspect_ratio
+
+        # Convert current shift to frame space
+        shift_x_frames = self.cam.data.shift_x / frame_width
+        shift_y_frames = self.cam.data.shift_y / frame_height
+
+        # Calculate nearest half frame position
+        half_x = round(shift_x_frames * 2) / 2
+        half_y = round(shift_y_frames * 2) / 2
+        
+        # Check if we're close enough to snap
+        if abs(shift_x_frames - half_x) < snap_threshold:
+            self.cam.data.shift_x = half_x * frame_width
+        if abs(shift_y_frames - half_y) < snap_threshold:
+            self.cam.data.shift_y = half_y * frame_height        
 
     def update_transform(self, context, event):
         mouse_co = Vector((event.mouse_x, event.mouse_y))
@@ -239,8 +350,15 @@ class STORYTOOLS_OT_camera_pan(Operator):
 
             self.cam.data.shift_x = self.init_shift_x + move_vec.x
             self.cam.data.shift_y = self.init_shift_y + move_vec.y
+
+            if event.alt:
+                ## Snap when closed to half-frame offest
+                self.snap_shift(context, snap_threshold=0.15)
+
             decimals = 3 if event.shift else 2
             self.text_body = f"Shift X: {self.cam.data.shift_x:.{decimals}f}\nShift Y: {self.cam.data.shift_y:.{decimals}f}"
+            ## update unshifted line hint coordinates
+            self.line_coords = shift_lines(context)
         else:
             move_vec = Vector((0,0,0))
             if not lock or lock == 'X': 
