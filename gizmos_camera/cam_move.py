@@ -404,6 +404,78 @@ class STORYTOOLS_OT_camera_pan(Operator):
         return {'RUNNING_MODAL'}
 
 
+def fit_camera_view_to_regions(context):
+    """
+    Fit camera view to viewport while considering all UI regions.
+    Returns True if fitting was performed, False otherwise.
+    """
+    region = context.region
+    area = context.area
+    r3d = context.space_data.region_3d
+    
+    # Define margin in pixels
+    margin = 20  # Margin around camera frame
+    
+    # Initialize UI element dimensions
+    toolbar_width = 0
+    sidebar_width = 0
+    header_height = 0
+    footer_height = 0
+    asset_shelf_height = 0
+    
+    # Iterate through regions to find UI elements
+    for r in area.regions:
+        if r.type == 'TOOLS' and r.width > 1:  # Left toolbar
+            toolbar_width = r.width
+        elif r.type == 'UI' and r.width > 1:  # Right sidebar
+            sidebar_width = r.width
+        elif r.type == 'HEADER' and r.height > 1:  # Header
+            # Check alignment (top or bottom)
+            if hasattr(area, 'header_alignment') and area.header_alignment == 'BOTTOM':
+                footer_height = r.height
+            else:
+                header_height = r.height
+        elif r.type == 'ASSET_SHELF' and r.height > 1:  # Asset shelf (at bottom)
+            asset_shelf_height = r.height
+    
+    # Calculate available space
+    available_width = region.width - (toolbar_width + sidebar_width + 2 * margin)
+    available_height = region.height - (header_height + footer_height + asset_shelf_height + 2 * margin)
+    
+    # Calculate proportion of available space
+    width_prop = available_width / region.width
+    height_prop = available_height / region.height
+    
+    # Apply zoom adjustment based on available space
+    # We need to make the view smaller to fit within the available area
+    current_zoom = r3d.view_camera_zoom
+    scale_factor = min(width_prop, height_prop)
+    new_zoom = current_zoom * scale_factor - 10  # Extra safety margin
+    new_zoom = min(new_zoom, current_zoom)  # Don't zoom in
+    r3d.view_camera_zoom = new_zoom
+    
+    # Calculate offset to center within available space
+    # The offset values are normalized from -1 to 1
+    # X-axis: positive moves view right, negative moves view left
+    # Y-axis: positive moves view up, negative moves view down
+    
+    # Calculate the UI imbalance (difference between left and right UI elements)
+    ui_imbalance_x = toolbar_width - sidebar_width
+    
+    # Calculate vertical imbalance (consider header, footer and asset shelf)
+    ui_imbalance_y = (footer_height + asset_shelf_height) - header_height
+    
+    # Convert to normalized coordinates (-1 to 1) and handle axis direction
+    offset_x = -1.0 * (ui_imbalance_x / (2.0 * region.width))
+    offset_y = (ui_imbalance_y / (2.0 * region.height))
+    
+    # Apply offset
+    r3d.view_camera_offset[0] = offset_x
+    r3d.view_camera_offset[1] = offset_y
+    
+    return True
+
+
 class STORYTOOLS_OT_lock_camera_to_view_toggle(Operator):
     bl_idname = "storytools.lock_camera_to_view_toggle"
     bl_label = 'Toggle Lock Camera To View'
@@ -412,9 +484,6 @@ class STORYTOOLS_OT_lock_camera_to_view_toggle(Operator):
         \n+ Ctrl : Center and resize view to fit camera bounds\
         \n+ Shift : Match view zoom to render resolution"
     bl_options = {'REGISTER', 'INTERNAL'}
-
-
-    # Ctrl : Fit viewport to camera frame bounds
 
     def invoke(self, context, event):
         self.fit_viewport = event.ctrl
@@ -438,15 +507,18 @@ class STORYTOOLS_OT_lock_camera_to_view_toggle(Operator):
             r3d.lock_rotation = False
 
         if self.fit_viewport:
-            ## TODO: Custom view_fit that consider all regions width
-            # fn.fit_view(context)
-            # return {"FINISHED"}
-
+            ## Simple method (do not consider regions)
+            # bpy.ops.view3d.view_center_camera()
+            # ## Dezoom slightly to let frame enter view
+            # r3d.view_camera_zoom += r3d.view_camera_zoom * -0.1
+            
+            ## fit_cam_to_region
+            # First center the camera view using Blender's built-in operator
             bpy.ops.view3d.view_center_camera()
-            ## Dezoom slightly to let frame enter view
 
-            r3d.view_camera_zoom += r3d.view_camera_zoom * -0.1
-
+            # Use the standalone function for custom view fitting
+            fit_camera_view_to_regions(context)
+            
             if is_rotation_locked:
                 r3d.lock_rotation = True
             return {"FINISHED"}
@@ -456,7 +528,6 @@ class STORYTOOLS_OT_lock_camera_to_view_toggle(Operator):
             if is_rotation_locked:
                 r3d.lock_rotation = True
             return {"FINISHED"}
-
 
         if go_to_cam:
             return {"FINISHED"}
