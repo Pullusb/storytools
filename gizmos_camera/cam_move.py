@@ -413,6 +413,9 @@ def fit_camera_view_to_regions(context):
     area = context.area
     r3d = context.space_data.region_3d
     
+    # First use Blender's built-in operator to center the camera
+    bpy.ops.view3d.view_center_camera()
+
     # Define margin in pixels
     margin = 20  # Margin around camera frame
     
@@ -512,11 +515,7 @@ class STORYTOOLS_OT_lock_camera_to_view_toggle(Operator):
             # ## Dezoom slightly to let frame enter view
             # r3d.view_camera_zoom += r3d.view_camera_zoom * -0.1
             
-            ## fit_cam_to_region
-            # First center the camera view using Blender's built-in operator
-            bpy.ops.view3d.view_center_camera()
-
-            # Use the standalone function for custom view fitting
+            ## Use the standalone function for custom view fitting
             fit_camera_view_to_regions(context)
             
             if is_rotation_locked:
