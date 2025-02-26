@@ -84,10 +84,23 @@ class STORYTOOLS_OT_map_frame_objects(Operator):
     bl_options = {"REGISTER", "INTERNAL"} # "UNDO", 
     
     target : bpy.props.StringProperty(name='Framing Target', 
-                                      default='ALL', 
-                                      options={'SKIP_SAVE'})
+                default='ALL',
+                description='Frame target (in ALL, GP, ACTIVE)', 
+                options={'SKIP_SAVE'})
+
+    @classmethod
+    def description(cls, context, properties):
+        if properties.target == 'GP':
+            return 'Frame all Grease pencil objects'
+        elif properties.target == 'ALL':
+            return 'Frame camera and all Grease pencil objects'
+        elif properties.target == 'ACTIVE':
+            return 'Frame active object'
+        else:
+            return 'Frame objects'
 
     def execute(self, context):
+        # TODO: make it a modal function to make the reframe movement smooth
         fn.frame_objects(context, target=self.target)
         return {"FINISHED"}
 

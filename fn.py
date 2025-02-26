@@ -1380,13 +1380,20 @@ def fit_view(context=None):
     r3d.view_camera_zoom = zoom_value
     print('zoom after', r3d.view_camera_zoom) # Dbg
 
-def frame_objects(context, target='NONE', objects=None):
+def frame_objects(context, target='NONE', objects=None, apply=True):
     '''frame objects in view using BBox
-    target (str): string to define what to show (ALL: GP object + Camera)
+    target (str): string to define what to frame (ALL: GP object + Camera, GP: GP object, ACTIVE: active object)
     objects (list, default:None): alternatively, a list of object to frame can be passed
+    apply (bool, default:True): apply the view distance and location, else only return the values
+
+    return: rv3d's (view_distance, view_location)
     '''
     if objects is None:
-        objects = [o for o in context.scene.objects if o.type in ('GREASEPENCIL',) and o.visible_get()]
+        if target == 'ACTIVE':
+            objects = [context.object]
+        else:
+            # case of GP or ALL
+            objects = [o for o in context.scene.objects if o.type in ('GREASEPENCIL',) and o.visible_get()]
 
         if target == 'ALL' and context.scene.camera:
             objects.append(context.scene.camera)
@@ -1424,12 +1431,22 @@ def frame_objects(context, target='NONE', objects=None):
     height = sorted_y[-1].y - sorted_y[0].y
     val = width if width > height else height
     
+    if target == 'ACTIVE':
+        ## Specifically for active object, dezoom a little
+        val *= 1.2 # Add 20% margin
+
     # if (down_left.xy - top_right.xy).length < 1.0:
     val = max(val, 2.0) # Clamp to 2.0 as minimum value
 
-    ## Set center and view distance 
-    context.region_data.view_location.xy = global_bbox_center.xy
-    context.region_data.view_distance = val
-
+    z_loc = context.region_data.view_location.z
     if context.region_data.view_location.z < top_right.z:
-        context.region_data.view_location.z = top_right.z + 0.2
+        z_loc = top_right.z + 0.2
+
+    if apply:
+        ## Set center and view distance 
+        context.region_data.view_location.xy = global_bbox_center.xy
+        context.region_data.view_distance = val
+
+        context.region_data.view_location.z = z_loc
+    
+    return val, Vector((global_bbox_center.x, global_bbox_center.y, z_loc))
