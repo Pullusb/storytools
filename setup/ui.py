@@ -38,14 +38,22 @@ class STORYTOOLS_PT_viewport_setup(bpy.types.Panel):
 
         if fn.is_minimap_viewport(context):
             ## Minimap view operators
+            if context.region.type != "HEADER":
+                ## Hack: Disabled col property to avoid clicking on propertie
+                sub = col.row()
+                op = sub.operator('storytools.info_note', text='Minimap Options', emboss=False)
+                op.text = ''
+                op.title = ''
+                sub.enabled = False
             col.label(text='Recenter Map:')
             col.operator("storytools.map_frame_objects", text='Frame GP Objects and Camera')
             col.operator("storytools.map_frame_objects", text='Frame GP Objects').target = 'GP'
             col.operator("view3d.view_all", text='Frame All')
-
             ## TODO restrict selection to current active type / restore selection
-            col.separator()
-            col.operator("storytools.disable_minimap_viewport", text='Disable Minimap Viewport')
+
+            if context.region.type == "HEADER":
+                col.separator()
+                col.operator("storytools.disable_minimap_viewport", text='Disable Minimap Viewport', icon='LOOP_BACK')
 
         else:
             ## setttgings 

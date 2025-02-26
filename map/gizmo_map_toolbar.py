@@ -35,6 +35,18 @@ class STORYTOOLS_GGT_map_toolbar(GizmoGroup):
         fn.set_gizmo_settings(self.gz_disable_map, 'LOOP_BACK') # 
         self.gz_disable_map.target_set_operator("storytools.disable_minimap_viewport")
         self.map_gizmos.append(self.gz_disable_map)
+        
+        self.gz_frame_objects = self.gizmos.new("GIZMO_GT_button_2d")
+        fn.set_gizmo_settings(self.gz_frame_objects, 'SHADING_BBOX') # 
+        op = self.gz_frame_objects.target_set_operator("storytools.map_frame_objects")
+        op.target = 'ALL'
+        self.map_gizmos.append(self.gz_frame_objects)
+        
+        self.gz_show_options = self.gizmos.new("GIZMO_GT_button_2d")
+        fn.set_gizmo_settings(self.gz_show_options, 'MENU_PANEL') # 
+        op = self.gz_show_options.target_set_operator("wm.call_panel")
+        op.name = "STORYTOOLS_PT_viewport_setup"
+        self.map_gizmos.append(self.gz_show_options)
 
         ## --- Object
         self.object_gizmos = []
@@ -57,41 +69,22 @@ class STORYTOOLS_GGT_map_toolbar(GizmoGroup):
         self.gz_ob_scale.target_set_operator("storytools.object_scale")
         self.object_gizmos.append(self.gz_ob_scale)
         
-        ## Object key transform
-        # self.gz_key_ob = self.gizmos.new("GIZMO_GT_button_2d")
-        # fn.set_gizmo_settings(self.gz_key_ob, 'DECORATE_KEYFRAME')
-        # self.gz_key_ob.target_set_operator("storytools.object_key_transform")
-        # self.object_gizmos.append(self.gz_key_ob)
-
 
         ## --- Camera
         
         self.camera_gizmos = []
-        
-        ## Camera Pan
-        # self.gz_cam_pan = self.gizmos.new("GIZMO_GT_button_2d")
-        # fn.set_gizmo_settings(self.gz_cam_pan, 'VIEW_PAN', show_drag=True) # ARROW_LEFTRIGHT
-        # self.gz_cam_pan.target_set_operator("storytools.camera_pan")
-        # self.camera_gizmos.append(self.gz_cam_pan)
-        
-        # ## Camera Depth
-        # self.gz_cam_depth = self.gizmos.new("GIZMO_GT_button_2d")
-        # fn.set_gizmo_settings(self.gz_cam_depth, 'EMPTY_SINGLE_ARROW', show_drag=True)
-        # self.gz_cam_depth.target_set_operator("storytools.camera_depth")
-        # self.camera_gizmos.append(self.gz_cam_depth)
+
+        # Roll view
+        self.gz_roll_view = self.gizmos.new("GIZMO_GT_button_2d")
+        fn.set_gizmo_settings(self.gz_roll_view, 'DRIVER_ROTATIONAL_DIFFERENCE', show_drag=True)
+        self.gz_roll_view.target_set_operator("storytools.roll_minimap_viewport")
+        self.camera_gizmos.append(self.gz_roll_view)
 
         # ## Camera Rotation
-        self.gz_cam_rot = self.gizmos.new("GIZMO_GT_button_2d")
-        fn.set_gizmo_settings(self.gz_cam_rot, 'FILE_REFRESH', show_drag=True)
-        op = self.gz_cam_rot.target_set_operator("storytools.object_rotate")
-        op.camera = True
-        self.camera_gizmos.append(self.gz_cam_rot)
-
-        ## Camera lock
-        # self.gz_lock_cam = self.gizmos.new("GIZMO_GT_button_2d")
-        # fn.set_gizmo_settings(self.gz_lock_cam, 'OUTLINER_OB_CAMERA')
-        # self.gz_lock_cam.target_set_operator("storytools.lock_camera_to_view_toggle")
-        # self.camera_gizmos.append(self.gz_lock_cam)
+        # self.gz_cam_rot = self.gizmos.new("GIZMO_GT_button_2d")
+        # fn.set_gizmo_settings(self.gz_cam_rot, 'FILE_REFRESH', show_drag=True)
+        # # self.gz_cam_rot.target_set_operator("view3d.view_roll") view_roll
+        # self.camera_gizmos.append(self.gz_cam_rot)
 
         ## Camera key position
         # self.gz_key_cam = self.gizmos.new("GIZMO_GT_button_2d")

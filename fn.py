@@ -1376,7 +1376,7 @@ def fit_view(context=None):
     ## ZOOM
     print('zoom before', r3d.view_camera_zoom) # Dbg
     zoom_value = zoom_from_fac(min(xfac, yfac))
-    zoom_value = max(min(zoom_value, 30.0), -30.0) # clamp between -30 and 30
+    zoom_value = max(min(zoom_value, 300.0), -30.0) # clamp between -30 and 30
     r3d.view_camera_zoom = zoom_value
     print('zoom after', r3d.view_camera_zoom) # Dbg
 

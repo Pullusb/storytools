@@ -2,6 +2,15 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.6.1
+
+- added: Minimap button toolbar (gizmos)
+- added: `Map view roll` button in minimap toolbar:
+  - Drag left right to rotate the top view
+  - Single click to reset to -Y world up
+- added: minimap toolbar button to reframe map to see camera and all GP object
+- added: minimap toolbar button to popup panel with different view framing choices
+
 2.6.0
 
 - added: overlay line hint when tweaking camera shift, show position of the un-shifted frame in grey lines 

@@ -12,7 +12,7 @@ from gpu_extras.batch import batch_for_shader
 import numpy as np
 from .. import fn
 
-
+## /!\ Unused version of map overlay using gizmo instead of gpu draw
 
 # Example of a gizmo that activates an operator
 # using the predefined dial gizmo to change the camera roll.

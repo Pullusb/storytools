@@ -2,16 +2,16 @@ from . import (
     # gizmos_map,
     handler_draw_map,
     map_ops,
-    # gizmo_map_toolbar,
-    # ui,
+    map_roll,
+    gizmo_map_toolbar,
     )
 
 modules = (
     # gizmos_map,
     handler_draw_map,
     map_ops,
-    # gizmo_map_toolbar,
-    # ui,
+    map_roll,
+    gizmo_map_toolbar,
 )
 
 def register():

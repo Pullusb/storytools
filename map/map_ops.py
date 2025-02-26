@@ -83,7 +83,9 @@ class STORYTOOLS_OT_map_frame_objects(Operator):
     bl_description = "Move and zoom Map to frame objects"
     bl_options = {"REGISTER", "INTERNAL"} # "UNDO", 
     
-    target : bpy.props.StringProperty(name='Framing Target', default='ALL', options={'SKIP_SAVE'})
+    target : bpy.props.StringProperty(name='Framing Target', 
+                                      default='ALL', 
+                                      options={'SKIP_SAVE'})
 
     def execute(self, context):
         fn.frame_objects(context, target=self.target)
@@ -96,7 +98,7 @@ class STORYTOOLS_OT_setup_minimap_viewport(Operator):
     bl_description = "Setup current viewport as minimap\
         \nAdjust viewport settings so viewport is considered as minimap\
         \n(determined by viewport orientation and combination of tool-settings"
-    bl_options = {"REGISTER", "INTERNAL", "UNDO"} # FIXME remove undo ?
+    bl_options = {"REGISTER", "INTERNAL"}
 
     split_viewport : bpy.props.BoolProperty(name='Split Viewport', default=False, options={'SKIP_SAVE'})
 
