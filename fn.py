@@ -366,6 +366,153 @@ def get_gp_draw_plane_matrix(context):
 
     return draw_plane_mat
 
+
+def create_gp_object(
+        name="",
+        parented=False,
+        at_cursor=False,
+        init_dist=8.0,
+        face_camera=True,
+        track_to_cam=False,
+        enter_draw_mode=True,
+        location=None,
+        context=None):
+    """
+    Create a new grease pencil object with specified parameters.
+    
+    Args:
+        name: Name of the Grease pencil object
+        parented: Whether to parent the object to the camera
+        at_cursor: Create at cursor location instead of facing view
+        init_dist: Initial distance from view
+        face_camera: Create facing camera instead of current view
+        track_to_cam: Add a track-to constraint pointing at active camera
+        enter_draw_mode: Whether to enter draw mode after creation
+        location: Explicit location to use instead of cursor or view (override other if provided)
+        context: Blender context, optional
+        
+    Returns:
+        The created Grease Pencil object
+    """
+    # Get context if not provided
+    if context is None:
+        context = bpy.context
+    
+    # Get references
+    prefs = get_addon_prefs()
+    scn = context.scene
+    
+    # Ensure we're in object mode
+    if context.object and context.object.visible_get() and context.mode != 'OBJECT':
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+    if context.mode == 'OBJECT':
+        bpy.ops.object.select_all(action='DESELECT')
+
+    # Get view matrix
+    r3d = context.space_data.region_3d
+    if r3d.view_perspective != 'CAMERA' and face_camera:
+        view_matrix = scn.camera.matrix_world
+    else:    
+        view_matrix = r3d.view_matrix.inverted()
+
+    # Set location - prioritize explicit location if provided
+    if location is not None:
+        # Use the provided location directly
+        loc = location
+    elif at_cursor:
+        loc = scn.cursor.location
+    else:
+        loc = view_matrix @ Vector((0.0, 0.0, -init_dist))
+    
+    # Clean name or generate default name if empty
+    name = name.strip()
+    if name == "":
+        # Create default numbered name
+        name_counter = len([o for o in bpy.data.objects if o.type == 'GREASEPENCIL']) + 1
+        name = f"Drawing_{name_counter:03d}"
+    
+    # TODO bonus : maybe check if want to use same data as another drawing ?
+
+    # Create Grease Pencil object
+    gp = bpy.data.grease_pencils_v3.new(name)
+    ob = bpy.data.objects.new(name, gp)
+
+    # Find appropriate collection
+    draw_col = next((c for c in scn.collection.children_recursive if c.name.startswith('Drawings')), None)
+    if not draw_col:
+        draw_col = next((c for c in scn.collection.children_recursive if c.name.startswith('GP')), None)
+    if not draw_col:
+        draw_col = context.collection  # auto-fallback on active collection
+
+    # Link to collection
+    draw_col.objects.link(ob)
+
+    # Set parent if needed
+    if parented:
+        ob.parent = scn.camera
+
+    # Set transform
+    _ref_loc, ref_rot, _ref_scale = view_matrix.decompose()
+    rot_mat = ref_rot.to_matrix().to_4x4() @ Matrix.Rotation(-pi/2, 4, 'X')
+    ## Old matrix creation method
+    # loc_mat = Matrix.Translation(loc)
+    # new_mat = loc_mat @ rot_mat @ get_scale_matrix((1, 1, 1))
+    ## Using Blender matrix compose method
+    new_mat = Matrix.LocRotScale(loc, rot_mat.to_3x3(), Vector((1, 1, 1)))
+
+    ob.matrix_world = new_mat
+
+    # Make active and selected
+    context.view_layer.objects.active = ob
+    ob.select_set(True)
+
+    # Add constraint if needed
+    if track_to_cam:
+        constraint = ob.constraints.new('TRACK_TO')
+        constraint.target = scn.camera
+        constraint.track_axis = 'TRACK_Y'
+        constraint.up_axis = 'UP_Z'
+
+    ## Configure default settings
+    # TODO: Set Active palette (Need a selectable loader)
+    # fn.load_palette(path_to_palette)
+    load_default_palette(ob=ob)
+    ## No edit line color in GPv3 (wire is displayed using curve theme)
+    # gp.edit_line_color[3] = prefs.default_edit_line_opacity # Bl default is 0.5
+    gp.use_autolock_layers = prefs.use_autolock_layers
+    
+    # Create default layers
+    for l_name in ['Color', 'Line', 'Sketch', 'Annotate']:
+        layer = gp.layers.new(l_name)
+        layer.frames.new(scn.frame_current)
+        layer.use_lights = prefs.use_lights
+    
+        # Set default material association
+        if l_name in ['Line', 'Sketch']:
+            set_material_association(ob, layer, 'line')
+        elif l_name == 'Color':
+            set_material_association(ob, layer, 'fill_white')
+        elif l_name == 'Annotate':
+            set_material_association(ob, layer, 'line_red')
+    
+    # Set default active layer (Could also be a preference but may be too much)
+    gp.layers.active = gp.layers.get('Sketch')
+
+    # Update UI
+    update_ui_prop_index(context)
+
+    # Enter draw mode if requested
+    if enter_draw_mode:
+        bpy.ops.object.mode_set(mode='PAINT_GREASE_PENCIL')
+        reset_draw_settings(context=context)
+
+    # Show canvas if first GP created on scene (or always enable at creation) ?
+    if len([o for o in context.scene.objects if o.type == 'GREASEPENCIL']) == 1:
+        context.space_data.overlay.use_gpencil_grid = True
+
+    return ob
+
 def mean_vector(vec_list):
     '''Get mean vector from a list of vectors
     e.g: mean_vector([self.ob.matrix_world @ co for co in self.init_pos])

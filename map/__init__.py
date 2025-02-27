@@ -3,6 +3,7 @@ from . import (
     handler_draw_map,
     map_ops,
     map_roll,
+    map_place_gp,
     gizmo_map_toolbar,
     )
 
@@ -11,6 +12,7 @@ modules = (
     handler_draw_map,
     map_ops,
     map_roll,
+    map_place_gp,
     gizmo_map_toolbar,
 )
 

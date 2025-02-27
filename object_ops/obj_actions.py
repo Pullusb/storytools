@@ -11,7 +11,7 @@ from .. import fn
 
 def distance_selection_update(self, context):
     # print('self: ', dir(self))
-    if self.place_from_cam and context.scene.camera:
+    if self.face_camera and context.scene.camera:
         self.init_dist = fn.coord_distance_from_cam(context=context)
     else:
         self.init_dist = fn.coord_distance_from_view(context=context)
@@ -37,7 +37,7 @@ class STORYTOOLS_OT_create_object(Operator):
         default=8.0, min=0.0, max=999, step=3, precision=3,
         subtype='DISTANCE')
     
-    place_from_cam : bpy.props.BoolProperty(
+    face_camera : bpy.props.BoolProperty(
         name='Use Active Camera',
         description="Create the object facing camera, else create from your current view",
         default=False, update=distance_selection_update)
@@ -46,12 +46,27 @@ class STORYTOOLS_OT_create_object(Operator):
         name='At Cursor',
         description="Create object at cursor location, else centered position at cursor 'distance' facing view",
         default=False)
+
+    use_location : bpy.props.BoolProperty(
+        name='Use Location',
+        description="Use the location of the new grease pencil object",
+        default=False,
+        options={'SKIP_SAVE'})
+
+    location : bpy.props.FloatVectorProperty(
+        name='Location',
+        description="Location of the new grease pencil object",
+        default=(0.0, 0.0, 0.0),
+        size=3,
+        options={'SKIP_SAVE'})
     
     track_to_cam : bpy.props.BoolProperty(
         name='Add Track To Camera',
         description="Add a track to constraint pointing at active camera\
             \nThis makes object's always face camera",
         default=False)
+    
+    # add option to enter draw mode (always On currently)
 
     def invoke(self, context, event):
         ## Suggest a numbered default name for quick use
@@ -76,129 +91,39 @@ class STORYTOOLS_OT_create_object(Operator):
         layout.use_property_split = True
         layout.prop(self, 'name')
         layout.prop(self, 'parented')
-        layout.prop(self, 'at_cursor')
-        row = layout.row()
-        row.prop(self, 'init_dist')
-        row.active = not self.at_cursor # enabled
         layout.prop(self, 'track_to_cam')
 
-        if context.space_data.region_3d.view_perspective != 'CAMERA':
-            box = layout.box()
-            col = box.column()
-            col.label(text='Not in camera', icon='ERROR')
-            col.prop(self, 'place_from_cam', text='Face Active Camera')
+        ## When location is passed, hide other options
+        if not self.use_location:
+            layout.label(text='Position:')
+            layout.prop(self, 'at_cursor')
+            row = layout.row()
+            row.prop(self, 'init_dist')
+            row.active = not self.at_cursor # enabled
+
+            if context.space_data.region_3d.view_perspective != 'CAMERA':
+                box = layout.box()
+                col = box.column()
+                col.label(text='Not in camera', icon='ERROR')
+                col.prop(self, 'face_camera', text='Face Active Camera')
         
         # if self.init_dist <= 0: (FIXME init_dist always positive, need futher check)
-        #     viewpoint ='camera' if self.place_from_cam else 'view'
+        #     viewpoint ='camera' if self.face_camera else 'view'
         #     col.label(text=f'Cursor is behind {viewpoint}', icon='ERROR') 
     
     def execute(self, context):
-        prefs = fn.get_addon_prefs()
-        scn = context.scene
-
-        if context.object and context.object.visible_get() and context.mode != 'OBJECT':
-            bpy.ops.object.mode_set(mode='OBJECT')
-
-        if context.mode == 'OBJECT':
-            bpy.ops.object.select_all(action='DESELECT')
-
-        r3d = context.space_data.region_3d
-        
-        if r3d.view_perspective != 'CAMERA' and self.place_from_cam:
-            view_matrix = scn.camera.matrix_world
-        else:    
-            view_matrix = r3d.view_matrix.inverted()
-
-        if self.at_cursor:
-            loc = scn.cursor.location
-        else:
-            loc = view_matrix @ Vector((0.0, 0.0, -self.init_dist))
-        
-        ## Create GP object
-        # TODO bonus : maybe check if want to use same data as another drawing ?
-
-        ## Clean name
-        self.name = self.name.strip()
-        gp = bpy.data.grease_pencils_v3.new(self.name)
-        ob_name = self.name
-
-        ob = bpy.data.objects.new(ob_name, gp)
-
-        ## Set collection 
-        ## Following is Only valid with a single scene !
-        # draw_col = bpy.data.collections.get('Drawings')
-        # if not draw_col:
-        #     draw_col = bpy.data.collections.new('Drawings')
-        #     bpy.scn.collection.children.link(draw_col)
-        
-        ## TODO : maybe better to always create a prefixed collection ?
-        draw_col = next((c for c in scn.collection.children_recursive if c.name.startswith('Drawings')), None)
-        if not draw_col:
-            draw_col = next((c for c in scn.collection.children_recursive if c.name.startswith('GP')), None)
-        if not draw_col:
-            ## Create a drawing collection or direct link in root/active collection ?
-            draw_col = context.collection # auto-fallback on scene collection
-
-        draw_col.objects.link(ob)
-
-        if self.parented:
-            ob.parent = scn.camera
-
-        ## Place
-        _ref_loc, ref_rot, _ref_scale  = view_matrix.decompose()
-        rot_mat = ref_rot.to_matrix().to_4x4() @ Matrix.Rotation(-pi/2, 4, 'X')
-        loc_mat = Matrix.Translation(loc)
-        new_mat = loc_mat @ rot_mat @ fn.get_scale_matrix((1,1,1))
-        ob.matrix_world = new_mat
-
-        ## Make active and selected
-        context.view_layer.objects.active = ob
-        ob.select_set(True)
-
-        if self.track_to_cam:
-            constraint = ob.constraints.new('TRACK_TO')
-            constraint.target = scn.camera
-            constraint.track_axis = 'TRACK_Y'
-            constraint.up_axis = 'UP_Z'
-
-        ## Configure
-        # TODO: Set Active palette (Need a selectable loader)
-        # fn.load_palette(path_to_palette)
-
-        fn.load_default_palette(ob=ob)
-        ## No edit line color in GPv3 (wire is displayed using curve theme)
-        # gp.edit_line_color[3] = prefs.default_edit_line_opacity # Bl default is 0.5
-        gp.use_autolock_layers = prefs.use_autolock_layers
-        
-        for l_name in ['Color', 'Line', 'Sketch', 'Annotate']:
-            layer = gp.layers.new(l_name)
-            layer.frames.new(scn.frame_current)
-            layer.use_lights = prefs.use_lights
-        
-            ## Set default association
-            ## TODO: Set default name as string in prefs (implemented with a layer customisation feature)
-            if l_name in ['Line', 'Sketch']:
-                fn.set_material_association(ob, layer, 'line')
-            elif l_name == 'Color':
-                fn.set_material_association(ob, layer, 'fill_white')
-            elif l_name == 'Annotate':
-                fn.set_material_association(ob, layer, 'line_red')
-        
-        ## Set default layer (Could also be a preference)
-        gp.layers.active = gp.layers.get('Sketch')
-
-        ## update UI
-        fn.update_ui_prop_index(context)
-
-        # Enter Draw mode
-        bpy.ops.object.mode_set(mode='PAINT_GREASE_PENCIL')
-        fn.reset_draw_settings(context=context)
-
-        ## Show canvas if first GP created on scene (or always enable at creation)
-        if len([o for o in context.scene.objects if o.type == 'GREASEPENCIL']) == 1:
-            context.space_data.overlay.use_gpencil_grid = True
-        # context.space_data.overlay.use_gpencil_grid = True
-
+        loc = self.location if self.use_location else None
+        fn.create_gp_object(
+            name=self.name,
+            parented=self.parented,
+            at_cursor=self.at_cursor,
+            init_dist=self.init_dist,
+            face_camera=self.face_camera,
+            track_to_cam=self.track_to_cam,
+            enter_draw_mode=True,
+            location=loc,
+            context=context
+        )
         return {"FINISHED"}
 
 ## ---

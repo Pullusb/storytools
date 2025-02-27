@@ -458,7 +458,7 @@ def tool_layout(self, layout, context):
     row.operator('storytools.opposite_view', text='', icon='FORCE_MAGNETIC') # CON_ROTLIMIT
 
     ## Test to see if it's worth adding as gizmo
-    layout.operator('storytools.camera_shift', text='Camera Shift')
+    # layout.operator('storytools.camera_shift', text='Camera Shift')
     
     ## Set origin to bottom : disabled for now...
     ## maybe we want the origin to move down in "local space" (on GP axis depending on drawing plane)

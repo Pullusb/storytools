@@ -70,7 +70,7 @@ class STORYTOOLS_OT_select_map_object(Operator):
         
         # r3d = context.space_data.region_3d
         
-        # if r3d.view_perspective != 'CAMERA' and self.place_from_cam:
+        # if r3d.view_perspective != 'CAMERA' and self.face_camera:
         #     view_matrix = context.scene.camera.matrix_world
         # else:    
         #     view_matrix = r3d.view_matrix.inverted()
@@ -101,6 +101,11 @@ class STORYTOOLS_OT_map_frame_objects(Operator):
 
     def execute(self, context):
         # TODO: make it a modal function to make the reframe movement smooth
+
+        ## On certain condition, use View All when there are no GP objects
+        if self.target in ('GP', 'ALL') and not len([o for o in context.scene.objects if o.type in ('GREASEPENCIL',)]):
+            bpy.ops.view3d.view_all('INVOKE_DEFAULT')
+            return {"CANCELLED"}
         fn.frame_objects(context, target=self.target)
         return {"FINISHED"}
 

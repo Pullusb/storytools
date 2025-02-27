@@ -224,7 +224,6 @@ def line_draw_callback(self, context):
     line_coords (flat list of vector3 pairs)
     line_color (vector4)
     line_width (float)
-
     line_blend (default NONE, str) choice in: 
         NONE No blending.
         ALPHA The original color channels are interpolated according to the alpha value.
@@ -234,31 +233,40 @@ def line_draw_callback(self, context):
         MULTIPLY The original color channels are multiplied by the corresponding ones.
         SUBTRACT The original color channels are subtracted by the corresponding ones.
         INVERT The original color channels are replaced by its complementary color.
-
-    
+    line_ghost (default False) if True, add test for main lines and draw a dimmed line when occluded (override line_blend)
     """
-
     line_color = getattr(self, 'line_color', (0.0, 0.5, 1.0, 1.0)) # blue
     line_width = getattr(self, 'line_width', 1.0)
+    line_ghost = getattr(self, 'line_ghost', False)
     line_blend = getattr(self, 'line_blend', 'NONE')
+    
+    if line_ghost:
+        # Force blend to alpha to show ghost
+        line_blend = 'ALPHA'
 
     gpu.state.blend_set(line_blend)
     gpu.state.line_width_set(line_width)
-
-    ## old compatibility (kept for reference)
-    # if bpy.app.version <= (3,6,0):
-    #     shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-    # else:
-    #     shader = gpu.shader.from_builtin('UNIFORM_COLOR')
+    previous_depth_test_value = gpu.state.depth_test_get()
+    
     shader = gpu.shader.from_builtin('UNIFORM_COLOR')
-    shader.uniform_float("color", line_color)
     batch = batch_for_shader(shader, 'LINES', {"pos": self.line_coords})
+
+    if line_ghost:
+        ## Trace dimmed ghost lines (opacity at 25% of original alpha)
+        shader.uniform_float("color", (line_color[0], line_color[1], line_color[2], line_color[3] * 0.25))
+        batch.draw(shader)
+        
+        ## set depth test so next lines are occluded by geometry
+        gpu.state.depth_test_set('LESS')
+
+    ## Trace full opacity lines
+    shader.uniform_float("color", line_color)
     batch.draw(shader)
 
-    ## restore default
+    ## Restore default/previous
     gpu.state.line_width_set(1)
     gpu.state.blend_set('NONE')
-
+    gpu.state.depth_test_set(previous_depth_test_value)
 
 def text_draw_callback_px(self, context):
     """Generic Draw text callback
@@ -289,14 +297,22 @@ def text_draw_callback_px(self, context):
     # blf.shadow_offset(fontid, 4, -4) # fontid, x, y
     
     if '\n' in text_body:
+        ## a good ratio between lines is 50% of the height
+        text_lines = text_body.split('\n')
+        ## get the mean of the height
+        # height_list = [blf.dimensions(font_id, line)[1] for line in text_lines]
+        height_list = [h for line in text_lines if (h := blf.dimensions(font_id, line)[1])] # without 0 height lines
+        height = sum([i for i in height_list]) / len(height_list)
+        ## Snap on 0.5 value
+
         ## display line by line
-        for i, line in enumerate(text_body.split('\n')):
-            ## Offset each line by the height of the previous
-            width, height = blf.dimensions(font_id, line)
-            ## a good ratio is 50% of the height
+        for i, line in enumerate(text_lines):
+            ## Other method : Offset each line by the height of the previous
+            # width, height = blf.dimensions(font_id, line)
             offset_down = i * (height + height / 2) # line + spacing
             blf.position(font_id, text_position[0], text_position[1] - offset_down, 0)
             blf.draw(font_id, line)
+
     else:
         ## Standard display
         blf.position(font_id, *text_position, 0) # Leave out z at 0

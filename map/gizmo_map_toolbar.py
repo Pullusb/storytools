@@ -32,18 +32,18 @@ class STORYTOOLS_GGT_map_toolbar(GizmoGroup):
         self.map_gizmos = []
         ## remove minimap
         self.gz_disable_map = self.gizmos.new("GIZMO_GT_button_2d")
-        fn.set_gizmo_settings(self.gz_disable_map, 'LOOP_BACK') # 
+        fn.set_gizmo_settings(self.gz_disable_map, 'LOOP_BACK')
         self.gz_disable_map.target_set_operator("storytools.disable_minimap_viewport")
         self.map_gizmos.append(self.gz_disable_map)
         
         self.gz_frame_objects = self.gizmos.new("GIZMO_GT_button_2d")
-        fn.set_gizmo_settings(self.gz_frame_objects, 'SHADING_BBOX') # 
+        fn.set_gizmo_settings(self.gz_frame_objects, 'SHADING_BBOX')
         op = self.gz_frame_objects.target_set_operator("storytools.map_frame_objects")
         op.target = 'ALL'
         self.map_gizmos.append(self.gz_frame_objects)
         
         self.gz_show_options = self.gizmos.new("GIZMO_GT_button_2d")
-        fn.set_gizmo_settings(self.gz_show_options, 'MENU_PANEL') # 
+        fn.set_gizmo_settings(self.gz_show_options, 'MENU_PANEL')
         op = self.gz_show_options.target_set_operator("wm.call_panel")
         op.name = "STORYTOOLS_PT_viewport_setup"
         self.map_gizmos.append(self.gz_show_options)
@@ -59,7 +59,7 @@ class STORYTOOLS_GGT_map_toolbar(GizmoGroup):
 
         ## Object Rotation
         self.gz_ob_rotate = self.gizmos.new("GIZMO_GT_button_2d")
-        fn.set_gizmo_settings(self.gz_ob_rotate, 'FILE_REFRESH', show_drag=True) # DRIVER_ROTATIONAL_DIFFERENCE
+        fn.set_gizmo_settings(self.gz_ob_rotate, 'FILE_REFRESH', show_drag=True)
         self.gz_ob_rotate.target_set_operator("storytools.object_rotate")
         self.object_gizmos.append(self.gz_ob_rotate)
         
@@ -72,25 +72,32 @@ class STORYTOOLS_GGT_map_toolbar(GizmoGroup):
 
         ## --- Camera
         
-        self.camera_gizmos = []
+        self.view_gizmos = []
+
 
         # Roll view
         self.gz_roll_view = self.gizmos.new("GIZMO_GT_button_2d")
         fn.set_gizmo_settings(self.gz_roll_view, 'DRIVER_ROTATIONAL_DIFFERENCE', show_drag=True)
         self.gz_roll_view.target_set_operator("storytools.roll_minimap_viewport")
-        self.camera_gizmos.append(self.gz_roll_view)
+        self.view_gizmos.append(self.gz_roll_view)
+
+        ## Place GP Object
+        self.gz_place_gp = self.gizmos.new("GIZMO_GT_button_2d")
+        fn.set_gizmo_settings(self.gz_place_gp, 'ADD') # OUTLINER_OB_GREASEPENCIL, GREASEPENCIL
+        self.gz_place_gp.target_set_operator("storytools.place_gp_object")
+        self.view_gizmos.append(self.gz_place_gp)
 
         # ## Camera Rotation
         # self.gz_cam_rot = self.gizmos.new("GIZMO_GT_button_2d")
         # fn.set_gizmo_settings(self.gz_cam_rot, 'FILE_REFRESH', show_drag=True)
         # # self.gz_cam_rot.target_set_operator("view3d.view_roll") view_roll
-        # self.camera_gizmos.append(self.gz_cam_rot)
+        # self.view_gizmos.append(self.gz_cam_rot)
 
         ## Camera key position
         # self.gz_key_cam = self.gizmos.new("GIZMO_GT_button_2d")
         # fn.set_gizmo_settings(self.gz_key_cam, 'DECORATE_KEYFRAME')
         # self.gz_key_cam.target_set_operator("storytools.camera_key_transform")
-        # self.camera_gizmos.append(self.gz_key_cam)
+        # self.view_gizmos.append(self.gz_key_cam)
 
 
     def draw_prepare(self, context):
@@ -109,7 +116,7 @@ class STORYTOOLS_GGT_map_toolbar(GizmoGroup):
         
         region = context.region
         # count = len(self.gizmos) # Wrong with gizmo added out of main line (GP gizmos)
-        count = len(self.map_gizmos + self.object_gizmos + self.camera_gizmos)
+        count = len(self.map_gizmos + self.object_gizmos + self.view_gizmos)
         sidebar_width = next((r.width for r in context.area.regions if r.type == 'UI'), 0)
 
         ## Using only direct offset
@@ -145,8 +152,8 @@ class STORYTOOLS_GGT_map_toolbar(GizmoGroup):
         obj_color = prefs.object_gz_color
         obj_color_hl = [i + 0.1 for i in obj_color]
 
-        cam_color = prefs.camera_gz_color
-        cam_color_hl = [i + 0.1 for i in cam_color]
+        view_color = prefs.camera_gz_color
+        view_color_hl = [i + 0.1 for i in view_color]
 
         # upline_left_pos = left_pos + (gap_size * px_scale) / 2
 
@@ -154,8 +161,8 @@ class STORYTOOLS_GGT_map_toolbar(GizmoGroup):
             gz.scale_basis = backdrop_size
 
             if gz in self.map_gizmos:
-                gz.color = obj_color
-                gz.color_highlight = obj_color_hl
+                gz.color = view_color
+                gz.color_highlight = view_color_hl
 
             if gz in self.object_gizmos:
                 if gz == self.object_gizmos[0]:
@@ -163,11 +170,11 @@ class STORYTOOLS_GGT_map_toolbar(GizmoGroup):
                 gz.color = obj_color
                 gz.color_highlight = obj_color_hl
 
-            if gz in self.camera_gizmos:
-                if gz == self.camera_gizmos[0]:
+            if gz in self.view_gizmos:
+                if gz == self.view_gizmos[0]:
                     left_pos += section_separator
-                gz.color = cam_color
-                gz.color_highlight = cam_color_hl
+                gz.color = view_color
+                gz.color_highlight = view_color_hl
 
             # if gz in self.interact_gizmos:
             #     if gz == self.interact_gizmos[0]:

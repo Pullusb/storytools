@@ -2,6 +2,12 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.7.0
+
+- added: add place new GP button on Minimap with overlays
+- fixed: error on drawing setup
+- changed: tiny improvement on map-frame ops when there is no GP (frame all)
+
 2.6.1
 
 - added: Minimap button toolbar (gizmos)
