@@ -250,6 +250,10 @@ def update_object_change(self, context):
 
     mode_swap = False
 
+    ## Full skip if object is not visible
+    if not ob.visible_get(view_layer=context.view_layer):
+        return
+
     ## TODO optional: Option to stop mode sync ?
     ## Set in same mode as previous object
     if context.scene.tool_settings.lock_object_mode:
@@ -272,7 +276,7 @@ def update_object_change(self, context):
     else:
         ## Keep same mode accross objects
         context.view_layer.objects.active = ob
-        if not ob.hide_viewport and prev_mode is not None and context.mode != prev_mode:
+        if ob.visible_get(view_layer=context.view_layer) and prev_mode is not None and context.mode != prev_mode:
             prev_mode = 'EDIT' if prev_mode == 'EDIT_GREASE_PENCIL' else prev_mode
             bpy.ops.object.mode_set(mode=prev_mode)
 
