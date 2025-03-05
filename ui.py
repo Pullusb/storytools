@@ -565,6 +565,79 @@ class STORYTOOLS_PT_palette_ui(Panel):
             layout.label(text="Can't display this panel here!", icon="ERROR")
 
 
+## Sub-panel for camera exclusion settings in camera menu, operartors in "cam_exclude_filter.py"
+class STORYTOOLS_PT_camera_exclusion_settings(Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Storytools"
+    bl_label = "Camera Exclusions"
+    bl_parent_id = "STORYTOOLS_PT_camera_settings"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.scene.camera
+
+    def draw_header(self, context):
+        cam = context.scene.camera
+        layout = self.layout
+        if cam and hasattr(cam, 'exclude_props') and cam.exclude_props:
+            layout.prop(cam.exclude_props, "enabled", text="")
+
+    ## Do not appear in popover menu
+    # def draw_header_preset(self, context):
+    #     layout = self.layout
+    #     info = layout.operator('storytools.info_note', text='', icon='QUESTION', emboss=False)
+    #     info.title = 'Visibility exclusions from camera'
+    #     info.text = 'List object or collection you want to hide from this camera view\
+    #         \nVisibility will be restored when going into another camera that does not exclude it'
+
+    def draw(self, context):
+        layout = self.layout
+        cam = context.scene.camera
+
+        ## Make sure the camera has the property group
+        if not hasattr(cam, 'exclude_props') or not cam.exclude_props:
+            layout.label(text="Missing exclusion properties", icon='ERROR')
+            return
+        
+        ## Hide lists when disabled
+        # if not cam.exclude_props.enabled:
+        #     return
+
+        # Objects section
+        main_col = layout.column()
+        main_col.label(text="Excluded Objects:")
+        
+        row = main_col.row()
+        row.template_list("STORYTOOLS_UL_excluded_objects", "", 
+                         cam.exclude_props, "excluded_objects", 
+                         cam.exclude_props, "active_object_index", 
+                         rows=3)
+        
+        col = row.column(align=True)
+        col.operator("storytools.add_excluded_object_from_selection", text="", icon='ADD')
+        col.operator("storytools.search_add_excluded_object", text="", icon='VIEW_ZOOM')
+        op = col.operator("storytools.remove_excluded_object", text="", icon='REMOVE')
+        op.index = cam.exclude_props.active_object_index
+        
+        # Collections section
+        # main_col = layout.column()
+        main_col.label(text="Excluded Collections:")
+        
+        row = main_col.row()
+        row.template_list("STORYTOOLS_UL_excluded_collections", "", 
+                         cam.exclude_props, "excluded_collections", 
+                         cam.exclude_props, "active_collection_index", 
+                         rows=3)
+        
+        col = row.column(align=True)
+        col.operator("storytools.search_add_excluded_collection", text="", icon='VIEW_ZOOM')
+        op = col.operator("storytools.remove_excluded_collection", text="", icon='REMOVE')
+        op.index = cam.exclude_props.active_collection_index
+
+        main_col.active = cam.exclude_props.enabled
+
 class STORYTOOLS_OT_info_note(Operator):
     bl_idname = "storytools.info_note"
     bl_label = "Info Note"
@@ -585,12 +658,9 @@ class STORYTOOLS_OT_info_note(Operator):
         fn.show_message_box(_message=lines, _title=self.title, _icon=self.icon)
         return {"FINISHED"}
 
-
 # class DummyPanel:
 #     def __init__(self, layout):
 #         self.layout = layout
-
-
 
 # def palette_layout(layout, context):
 #     dummy_panel = DummyPanel(layout)
@@ -603,7 +673,6 @@ class STORYTOOLS_OT_info_note(Operator):
 #             )
 #         else:
 #             layout.label(text="Can't display this panel here!", icon="ERROR")
-
 
 # ## function to append in a menu
 # def palette_manager_menu(self, context):
@@ -657,6 +726,7 @@ panel_classes = (
     # STORYTOOLS_PT_focal_presets,
     STORYTOOLS_OT_info_note,
     STORYTOOLS_PT_camera_settings,
+    STORYTOOLS_PT_camera_exclusion_settings,
     STORYTOOLS_PT_gp_objects_list_options,
     STORYTOOLS_PT_storytools_ui,
     STORYTOOLS_PT_camera_ui,

@@ -2,6 +2,14 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.8.0
+
+- added: Exclude objects or collections from camera view:
+  - located in camera subpanel
+  - affect hide viewport and render toggle
+  - refresh on active camera change
+  - object listed by other cameras but not in current are restore (need to see if behavior is ok)
+
 2.7.0
 
 - added: add place new GP button on Minimap with overlays
