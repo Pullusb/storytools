@@ -28,8 +28,8 @@ class STORYTOOLS_OT_create_object(Operator):
         description="Name of Grease pencil object")
     
     parented : bpy.props.BoolProperty(
-        name='Attached To Camera',
-        description="When Creating the object, Attach it to the camera",
+        name='Parent To Camera',
+        description="When Creating the object, Parent it to the camera to follow it's movements",
         default=False)
     
     init_dist : bpy.props.FloatProperty(
