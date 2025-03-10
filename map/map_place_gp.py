@@ -63,7 +63,7 @@ class STORYTOOLS_OT_place_gp_object(Operator):
         # Setup text
         self.text_body = 'Click/Drag to place new grease pencil'
         self.text_size = 16.0
-        self.text_position = (20, 120)
+        self.text_position = (20, 120 + fn.get_header_margin(context))
         self._text_handle = bpy.types.SpaceView3D.draw_handler_add(draw.text_draw_callback_px, args, 'WINDOW', 'POST_PIXEL')
 
         context.window.cursor_set("CROSSHAIR")  # Set cursor to crosshair for better positioning
