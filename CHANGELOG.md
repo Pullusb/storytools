@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.10.0
+
+- added: remove active grease pencil operator, button added in "Drawings" side icons
+
 2.9.0
 
 - added: Warning icon in "Drawings" header to alert when active object scale is not applied

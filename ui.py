@@ -223,6 +223,13 @@ class STORYTOOLS_PT_gp_objects_list_options(bpy.types.Panel):
         row=col.row(align=True)
         row.prop(settings, 'show_gp_users', text='Show GP users', expand=True)
 
+        ## Show a delete icon in submenu (only relevent if the minus icon is removed from side list)
+        # if context.object and context.object.type == 'GREASEPENCIL':
+        #     col.separator()
+        #     row = col.row()
+        #     row.alert = True
+        #     row.operator("storytools.delete_gp_object", text="Delete Active GP Object", icon='TRASH')
+
 
 """ 
 class STORYTOOLS_MT_focal_presets(Menu): 
@@ -376,7 +383,8 @@ def object_layout(layout, context):
         scn, "objects", scn.gp_object_props, "index", rows=4)
 
     col_lateral = row.column(align=True)
-    col_lateral.operator('storytools.create_object', icon='ADD', text='') # 'PLUS'
+    col_lateral.operator('storytools.create_object', icon='ADD', text='')
+    col_lateral.operator('storytools.delete_gp_object', icon='REMOVE', text='') 
 
     ## Parent toggle
     if context.object:

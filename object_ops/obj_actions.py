@@ -126,6 +126,91 @@ class STORYTOOLS_OT_create_object(Operator):
         )
         return {"FINISHED"}
 
+class STORYTOOLS_OT_delete_gp_object(Operator):
+    bl_idname = "storytools.delete_gp_object"
+    bl_label = "Delete GP Object"
+    bl_description = "Delete the active Grease Pencil object"
+    bl_options = {"REGISTER", "UNDO"}
+
+    confirm: bpy.props.BoolProperty(
+        name="Confirm",
+        description="Ask for confirmation before deleting",
+        default=True,
+        options={'SKIP_SAVE'}
+    )
+
+    # unlink: bpy.props.BoolProperty(
+    #     name="Unlink",
+    #     description="Unlink only in current scene instead of deleting",
+    #     default=False,
+    #     options={'SKIP_SAVE'}
+    # )
+
+    @classmethod
+    def poll(cls, context):
+        return context.object and context.object.type == 'GREASEPENCIL'
+
+    def invoke(self, context, event):
+        if not self.confirm:
+            return self.execute(context)
+        
+        # obj = context.object
+        # if len(obj.users_scene) > 1:
+        #     # popup if there is object is multiscene
+        #     self.unlink = True
+        #     return context.window_manager.invoke_props_dialog(self, width=400)
+
+        # Force confirmation popup if we user warning is On
+        prefs = fn.get_addon_prefs()
+        if prefs.use_warnings:
+            return context.window_manager.invoke_props_dialog(self, width=400)
+        return self.execute(context)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text=f'Delete object "{context.object.name}" ?')
+        obj = context.object
+        # if len(obj.users_scene) > 1:
+        #     layout.label(text=f'Object "{obj.name}" is used in other scenes')
+        #     layout.prop(self, 'unlink')
+        #     layout.label(text='Unlinking will remove from current scene only')
+        #     # for scene in obj.users_scene:
+        #     #     layout.label(text=f'- {scene.name}')
+
+        # if self.unlink:
+        #     layout.label(text=f'Remove object "{context.object.name}" from current scene?')
+        # else:
+        #     layout.label(text=f'Delete object "{context.object.name}" ?')
+
+    def execute(self, context):
+        obj = context.object
+        
+        # Ensure we are in object mode
+        if context.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+        
+        # Store name for message
+        obj_name = obj.name
+        
+        ## Delete the object
+
+        # if self.unlink:
+        #     bpy.ops.object.delete(use_global=False, confirm=False)
+        # else:
+        #     ## full delete from everywhere
+        #     bpy.ops.object.delete(use_global=True, confirm=False)
+        
+        ## Using ops avoid deleting object from all scenes
+        bpy.ops.object.delete(use_global=False, confirm=False)
+            
+        ## or directly with data.object:
+        # bpy.data.objects.remove(obj, do_unlink=True)
+
+        # Report success
+        self.report({'INFO'}, f"Deleted Grease Pencil object '{obj_name}'")
+        
+        return {"FINISHED"}
+
 ## ---
 ## Object Property groups and UIlist
 ## ---
@@ -503,6 +588,7 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
 
 classes=(
 STORYTOOLS_OT_create_object,
+STORYTOOLS_OT_delete_gp_object,
 STORYTOOLS_OT_object_draw,
 STORYTOOLS_OT_visibility_toggle,
 STORYTOOLS_object_collection, ## Test all bugged
