@@ -375,6 +375,13 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
     ## Tool presets (Old tool presets)
     # tool_presets : PointerProperty(type=STORYTOOLS_PG_tool_presets)
 
+    ## Hint / Tips / Warning management
+
+    use_warnings : BoolProperty(
+        name='Enable Hints And Warnings',
+        description="Show beginner friendly warnings and hints",
+        default=True)
+
     # Update variables
     is_git_repo : BoolProperty(default=False)
     has_git : BoolProperty(default=False)
@@ -390,6 +397,8 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         col = layout.column()
 
         if self.pref_tab == 'SETTINGS':
+            col.prop(self, 'use_warnings')
+            
             # Tool Presets
             box = col.box()
             bcol = box.column()

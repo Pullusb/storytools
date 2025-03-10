@@ -2,6 +2,7 @@
 
 import bpy
 from bpy.types import Operator, Panel, Menu
+from mathutils import Vector
 from .fn import get_addon_prefs
 # from bl_ui.utils import PresetPanel
 
@@ -94,6 +95,29 @@ class STORYTOOLS_PT_drawings_ui(Panel):
 
     def draw_header_preset(self, context):
         layout = self.layout
+        ## Add object warning when scale is non-uniform or not-applied.
+        ## TODO: replace it by a more universal viewport warning
+        ## (note: in 4.4 there is a native warning at bottom left)
+    
+        if fn.get_addon_prefs().use_warnings and (obj := context.object) and obj.scale != Vector((1.0, 1.0, 1.0)):
+            op = layout.operator('storytools.info_note', text='', icon='ERROR', emboss=False)
+            op.title = 'Scale Not Applied' # 'Unapplied Scale'
+            op.text = 'Object scale is not applied.\
+                    \nYou may want to apply the scale to avoid issues later.\
+                    \nIn Object mode: Ctrl+A > Apply Scale.\
+                    \ne.g., scale affects Grease Pencil radius and modifiers output.'
+
+            ## Equality check evaluate to False when not 1.0 on all axis, would need to round values
+            # if not (obj.scale[0] == obj.scale[1] == obj.scale[2]):
+            #     op.text = "Object has non-uniform scale\
+            #         \nYou may want to apply scale to avoid issues"
+            # if any(x < 0 for x in obj.scale):
+            #     op.text = 'Object scale has negative values\
+            #         \nYou may want to apply scale to avoid issues'
+            # else:
+            #     op.text = 'Object scale is not applied\
+            #         \nYou may want to apply scale to avoid issues'
+
         layout.prop(context.space_data.overlay, "use_gpencil_grid", text='', icon='MESH_GRID')
 
     def draw(self, context):
@@ -409,7 +433,6 @@ def materials_layout(layout, context):
 
     ob = context.object
     ## Material:
-    layout.label(text=f'Materials:')
     
     row = layout.row()
     row.template_list("GPENCIL_UL_matslots", "", ob, "material_slots", ob, "active_material_index", rows=7)

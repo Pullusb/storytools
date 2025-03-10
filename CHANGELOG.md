@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.9.0
+
+- added: Warning icon in "Drawings" header to alert when active object scale is not applied
+- added: Preference option to disable beginner friendly hints and warnings, like the new header alert.
+
 2.8.0
 
 - added: Exclude objects or collections from camera view:
