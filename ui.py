@@ -17,49 +17,6 @@ class STORYTOOLS_PT_storytools_ui(Panel):
 
     def draw(self, context):
         return
-        """ # Old
-        layout = self.layout
-        ob = context.object
-        col = layout.column()
-        # settings = context.scene.storytools_settings
-        # row = col.row()
-        # if not settings.show_camera_panel:
-        #     row.prop(settings, 'show_camera_panel', text='', icon='DISCLOSURE_TRI_RIGHT', emboss=False)
-        #     row.label(text='Cameras')
-        #     # col.prop(settings, 'show_camera_panel', icon='DISCLOSURE_TRI_RIGHT', emboss=False)
-        # else:
-        #     row.prop(settings, 'show_camera_panel', text='', icon='DISCLOSURE_TRI_DOWN', emboss=False)
-        #     row.label(text='Cameras:')
-        #     # col.prop(settings, 'show_camera_panel', icon='DISCLOSURE_TRI_DOWN', emboss=False)
-        #     camera_layout(col, context)
-
-        # if context.scene.camera:
-        #     row = col.row(align=True)
-        #     row.label(text='Passepartout')
-        #     if context.scene.camera.name == 'draw_cam' and hasattr(context.scene, 'gptoolprops'):
-        #         row.prop(context.scene.gptoolprops, 'drawcam_passepartout', text='', icon ='OBJECT_HIDDEN') 
-        #     else:
-        #         row.prop(context.scene.camera.data, 'show_passepartout', text='', icon ='OBJECT_HIDDEN')
-        #     row.prop(context.scene.camera.data, 'passepartout_alpha', text='')
-
-        # col.label(text='Drawings:') # Objects, Grease Pencils
-        # object_layout(col, context)
-
-
-        col.label(text='Layers:')
-        ob = context.object
-        if not ob or ob.type != 'GREASEPENCIL':
-            col.label(text=f'No Grease Pencil Active')
-            return
-
-        ## Layers:
-        layers_layout(col, context)
-
-        materials_layout(col, context)
-
-        tool_layout(self, col, context)
-        """
-
 
 class STORYTOOLS_PT_camera_ui(Panel):
     bl_space_type = "VIEW_3D"
@@ -559,10 +516,52 @@ class STORYTOOLS_PT_colors_ui(Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.object and context.object.type == 'GREASEPENCIL'# and context.mode == 'PAINT_GREASE_PENCIL'
+        return context.object and context.object.type == 'GREASEPENCIL'
+
+    ## Show material/color_attr swich in header (problem : it's repeated in native color panel instanciated)
+    # def draw_header_preset(self, context):
+    #     layout = self.layout
+    #     row = layout.row(align=True)
+    #     settings = context.scene.tool_settings.gpencil_paint
+    #     row.prop_enum(settings, "color_mode", 'MATERIAL', text="", icon='MATERIAL')
+    #     row.prop_enum(settings, "color_mode", 'VERTEXCOLOR', text="", icon='VPAINT_HLT')
 
     def draw(self, context):
         layout = self.layout
+        settings = context.scene.tool_settings.gpencil_paint
+        
+        if settings.color_mode == 'MATERIAL':
+            row = layout.row(align=True)
+            row.prop(settings, "color_mode", expand=True)
+            if not (mat := context.object.active_material):
+                layout.label(text='No active material')
+                return
+
+            ### Show basic material settings
+            layout.label(text=mat.name, icon='MATERIAL')
+            ## One row each
+            col = layout.column(align=True)
+            row = col.row(align=True)
+            row.prop(mat.grease_pencil, "show_stroke", text="Stroke")
+            row.prop(mat.grease_pencil, "color", text="")
+            row = col.row(align=True)
+            row.prop(mat.grease_pencil, "show_fill", text="Fill")
+            row.prop(mat.grease_pencil, "fill_color", text="")
+            return
+            
+            ## Tried to show the full original "Surface" panel (use context.material that does not exists in viewport context):
+            ## AttributeError: 'Context' object has no attribute 'material'
+            # if not hasattr(bpy.types, "MATERIAL_PT_gpencil_surface"):
+            #     layout.label(text='Color is defined by active material')
+            #     return
+            # material_surface_cls = bpy.types.MATERIAL_PT_gpencil_surface
+            # if not hasattr(material_surface_cls, "poll") or material_surface_cls.poll(context):
+            #     material_surface_cls.draw(self, context)
+            # else:
+            #     layout.label(text="Can't display this panel here!", icon="ERROR")
+            
+            # return
+
         if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_v3_brush_mixcolor"):
             return
         
@@ -577,12 +576,15 @@ class STORYTOOLS_PT_palette_ui(Panel):
     bl_region_type = "UI"
     bl_category = "Storytools" # Gpencil
     bl_label = "Palette"
-    bl_parent_id = "STORYTOOLS_PT_storytools_ui" # as_subpanel
+    # bl_parent_id = "STORYTOOLS_PT_colors_ui" # as_subpanel of Colors
+    bl_parent_id = "STORYTOOLS_PT_storytools_ui" # as_subpanel of main
     bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
     def poll(cls, context):
-        return context.object and context.object.type == 'GREASEPENCIL'# and context.mode == 'PAINT_GREASE_PENCIL'
+        return context.object \
+            and context.object.type == 'GREASEPENCIL' \
+            and context.scene.tool_settings.gpencil_paint.color_mode != 'MATERIAL'
 
     def draw(self, context):
         layout = self.layout

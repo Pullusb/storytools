@@ -2,9 +2,15 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.11.0
+
+- changed: improve "colors" UI:
+  - hide palette panel when mode is set to material
+  - Show active material name and colors with their `use` property
+
 2.10.0
 
-- added: remove active grease pencil operator, button added in "Drawings" side icons
+- added: `remove active grease pencil` operator, button added in "Drawings" side icons
 
 2.9.0
 
