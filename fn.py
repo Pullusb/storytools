@@ -376,6 +376,8 @@ def create_gp_object(
         track_to_cam=False,
         enter_draw_mode=True,
         location=None,
+        material_from_obj=None,
+        layer_from_obj=None,
         context=None):
     """
     Create a new grease pencil object with specified parameters.
@@ -476,28 +478,51 @@ def create_gp_object(
 
     ## Configure default settings
     # TODO: Set Active palette (Need a selectable loader)
-    # fn.load_palette(path_to_palette)
-    load_default_palette(ob=ob)
+    if material_from_obj and len(material_from_obj.data.materials):
+        ## load material from reference object
+        for mat in material_from_obj.data.materials:
+            gp.materials.append(mat)
+    else:
+        load_default_palette(ob=ob)
+
     ## No edit line color in GPv3 (wire is displayed using curve theme)
     # gp.edit_line_color[3] = prefs.default_edit_line_opacity # Bl default is 0.5
     gp.use_autolock_layers = prefs.use_autolock_layers
     
-    # Create default layers
-    for l_name in ['Color', 'Line', 'Sketch', 'Annotate']:
-        layer = gp.layers.new(l_name)
-        layer.frames.new(scn.frame_current)
-        layer.use_lights = prefs.use_lights
-    
-        # Set default material association
-        if l_name in ['Line', 'Sketch']:
-            set_material_association(ob, layer, 'line')
-        elif l_name == 'Color':
-            set_material_association(ob, layer, 'fill_white')
-        elif l_name == 'Annotate':
-            set_material_association(ob, layer, 'line_red')
+    ## Create layers
+    if layer_from_obj and len(layer_from_obj.data.layers):
+        for ref_layer in layer_from_obj.data.layers:
+            layer = gp.layers.new(ref_layer.name)
+            layer.frames.new(scn.frame_current)
+            ## get same use light and opacity settings
+            layer.use_lights = ref_layer.use_lights
+            layer.opacity = ref_layer.opacity
+        
+        ## Copy custom properties for layer-material sync
+        for k, v in layer_from_obj.items():
+            if k.startswith(LAYERMAT_PREFIX):
+                ob[k] = v
+
+    else:
+        # Create default layers
+        for l_name in ['Color', 'Line', 'Sketch', 'Annotate']:
+            layer = gp.layers.new(l_name)
+            layer.frames.new(scn.frame_current)
+            layer.use_lights = prefs.use_lights
+        
+            # Set default material association
+            if l_name in ['Line', 'Sketch']:
+                set_material_association(ob, layer, 'line')
+            elif l_name == 'Color':
+                set_material_association(ob, layer, 'fill_white')
+            elif l_name == 'Annotate':
+                set_material_association(ob, layer, 'line_red')
     
     # Set default active layer (Could also be a preference but may be too much)
-    gp.layers.active = gp.layers.get('Sketch')
+    active = gp.layers.get('Sketch')
+    if not active and len(gp.layers):
+        active = gp.layers[-1]
+    gp.layers.active = active
 
     # Update UI
     update_ui_prop_index(context)

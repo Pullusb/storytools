@@ -2,6 +2,12 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.12.0
+
+- added: when creating a new GP object, add option to use layer stack and/or material stack from another object
+  - if active object is a grease pencil when calling creation, it is preselected
+  - the GP objects that are not in scene are listed last
+
 2.11.0
 
 - changed: improve "colors" UI:

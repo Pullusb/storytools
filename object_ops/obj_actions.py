@@ -4,6 +4,15 @@ from math import pi
 from mathutils import Vector, Matrix
 
 from bpy.types import Operator, PropertyGroup
+from bpy.props import (
+    StringProperty,
+    BoolProperty,
+    FloatProperty,
+    IntProperty,
+    FloatVectorProperty,
+    PointerProperty,
+    EnumProperty,
+)
 
 from .. import fn
 
@@ -16,63 +25,110 @@ def distance_selection_update(self, context):
     else:
         self.init_dist = fn.coord_distance_from_view(context=context)
 
+def get_gp_objects(self, context):
+    gp_in_scene = [o for o in context.scene.objects if o.type == 'GREASEPENCIL']
+    ## Set active first
+    if context.object and context.object.type == 'GREASEPENCIL':
+        ## Put Active GP object first in list, if any.
+        gp_in_scene.insert(0, gp_in_scene.pop(gp_in_scene.index(context.object)))
+
+    ## Add all GP objects from data
+    gp_in_other_scenes = [o for o in bpy.data.objects if o.type == 'GREASEPENCIL' and o not in gp_in_scene]
+    all_gps = gp_in_scene + gp_in_other_scenes
+
+    objects = [(obj.name, obj.name, f"Use {obj.name} as template") 
+               for obj in all_gps]
+    
+    # if not objects:
+    #     return [('None', 'None', "No Grease Pencil object found")]
+
+    ## include None choice (first one)
+    # return [('None', 'Default', "Create new with default layers material stack")] + objects
+    return objects
 
 class STORYTOOLS_OT_create_object(Operator):
     bl_idname = "storytools.create_object"
     bl_label = "Create New Drawing"
     bl_description = "Create a new grease pencil object"
     bl_options = {"REGISTER", "UNDO"} # , "INTERNAL"
+    # bl_property = 'reference_object'
 
-    name : bpy.props.StringProperty(
+    name : StringProperty(
         name='Name',
         description="Name of Grease pencil object")
     
-    parented : bpy.props.BoolProperty(
+    parented : BoolProperty(
         name='Parent To Camera',
         description="When Creating the object, Parent it to the camera to follow it's movements",
         default=False)
     
-    init_dist : bpy.props.FloatProperty(
+    init_dist : FloatProperty(
         name="Distance", description="Initial distance of new grease pencil object", 
         default=8.0, min=0.0, max=999, step=3, precision=3,
         subtype='DISTANCE')
     
-    face_camera : bpy.props.BoolProperty(
+    face_camera : BoolProperty(
         name='Use Active Camera',
         description="Create the object facing camera, else create from your current view",
         default=False, update=distance_selection_update)
 
-    at_cursor : bpy.props.BoolProperty(
+    at_cursor : BoolProperty(
         name='At Cursor',
         description="Create object at cursor location, else centered position at cursor 'distance' facing view",
         default=False)
 
-    use_location : bpy.props.BoolProperty(
+    use_location : BoolProperty(
         name='Use Location',
         description="Use the location of the new grease pencil object",
         default=False,
         options={'SKIP_SAVE'})
 
-    location : bpy.props.FloatVectorProperty(
+    location : FloatVectorProperty(
         name='Location',
         description="Location of the new grease pencil object",
         default=(0.0, 0.0, 0.0),
         size=3,
         options={'SKIP_SAVE'})
     
-    track_to_cam : bpy.props.BoolProperty(
+    track_to_cam : BoolProperty(
         name='Add Track To Camera',
         description="Add a track to constraint pointing at active camera\
             \nThis makes object's always face camera",
         default=False)
     
-    # add option to enter draw mode (always On currently)
+    ## Option to transfer layers and/or materials from a pointed object or from active object
+    use_reference_object : BoolProperty(
+        name='Use Reference Object',
+        description="Use a reference object to create the new grease pencil layer and/or material stack",
+        default=False)
+
+    transfer_data : EnumProperty(
+        name="Use Reference",
+        description="Create same layer stack and/or material stack from reference object",
+        default='MATERIALS',
+        items=(
+            # ('NONE', `'Use Default', "Create default layer and material stack"),
+            ('MATERIALS', 'Material Stack', "Create same material stack as reference", 0),
+            ('LAYERS', 'Layer Stack', "Create the same material stack as reference", 1),
+            ('LAYER_AND_MATERIALS', 'Layer & Material Stacks', "Create same layer and material stack", 2),
+        ),
+        options={'SKIP_SAVE'}
+    )
+
+    reference_object : EnumProperty(
+        name="Reference Object",
+        description="Reference object layers and materials from this object",
+        items=get_gp_objects,
+        options={'SKIP_SAVE'}
+    )
+
+    # add option to enter draw mode ? (always On currently, probably best)
 
     def invoke(self, context, event):
         ## Suggest a numbered default name for quick use
-        # gp_ct = len([o for o in context.scene.objects if o.type == 'GREASEPENCIL'])
-        gp_ct = len([o for o in bpy.data.objects if o.type == 'GREASEPENCIL'])
-        self.name = f'Drawing_{gp_ct+1:03d}'
+        # self.gp_ct = len([o for o in context.scene.objects if o.type == 'GREASEPENCIL'])
+        self.gp_ct = len([o for o in bpy.data.objects if o.type == 'GREASEPENCIL'])
+        self.name = f'Drawing_{self.gp_ct+1:03d}'
         settings = context.scene.storytools_settings
         
         ## Calculate distance to 3D cursor
@@ -82,6 +138,12 @@ class STORYTOOLS_OT_create_object(Operator):
         # if context.scene.camera:
         #     self.cam_distance_from_cursor = fn.coord_distance_from_cam(context=context)
 
+        ## Create list of GP object in data. if possible, add gp from current scene first in list
+        # self.gp_list.clear()
+        # for gp_obj in all_gps:
+        #     item = self.gp_list.add()
+        #     item.object = gp_obj
+
         distance_selection_update(self, context)
         self.parented = settings.initial_parented
         return context.window_manager.invoke_props_dialog(self, width=280)
@@ -90,6 +152,8 @@ class STORYTOOLS_OT_create_object(Operator):
         layout = self.layout
         layout.use_property_split = True
         layout.prop(self, 'name')
+
+        # layout.label(text='Relation To Camera:')
         layout.prop(self, 'parented')
         layout.prop(self, 'track_to_cam')
 
@@ -109,10 +173,32 @@ class STORYTOOLS_OT_create_object(Operator):
         
         # if self.init_dist <= 0: (FIXME init_dist always positive, need futher check)
         #     viewpoint ='camera' if self.face_camera else 'view'
-        #     col.label(text=f'Cursor is behind {viewpoint}', icon='ERROR') 
+        #     col.label(text=f'Cursor is behind {viewpoint}', icon='ERROR')
+
+        if self.gp_ct:
+            ## Expose transfer of data from another object
+            box = layout.box()
+            box.prop(self, 'use_reference_object', text='Use Reference Object')
+            col = box.column(align=False)
+            col.prop(self, 'transfer_data', text='Replicate')
+            col.prop(self, 'reference_object', text='From Object')
+            col.active = self.use_reference_object
     
     def execute(self, context):
+        ## Define location
         loc = self.location if self.use_location else None
+
+        ## Define a source object for layers and materials if applicable
+        ref_layers = None
+        ref_mats = None
+        if self.use_reference_object and self.reference_object:
+            ref_obj = bpy.data.objects.get(self.reference_object)
+            if ref_obj:
+                if self.transfer_data in ('MATERIALS', 'LAYER_AND_MATERIALS'):
+                    ref_mats = ref_obj
+                if self.transfer_data in ('LAYERS', 'LAYER_AND_MATERIALS'):
+                    ref_layers = ref_obj
+
         fn.create_gp_object(
             name=self.name,
             parented=self.parented,
@@ -122,6 +208,8 @@ class STORYTOOLS_OT_create_object(Operator):
             track_to_cam=self.track_to_cam,
             enter_draw_mode=True,
             location=loc,
+            layer_from_obj=ref_layers,
+            material_from_obj=ref_mats,
             context=context
         )
         return {"FINISHED"}
@@ -132,14 +220,14 @@ class STORYTOOLS_OT_delete_gp_object(Operator):
     bl_description = "Delete the active Grease Pencil object"
     bl_options = {"REGISTER", "UNDO"}
 
-    confirm: bpy.props.BoolProperty(
+    confirm: BoolProperty(
         name="Confirm",
         description="Ask for confirmation before deleting",
         default=True,
         options={'SKIP_SAVE'}
     )
 
-    # unlink: bpy.props.BoolProperty(
+    # unlink: BoolProperty(
     #     name="Unlink",
     #     description="Unlink only in current scene instead of deleting",
     #     default=False,
@@ -227,7 +315,7 @@ class STORYTOOLS_OT_visibility_toggle(Operator):
     # def invoke(self, context, event):
     #     return self.execute(context)
 
-    name : bpy.props.StringProperty()
+    name : StringProperty()
 
     def execute(self, context):
         if not self.name:
@@ -259,7 +347,7 @@ class STORYTOOLS_OT_object_draw(Operator):
     def poll(cls, context):
         return True
 
-    # name : bpy.props.StringProperty()
+    # name : StringProperty()
     def invoke(self, context, event):
         self.ctrl = event.ctrl
         self.shift = event.shift
@@ -374,7 +462,7 @@ def update_object_change(self, context):
 
 class STORYTOOLS_object_collection(PropertyGroup):
     ## need an index for the native object list
-    index : bpy.props.IntProperty(default=-1, update=update_object_change)
+    index : IntProperty(default=-1, update=update_object_change)
     
     # point_prop : PointerProperty(
     #     name="Object",
@@ -386,7 +474,7 @@ class STORYTOOLS_OT_grease_pencil_options(bpy.types.Operator):
     bl_description = "Show grease pencil options"
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    object_name : bpy.props.StringProperty(name='')
+    object_name : StringProperty(name='')
 
     def invoke(self, context, event):
         if not self.object_name:
@@ -441,7 +529,7 @@ class STORYTOOLS_UL_gp_objects_list(bpy.types.UIList):
     # E.g. VGROUP_EMPTY = 1 << 0
 
     # Custom properties, saved with .blend file. E.g.
-    # use_filter_empty: bpy.props.BoolProperty(
+    # use_filter_empty: BoolProperty(
     #     name="Filter Empty", default=False, options=set(),
     #     description="Whether to filter empty vertex groups",
     # )
@@ -601,7 +689,7 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
     
-    bpy.types.Scene.gp_object_props = bpy.props.PointerProperty(type=STORYTOOLS_object_collection)
+    bpy.types.Scene.gp_object_props = PointerProperty(type=STORYTOOLS_object_collection)
     
     # bpy.types.GPENCIL_MT_....append(menu_add_storytools_gp)
 
