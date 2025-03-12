@@ -212,6 +212,14 @@ class STORYTOOLS_OT_create_object(Operator):
             material_from_obj=ref_mats,
             context=context
         )
+
+        ## Ensure Z pass is activated every scene's viewlayer
+        ## User don't undestand why GP occlusion are disabled on render
+        ## (This is quite bruteforce and not considered good practice, but it should help more than it can harm)
+        for scene in bpy.data.scenes:
+            for vl in scene.view_layers:
+                vl.use_pass_z = True
+
         return {"FINISHED"}
 
 class STORYTOOLS_OT_delete_gp_object(Operator):
