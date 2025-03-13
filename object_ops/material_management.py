@@ -5,44 +5,72 @@ from bpy.types import Operator, PropertyGroup
 from bpy.props import (
     StringProperty,
     BoolProperty,
-    FloatProperty,
-    IntProperty,
-    FloatVectorProperty,
-    PointerProperty,
     EnumProperty,
 )
 
+from .. import fn
 
-# class STORYTOOLS_OT_load_materials_from_object(Operator):
-#     bl_idname = "storytools.load_materials_from_object"
-#     bl_label = 'Load Materials From Object'
-#     bl_description = "Load materials from pointed object to active object's materials stack"
-#     bl_options = {'REGISTER', 'UNDO'}
+def get_other_gp_objects(self, context):
+    """Return a list of Grease Pencil object, without the active
+    as tuple to use as reference object (for dynamic enum prop update)"""
+    gp_in_scene = [o for o in context.scene.objects if o.type == 'GREASEPENCIL']
 
-#     @classmethod
-#     def poll(cls, context):
-#         return True
-#     # def invoke(self, context, event):
-#     #     return self.execute(context)
+    ## Add all GP objects from data
+    gp_in_other_scenes = [o for o in bpy.data.objects if o.type == 'GREASEPENCIL' and o not in gp_in_scene]
+    all_gps = gp_in_scene + gp_in_other_scenes
 
-#     name : StringProperty()
+    ## Remove active object from list
+    all_gps = [o for o in all_gps if o != context.object]
 
-#     def execute(self, context):
-#         if not self.name:
-#             return {"CANCELLED"}
+    objects = [(obj.name, obj.name, f"Use {obj.name} as template") 
+               for obj in all_gps]
 
-#         ob = context.scene.objects.get(self.name)
-#         if not ob:
-#             return {"CANCELLED"}
+    return objects
+
+class STORYTOOLS_OT_load_materials_from_object(Operator):
+    bl_idname = "storytools.load_materials_from_object"
+    bl_label = 'Load Materials From Object'
+    bl_description = "Load materials from pointed object to active object's materials stack"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    reference_object : EnumProperty(
+        name="Reference Object",
+        description="Reference object to get materials from",
+        items=get_other_gp_objects,
+        options={'SKIP_SAVE'}
+    )
+
+    def invoke(self, context, event):
+        if len([o for o in bpy.data.objects if o.type == 'GREASEPENCIL']) < 2:
+            self.report({'WARNING'}, 'No other Grease Pencil object found')
+            return {"CANCELLED"}
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "reference_object", text='Source')
+
+    def execute(self, context):
+        if not self.reference_object:
+            self.report({'WARNING'}, 'No object selected')
+            return {"CANCELLED"}
+        source_obj = bpy.data.objects.get(self.reference_object)
+        if not source_obj:
+            self.report({'ERROR'}, 'Object not found')
+            return {"CANCELLED"}
         
-#         # hide = not ob.hide_viewport
-#         hide = ob.visible_get() # Already inversed
-        
-#         ob.hide_viewport = hide
-#         ob.hide_render = hide
-#         # Set viewlayer visibility
-#         ob.hide_set(hide)
-#         return {"FINISHED"}
+        ct = 0
+        for mat in source_obj.data.materials:
+            if mat not in context.object.data.materials[:]:
+                print("Adding", mat.name)
+                context.object.data.materials.append(mat)
+                ct += 1
+        self.report({'INFO'}, f'{ct} materials added')
+        return {"FINISHED"}
 
 class STORYTOOLS_OT_load_material(Operator):
     bl_idname = "storytools.load_material"
@@ -119,7 +147,6 @@ class STORYTOOLS_OT_add_existing_materials(Operator):
         col.prop(self, "hide_already_loaded")
         
         ## TODO: Split list between - Scene and Data
-        
 
         ## Material
         col = layout.column()
@@ -145,8 +172,8 @@ class STORYTOOLS_OT_add_existing_materials(Operator):
 
 classes=(
     STORYTOOLS_OT_load_material,
-    # STORYTOOLS_OT_load_materials_from_object,
     STORYTOOLS_OT_add_existing_materials,
+    STORYTOOLS_OT_load_materials_from_object,
 )
 
 def register(): 

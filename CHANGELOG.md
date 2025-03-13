@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.14.0
+
+- added: option to load material stack from another object with a seelction within a popup
+
 2.13.0
 
 - added: option to browse and add existing materials to object stack

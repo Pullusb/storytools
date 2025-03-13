@@ -26,6 +26,8 @@ def distance_selection_update(self, context):
         self.init_dist = fn.coord_distance_from_view(context=context)
 
 def get_gp_objects(self, context):
+    """Return a list of Grease Pencil object as tuple to use as reference object (for dynamic enum prop update)
+    make active object the first one in list (if active is a GP)"""
     gp_in_scene = [o for o in context.scene.objects if o.type == 'GREASEPENCIL']
     ## Set active first
     if context.object and context.object.type == 'GREASEPENCIL':
