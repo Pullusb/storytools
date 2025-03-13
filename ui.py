@@ -474,7 +474,15 @@ class STORYTOOLS_MT_material_context_menu(bpy.types.Menu):
         layout = self.layout
         col=layout.column()
         col.operator('storytools.load_default_palette', text='Load Base Palette')
-        # col.prop(bpy.context.scene.storytools_settings, 'material_sync', text='')
+        # col.operator('storytools.load_materials_from_object', text='Load Materials From Object')
+        col.operator('storytools.add_existing_materials', text='Add An Existing Material')
+        # TODO : Add option to load material from another object ?
+
+        ## Cleanup material slots (from gp_toolbox if active)
+        ## Weird to repeat it there. it's already added in dropdown menu...
+        # if hasattr(bpy.types, 'GP_OT_clean_material_stack'):
+        #     col.operator('gp.clean_material_stack', text='Clean Material Stack')
+
 
 class STORYTOOLS_PT_brushes_ui(Panel):
     bl_space_type = "VIEW_3D"

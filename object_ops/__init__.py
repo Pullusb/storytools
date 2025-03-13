@@ -3,6 +3,7 @@ from . import (
     autolock_switch,
     snap_cursor,
     set_origin,
+    material_management,
 )
 
 modules = (
@@ -10,6 +11,7 @@ modules = (
     autolock_switch,
     snap_cursor,
     set_origin,
+    material_management,
 )
 
 def register():
