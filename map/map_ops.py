@@ -110,6 +110,83 @@ class STORYTOOLS_OT_map_frame_objects(Operator):
         return {"FINISHED"}
 
 
+def set_minimap_viewport_settings(context) -> None:
+    ## Set TOP ortho view (if needed)
+    if context.region_data.view_perspective != 'ORTHO':
+        context.region_data.view_perspective = 'ORTHO'
+
+    # euler_view = context.region_data.view_matrix.to_euler()
+    # if euler_view[1] != 0.0 or euler_view[1] != 0.0:
+    #     ## ops has incorrect context
+    #     # bpy.ops.view3d.view_axis(type='TOP', align_active=True, relative=True) 
+    ## manual view set
+    context.region_data.view_rotation = Quaternion()
+    ## Also frame GP and cam
+    fn.frame_objects(context, target='ALL')
+
+    ## Lock view
+    context.region_data.lock_rotation = True # map_val
+
+    space_data = bpy.context.space_data
+    overlay = space_data.overlay
+
+    ## Completely disable overlays ? 
+    ## - Users may want to have some.
+    ## - And some object selectability might be needed overlay for selection)
+    ## For now let's do with overlays
+
+    space_data.overlay.show_overlays = True
+
+    ## If overlay are enabled:
+    ## Viewport settings
+    # Optional
+    ## Might be disturbing not having the floor and axis...
+    overlay.show_floor = True
+    overlay.show_axis_y = True
+    overlay.show_axis_x = True
+    overlay.show_axis_z = False
+
+    # Mandatory
+    overlay.show_annotation = False
+    overlay.show_cursor = False
+    overlay.show_text = False
+    overlay.show_stats = False
+    overlay.show_look_dev = False
+    overlay.show_bones = False
+    # overlay.show_outline_selected = False
+    overlay.show_viewer_attribute = False
+    overlay.show_relationship_lines = False
+    
+    overlay.use_gpencil_grid = False
+    overlay.use_gpencil_fade_objects = False
+    
+    overlay.show_outline_selected = True # Keep selection overlay
+    overlay.show_object_origins_all = False # Show all object origin ?
+    overlay.show_extras = True # Needed to show camera (and lights)
+
+    ## Gizmos
+    space_data.show_gizmo = True
+    space_data.show_gizmo_context = True
+    space_data.show_gizmo_tool = True
+    space_data.show_gizmo_object_translate = True # Hide translate ? 
+
+    ## Remove top right corner navigation Gizmos
+    space_data.show_gizmo_navigate = False
+
+    ## Visibility filter special combination (serve to identify viewport as minimap)
+    space_data.show_object_viewport_lattice = False # map_val
+    space_data.show_object_viewport_light_probe = False # map_val
+
+
+    ## Hide UI elements and stuffs
+    space_data.show_region_ui = False
+    space_data.show_region_tool_header = False
+    space_data.show_region_toolbar = False
+
+    ## - ! - hiding this one mean it cannot be used for customizing view (can be done with new gyzmo set)
+    ## - BUT, also had user visual customization... kinda risky.
+    space_data.show_region_header = False
+
 class STORYTOOLS_OT_setup_minimap_viewport(Operator):
     bl_idname = "storytools.setup_minimap_viewport"
     bl_label = "Set Minimap Viewport"
@@ -161,83 +238,82 @@ class STORYTOOLS_OT_setup_minimap_viewport(Operator):
     def execute(self, context):
         if self.split_viewport:
             bpy.ops.screen.area_split(direction='HORIZONTAL', factor=0.49)
+        set_minimap_viewport_settings(context)
+        return {"FINISHED"}
+    
+class STORYTOOLS_OT_setup_minimap_on_pointed_editor(Operator):
+    bl_idname = "storytools.setup_minimap_on_pointed_editor"
+    bl_label = "Set Minimap Viewport On Editor"
+    bl_description = "Setup minimap in pointer editor (split)"
+    bl_options = {"REGISTER", "INTERNAL"}
 
-        ## Set TOP ortho view (if needed)
-        if context.region_data.view_perspective != 'ORTHO':
-            context.region_data.view_perspective = 'ORTHO'
+    split_editor : bpy.props.BoolProperty(name='Split Editor', default=False, options={'SKIP_SAVE'})
 
-        # euler_view = context.region_data.view_matrix.to_euler()
-        # if euler_view[1] != 0.0 or euler_view[1] != 0.0:
-        #     ## ops has incorrect context
-        #     # bpy.ops.view3d.view_axis(type='TOP', align_active=True, relative=True) 
-        ## manual view set
-        context.region_data.view_rotation = Quaternion()
-        ## Also frame GP and cam
-        fn.frame_objects(context, target='ALL')
-
-        ## Lock view
-        context.region_data.lock_rotation = True # map_val
-
-        space_data = bpy.context.space_data
-        overlay = space_data.overlay
-
-        ## Completely disable overlays ? 
-        ## - Users may want to have some.
-        ## - And some object selectability might be needed overlay for selection)
-        ## For now let's do with overlays
-
-        space_data.overlay.show_overlays = True
-
-        ## If overlay are enabled:
-        ## Viewport settings
-        # Optional
-        ## Might be disturbing not having the floor and axis...
-        overlay.show_floor = True
-        overlay.show_axis_y = True
-        overlay.show_axis_x = True
-        overlay.show_axis_z = False
-
-        # Mandatory
-        overlay.show_annotation = False
-        overlay.show_cursor = False
-        overlay.show_text = False
-        overlay.show_stats = False
-        overlay.show_look_dev = False
-        overlay.show_bones = False
-        # overlay.show_outline_selected = False
-        overlay.show_viewer_attribute = False
-        overlay.show_relationship_lines = False
+    @classmethod
+    def description(cls, context, properties) -> str:
+        if properties.split_editor:
+            desc = 'Split pointed editor to create a minimap editor'
+        else:
+            desc = 'Replace pointed editor to minimap'
         
-        overlay.use_gpencil_grid = False
-        overlay.use_gpencil_fade_objects = False
-        
-        overlay.show_outline_selected = True # Keep selection overlay
-        overlay.show_object_origins_all = False # Show all object origin ?
-        overlay.show_extras = True # Needed to show camera (and lights)
+        ## Precisions
+        desc += '\nAdjust editor settings so editor is considered as minimap\
+                 \n(determined by editor orientation and combination of tool-settings'
+        return desc
 
-        ## Gizmos
-        space_data.show_gizmo = True
-        space_data.show_gizmo_context = True
-        space_data.show_gizmo_tool = True
-        space_data.show_gizmo_object_translate = True # Hide translate ? 
+    def invoke(self, context, event):
+        context.window_manager.modal_handler_add(self)
+        context.window.cursor_set("PICK_AREA")
+        return {'RUNNING_MODAL'}
 
-        ## Remove top right corner navigation Gizmos
-        space_data.show_gizmo_navigate = False
+    def build_override_area_from_mouse(self, context, event):
+        override = None
+        screen = context.window.screen
+        for i, area in enumerate(screen.areas):
+            if (area.x < event.mouse_x < area.x + area.width
+            and area.y < event.mouse_y < area.y + area.height):
+                print(f"Set Minimap in area of {area.type}")
+                for region in area.regions:
+                    if region.type == 'WINDOW':
+                        override = {'window': context.window, 'screen': screen, 'area': area, 'region': region}
+                # self.report({'INFO'}, f'Screen {screen.name} area of {area.type} index {i}')
+                break
+        return override
 
-        ## Visibility filter special combination (serve to identify viewport as minimap)
-        space_data.show_object_viewport_lattice = False # map_val
-        space_data.show_object_viewport_light_probe = False # map_val
+    def modal(self, context, event):
+        if event.type == 'LEFTMOUSE':        
+            # init_areas = [(a, a.type) for a in context.screen.areas]
+            override = self.build_override_area_from_mouse(context, event)
+            if not override:
+                context.window.cursor_set("DEFAULT")
+                self.report({'ERROR'}, 'No area found')
+                return {'CANCELLED'}
+            
+            # splitted = False
+            with context.temp_override(**override):
+                # if self.split_editor:
+                #     bpy.ops.screen.area_split(direction='HORIZONTAL', factor=0.49)
+                #     splitted = True
+    
+                ## Change type to viewport
+                if context.area.type != 'VIEW_3D':
+                    context.area.type = 'VIEW_3D'
+            
+            ## re-use mouse location ?
+            override = self.build_override_area_from_mouse(context, event)
+            with context.temp_override(**override):
+                set_minimap_viewport_settings(context)
+            
+            context.window.cursor_set("DEFAULT")
+            return {'FINISHED'}
 
+        elif event.type in {'RIGHTMOUSE', 'ESC'}:
+            context.window.cursor_set("DEFAULT")
+            return {'CANCELLED'}
 
-        ## Hide UI elements and stuffs
-        space_data.show_region_ui = False
-        space_data.show_region_tool_header = False
-        space_data.show_region_toolbar = False
+        return {'RUNNING_MODAL'}
 
-        ## - ! - hiding this one mean it cannot be used for customizing view (can be done with new gyzmo set)
-        ## - BUT, also had user visual customization... kinda risky.
-        space_data.show_region_header = False
-
+    def execute(self, context):
         return {"FINISHED"}
 
 class STORYTOOLS_OT_disable_minimap_viewport(Operator):
@@ -298,6 +374,7 @@ classes=(
 STORYTOOLS_OT_select_map_object,
 STORYTOOLS_OT_map_frame_objects,
 STORYTOOLS_OT_setup_minimap_viewport,
+STORYTOOLS_OT_setup_minimap_on_pointed_editor,
 STORYTOOLS_OT_disable_minimap_viewport,
 STORYTOOLS_OT_minimap_lc,
 )

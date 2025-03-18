@@ -83,9 +83,13 @@ class STORYTOOLS_PT_viewport_setup(bpy.types.Panel):
             ## Minimap
             col.separator()
             if not fn.is_minimap_viewport(context):
-                col.label(text='Minimap:')
-                col.operator('storytools.setup_minimap_viewport', text='Viewport to minimap', icon='WORLD').split_viewport = False
+                col.label(text='Minimap Setup:')
+                col.operator('storytools.setup_minimap_viewport', text='Viewport To Minimap', icon='WORLD').split_viewport = False
                 col.operator('storytools.setup_minimap_viewport', text='Split With Minimap', icon='SPLIT_HORIZONTAL').split_viewport = True
+                col.operator('storytools.setup_minimap_on_pointed_editor', text='Pick Editor To Minimap', icon='RESTRICT_SELECT_OFF').split_editor = False
+                ## point and split is bugged
+                # col.operator('storytools.setup_minimap_on_pointed_editor', text='Pick And Split Editor', icon='SPLIT_HORIZONTAL').split_editor = True
+
 
             # show_storypencil_setup = len(context.window_manager.windows) == 1 and context.preferences.addons.get('storypencil')
             # if show_workspace_switch or show_storypencil_setup:        

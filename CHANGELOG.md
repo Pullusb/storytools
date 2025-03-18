@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.15.0
+
+- added: third option button to swap a pointed editor to the minimap (often people will add it on the upper right corner)
+
 2.14.0
 
 - added: option to load material stack from another object with a seelction within a popup
