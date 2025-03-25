@@ -1,10 +1,12 @@
 from . import (
     cam_move,
+    view_locked_pan,
     # cam_shift,
     )
 
 modules = (
     cam_move,
+    view_locked_pan,
     # cam_shift,
 )
 

@@ -1,10 +1,7 @@
 import bpy
-import gpu
 
 from bpy.types import Operator
 from mathutils import Vector
-from gpu_extras.batch import batch_for_shader
-from bpy.app.handlers import persistent
 from mathutils.geometry import intersect_line_plane
 
 from .. import fn
@@ -552,127 +549,18 @@ class STORYTOOLS_OT_camera_key_transform(Operator):
             self.report({'INFO'}, ret)
         return {"FINISHED"}
  
-class STORYTOOLS_OT_lock_view(Operator):
-    bl_idname = "storytools.lock_view"
-    bl_label = 'Lock Current View'
-    bl_description = "Lock current viewport orbit navigation"
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    def execute(self, context):
-        r3d = context.space_data.region_3d
-        r3d.lock_rotation = not r3d.lock_rotation
-        return {"FINISHED"}
-
-class VIEW3D_OT_locked_pan(bpy.types.Operator):
-    bl_idname = "view3d.locked_pan"
-    bl_label = "Locked Pan"
-    bl_description = "Locked Pan, a wrapper for pan operation\
-                    \nOnly valid when viewport has locked rotation (region_3d.lock_rotation)"
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    @classmethod
-    def poll(cls, context):
-        # context.area.type == 'VIEW_3D'
-        return context.space_data.region_3d.lock_rotation
-
-    def execute(self, context):
-        # print("Locked rotation - Pan wrapper") # Dbg
-        bpy.ops.view3d.move("INVOKE_DEFAULT")
-        return {'FINISHED'}
-
-## --- KEYMAPS
-
-addon_keymaps = []
-def register_keymaps():
-    addon = bpy.context.window_manager.keyconfigs.addon
-
-    # active
-    # compare
-    # idname
-    # name
-    # repeat
-    # map_type
-
-    key_props = [
-    'type',
-    'value',
-    'ctrl',
-    'alt',
-    'shift',
-    'oskey',
-    'any',
-    'key_modifier',
-    ]
-
-    user_km = bpy.context.window_manager.keyconfigs.user.keymaps.get('3D View')
-    if not user_km:
-        print('-- Storytools could not reach user keymap')
-        return
-
-    for skmi in user_km.keymap_items:
-        # Only replicate orbit shortcut
-        if skmi.idname != 'view3d.rotate':
-            continue
-
-        # skmi.show_expanded = True #Dbg
-
-        ## FIXME : Trackball shortcut skip ?
-        ## by default 3 shortcut exists : MOUSEROTATE, MIDDLEMOUSE, TRACKPADPAN
-        if skmi.type == 'MOUSEROTATE':
-            continue
-
-        ## Check if duplicates exists 
-        km_dup = next((k for k in user_km.keymap_items 
-                        if k.idname == VIEW3D_OT_locked_pan.bl_idname
-                        and all(getattr(skmi, x) == getattr(k, x) for x in key_props)), None)
-        if km_dup:
-            # print(f'--> "{skmi.name} > {skmi.type} > {skmi.value}" shortcut already have a lock pan equivalent') # Dbg
-            continue
-        
-        # print(f'>-> Create {skmi.name} > {skmi.type} > {skmi.value}" shortcut to lock pan') # Dbg
-        ## Create duplicate
-        km = addon.keymaps.new(name = "3D View", space_type = "VIEW_3D")
-        kmi = km.keymap_items.new(
-            idname=VIEW3D_OT_locked_pan.bl_idname,
-            type=skmi.type,
-            value=skmi.value,
-            ctrl=skmi.ctrl,
-            alt=skmi.alt,
-            shift=skmi.shift,
-            oskey=skmi.oskey,
-            any=skmi.any,
-            key_modifier=skmi.key_modifier,
-            )
-
-        addon_keymaps.append((km, kmi))
-
-def unregister_keymaps():
-    for km, kmi in addon_keymaps:
-        km.keymap_items.remove(kmi)
-    addon_keymaps.clear()
-
-@persistent
-def set_lockpan_km(dummy):
-    register_keymaps()
 
 classes=(
     STORYTOOLS_OT_camera_pan,
     STORYTOOLS_OT_camera_depth,
     STORYTOOLS_OT_camera_key_transform,
     STORYTOOLS_OT_lock_camera_to_view_toggle,
-    STORYTOOLS_OT_lock_view,
-    VIEW3D_OT_locked_pan,
 )
 
 def register(): 
     for cls in classes:
         bpy.utils.register_class(cls)
-    bpy.app.handlers.load_post.append(set_lockpan_km)
-    # register_keymaps()
 
 def unregister():
-    unregister_keymaps()
-    bpy.app.handlers.load_post.remove(set_lockpan_km)
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
-    
