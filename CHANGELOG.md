@@ -2,6 +2,12 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+2.15.1
+
+- fixed: #82 locked pan failing to register in some cases
+- changed: rotate icon for minimap rotation
+
 2.15.0
 
 - added: third option button to swap a pointed editor to the minimap (often people will add it on the upper right corner)
