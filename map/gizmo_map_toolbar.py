@@ -77,7 +77,7 @@ class STORYTOOLS_GGT_map_toolbar(GizmoGroup):
 
         # Roll view
         self.gz_roll_view = self.gizmos.new("GIZMO_GT_button_2d")
-        fn.set_gizmo_settings(self.gz_roll_view, 'DRIVER_ROTATIONAL_DIFFERENCE', show_drag=True)
+        fn.set_gizmo_settings(self.gz_roll_view, 'FILE_REFRESH', show_drag=True)
         self.gz_roll_view.target_set_operator("storytools.roll_minimap_viewport")
         self.view_gizmos.append(self.gz_roll_view)
 
