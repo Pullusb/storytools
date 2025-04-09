@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.21.1
+
+- fixed: layer-material sync when using dual main window (hack used when storyboarding using storypencil / spa-sequencer)
+
 1.21.0
 
 - changed: in camera `Rotate gizmo` button reset rotation on single click (Previously double click)
