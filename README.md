@@ -4,6 +4,8 @@ Blender addon - Set of tool for storyboarding in Blender
 
 ## [Download latest (Blender 4.3+)](https://github.com/Pullusb/storytools/archive/master.zip)
 
+> /!\ Important Note: the releases on release page are only for older version (4.0 to 4.2), access on link below
+
 ## [Downloads for Blender 4.0 to 4.2 are on release page](https://github.com/Pullusb/storytools/releases)
 
 ## [Documentation](https://pullusb.github.io/storytools-docs/)

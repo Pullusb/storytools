@@ -5,7 +5,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 2.15.2
 
-- fixed: layer-material sync when using dual main window (hack used when storyboarding using storypencil / spa-sequencer)
+- fixed: #84 layer-material sync when using dual main window (hack used when storyboarding using storypencil / spa-sequencer)
 
 2.15.1
 
