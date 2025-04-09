@@ -3,6 +3,40 @@ from bpy.app.handlers import persistent
 from .constants import LAYERMAT_PREFIX
 from .fn import get_addon_prefs, set_material_by_name
 
+def get_object_and_scene():# -> tuple[None, None] | tuple[Any | None, Any]:
+    """return scene and active object if object is a GP
+    If there are mutliple main windows, return the scene and active GP object from first window with active GP
+    Return: (scene, GP_object) or (None, None)
+    """
+
+    scn = None
+    ob = None
+    if len(bpy.context.window_manager.windows) == 1:
+        scn = bpy.context.scene
+        ob = bpy.context.object
+        if not ob or ob.type != 'GREASEPENCIL':
+            return None, None
+        if not ob.data.layers.active:
+            return None, None
+    
+    else:
+        # Dirty fix for case of multi-main-window (for dual win hack, with storypencil or spark-sequencer
+        ob = bpy.context.object
+        if ob and ob.type == 'GREASEPENCIL':
+            scn = bpy.context.scene
+            ## Use current window direcly
+            return scn, ob
+
+        for win in bpy.context.window_manager.windows:
+            if win.view_layer.objects.active and win.view_layer.objects.active.type == 'GREASEPENCIL':
+                scn = win.scene
+                ob = win.view_layer.objects.active
+                return scn, ob
+
+        return None, None
+    
+    return scn, ob
+
 def layer_change_callback():
     # print('Layer has changed!')
 
@@ -11,13 +45,11 @@ def layer_change_callback():
     if not get_addon_prefs().show_sidebar_ui:
         return
 
-    ob = bpy.context.object
-    if not ob or ob.type != 'GREASEPENCIL':
-        return
-    if not ob.data.layers.active:
+    scn, ob = get_object_and_scene()
+    if scn is None or ob is None:
         return
     
-    mode = bpy.context.scene.storytools_settings.material_sync
+    mode = scn.storytools_settings.material_sync
     if mode == 'DISABLED':
         return
     
@@ -33,7 +65,6 @@ def layer_change_callback():
         if key_name in ob.keys():
             set_material_by_name(ob, ob[key_name])
     else:
-        scn = bpy.context.scene
         if not hasattr(scn, 'gp_mat_by_layer'):
             return
         set_material_by_name(ob, scn.gp_mat_by_layer.get(ob.data.layers.active.name))
@@ -65,20 +96,16 @@ def material_change_callback():
     if not get_addon_prefs().show_sidebar_ui:
         return
 
-    ob = bpy.context.object
-    if not ob or ob.type != 'GREASEPENCIL':
-        return
-    if not ob.data.layers.active:
+    scn, ob = get_object_and_scene()
+    if scn is None or ob is None:
         return
     if not ob.active_material:
         return
     
-    mode = bpy.context.scene.storytools_settings.material_sync
+    mode = scn.storytools_settings.material_sync
     if mode == 'DISABLED':
         return
 
-    # mode = 'INDIVIDUAL'
-    
     if mode == 'INDIVIDUAL':
         ## use active_material_index
         # ob.data.layers.active['material'] = ob.active_material.name
@@ -98,7 +125,6 @@ def material_change_callback():
         # ob.data.layers.active.use_material = ob.active_material.name ## not working 
 
     else: # GLOBAL
-        scn=bpy.context.scene
         # Attach material.name to layer info on a scene prop
         # spread accross other layer
         if not hasattr(scn, 'gp_mat_by_layer'):
