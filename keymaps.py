@@ -49,7 +49,14 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
             \nEmpty field = no change",
         default="",
         options={'SKIP_SAVE'})
-    
+
+    brush_asset_path : StringProperty(
+        name="Brush Asset Path", description="Use path to the brush asset\
+            \nIf provided, 'Brush' property will be ignored\
+            \nUser Library brushes path usually starts with 'Saved/Brushes/...'",
+        default="",
+        options={'SKIP_SAVE'})
+
     layer : StringProperty(
         name="Layer", description="Layer to set (exact name, case sensitive)\
             \nEmpty field = no change",
@@ -114,8 +121,18 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
             else:
                 tools.append(f'Tool: {properties.tool}')
         
+        brush_name = ''
         if properties.brush:
-            tools.append(f'Brush: {properties.brush}')
+            if '/' in properties.brush:
+                brush_name = properties.brush.split("/")[-1]
+            else:
+                brush_name = properties.brush[-1]
+
+        if not brush_name and properties.brush:
+            brush_name = properties.brush
+        
+        if brush_name:
+            tools.append(f'Brush: {brush_name}')
 
         if tools:
             desc.append(' > '.join(tools))
@@ -151,7 +168,7 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
         # if self.mode != 'NONE' and context.mode != self.mode:
         #     bpy.ops.object.mode_set(mode=self.mode)
         
-        prop_names = ('tool', 'brush', 'layer', 'material')
+        prop_names = ('tool', 'brush', 'brush_asset_path', 'layer', 'material')
         # if not self.tool and not self.brush and not self.layer and not self.material:
         if not any(getattr(self, prop_name) for prop_name in prop_names) and self.mode == 'NONE':
             message = [
@@ -177,7 +194,19 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
                 self.report({'ERROR'}, f'Cannot set tool {self.tool}, need identifier (ex: "builtin.brush")')
                 return {"CANCELLED"}
         
-        if self.brush:
+        if self.brush_asset_path:
+            ## always Consider that this is a custom brush for brush name
+            ## But need a more robust solution
+            try:
+                bpy.ops.brush.asset_activate(asset_library_type='CUSTOM',
+                asset_library_identifier="User Library",
+                relative_asset_identifier=self.brush_asset_path)
+            except Exception as e:
+                print('Error loading brush from asset', e)
+                self.report({'ERROR'}, f'Cannot load brush from asset {self.brush_asset_path}')
+                return {"CANCELLED"}
+
+        elif self.brush:
             ## self.brush is brush name as str here
             br = bpy.data.brushes.get(self.brush)
 
@@ -220,7 +249,7 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
                 # when found in blend (not a boolean value from checks above)
                 if br:
                     # Use asset-activate operator, instead of deprecated : context.scene.tool_settings.gpencil_paint.brush = br
-                    
+
                     ## FIXME: brush source hardcoded to essential for now, but will miserably fail if user set brush name from another library
                     ## Need to find a way to get library type and relative_asset_identifier from brush object
                     bpy.ops.brush.asset_activate(asset_library_type='ESSENTIALS', 
