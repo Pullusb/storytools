@@ -45,15 +45,10 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
         options={'SKIP_SAVE'})
     
     brush : StringProperty(
-        name="Brush", description="Brush to set\
+        name="Brush", description="Name of Brush to set\
+            \nIf it's a User brush, need to enter the relative asset path\
+            \nExample: 'Saved/Brushes/CustomFill.asset.blend/Brush/CustomFill'\
             \nEmpty field = no change",
-        default="",
-        options={'SKIP_SAVE'})
-
-    brush_asset_path : StringProperty(
-        name="Brush Asset Path", description="Use path to the brush asset\
-            \nIf provided, 'Brush' property will be ignored\
-            \nUser Library brushes path usually starts with 'Saved/Brushes/...'",
         default="",
         options={'SKIP_SAVE'})
 
@@ -121,17 +116,11 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
             else:
                 tools.append(f'Tool: {properties.tool}')
         
-        brush_name = ''
         if properties.brush:
             if '/' in properties.brush:
                 brush_name = properties.brush.split("/")[-1]
             else:
-                brush_name = properties.brush[-1]
-
-        if not brush_name and properties.brush:
-            brush_name = properties.brush
-        
-        if brush_name:
+                brush_name = properties.brush
             tools.append(f'Brush: {brush_name}')
 
         if tools:
@@ -168,7 +157,7 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
         # if self.mode != 'NONE' and context.mode != self.mode:
         #     bpy.ops.object.mode_set(mode=self.mode)
         
-        prop_names = ('tool', 'brush', 'brush_asset_path', 'layer', 'material')
+        prop_names = ('tool', 'brush', 'layer', 'material')
         # if not self.tool and not self.brush and not self.layer and not self.material:
         if not any(getattr(self, prop_name) for prop_name in prop_names) and self.mode == 'NONE':
             message = [
@@ -194,16 +183,16 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
                 self.report({'ERROR'}, f'Cannot set tool {self.tool}, need identifier (ex: "builtin.brush")')
                 return {"CANCELLED"}
         
-        if self.brush_asset_path:
-            ## always Consider that this is a custom brush for brush name
+        if '/' in self.brush:
+            ## always Consider that this is a custom user brush to use with asset_activate
             ## But need a more robust solution
             try:
                 bpy.ops.brush.asset_activate(asset_library_type='CUSTOM',
                 asset_library_identifier="User Library",
-                relative_asset_identifier=self.brush_asset_path)
+                relative_asset_identifier=self.brush)
             except Exception as e:
                 print('Error loading brush from asset', e)
-                self.report({'ERROR'}, f'Cannot load brush from asset {self.brush_asset_path}')
+                self.report({'ERROR'}, f'Cannot load {self.brush}, need to be an asset path, ex: "Saved/Brushes/CustomFill.asset.blend/Brush/CustomFill"')
                 return {"CANCELLED"}
 
         elif self.brush:
@@ -360,6 +349,7 @@ def register_keymap():
     kmi.properties.name = 'Bucket Fill'
     kmi.properties.mode = 'PAINT_GREASE_PENCIL'
     kmi.properties.tool = 'builtin_brush.Fill'
+    kmi.properties.brush = 'Fill'
     kmi.properties.layer = 'Color'
     # kmi.properties.material = '' # fill_white
     kmi.properties.icon = 'SHADING_SOLID'
