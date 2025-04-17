@@ -231,7 +231,7 @@ class STORYTOOLS_OT_object_depth_move(Operator):
         if any(context.object.lock_location):
             self.report({'ERROR'}, "Active object's location is locked")
             return {'CANCELLED'}
-        
+
         self.init_mouse_x = event.mouse_x
         self.shift_pressed = event.shift
         self.delta = 0
@@ -271,10 +271,23 @@ class STORYTOOLS_OT_object_depth_move(Operator):
                 f'Move factor: 0.00 | Mode: {self.mode} (M to switch) | Ctrl: Adjust Scale | Shift: Precision')
         
         context.window.cursor_set("SCROLL_X")
-        
-        self.current_area = context.area # gpuDraw
+
         if fn.get_addon_prefs().use_visual_hint:
-            self._handle = bpy.types.SpaceView3D.draw_handler_add(draw.draw_callback_wall, (self, context), 'WINDOW', 'POST_VIEW') # gpuDraw
+            ## Setup and add gpuDraw draw overlays
+            self.current_area = context.area
+
+            args = (self, context) # gpuDraw
+            self._handle = bpy.types.SpaceView3D.draw_handler_add(draw.draw_callback_wall, args, 'WINDOW', 'POST_VIEW') # gpuDraw
+
+            # Setup pip view properties
+            self.pip_size = 0.2  # Size relative to viewport
+            self.pip_quality = 95  # Render quality percentage
+            offset_from_corner = 60
+            bottom_pos = context.region.height * self.pip_size + offset_from_corner
+            self.pip_position = (offset_from_corner, context.region.height - bottom_pos)  # Upper left corner
+
+            self._pip_handle = bpy.types.SpaceView3D.draw_handler_add(draw.zenith_view_callback, args, 'WINDOW', 'POST_PIXEL')
+
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
@@ -287,6 +300,8 @@ class STORYTOOLS_OT_object_depth_move(Operator):
 
     def exit_modal(self, context):
         draw.stop_callback(self, context)
+        if hasattr(self, 'pip_offscreen'):
+            self.pip_offscreen.free()
         restore_child_of(self.constraint_dict) # ChildConst
 
     def modal(self, context, event):

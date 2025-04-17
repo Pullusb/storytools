@@ -2,8 +2,9 @@ import bpy
 import blf
 import gpu
 
-from mathutils import Vector
+from mathutils import Vector, Matrix
 from gpu_extras.batch import batch_for_shader
+from gpu_extras.presets import draw_texture_2d
 from . import fn
 
 ## Draw utils
@@ -37,18 +38,20 @@ def stop_callback(self, context):
     # Remove draw handler and text set
     context.area.header_text_set(None) # Reset header
     context.window.cursor_set("DEFAULT")
-    if handle := getattr(self, '_handle', None):
-        bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
-    if handle := getattr(self, '_pos_handle', None):
-        bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
-    # if handle := getattr(self, '_guide_handle', None):
-    #     bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
-    if handle := getattr(self, '_line_handle', None):
-        bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
-    if handle := getattr(self, '_grid_handle', None):
-        bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
-    if handle := getattr(self, '_text_handle', None):
-        bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
+
+    possible_handles = [
+        '_handle',
+        '_pos_handle',
+        '_line_handle',
+        '_grid_handle',
+        '_text_handle',
+        '_pip_handle',
+        # '_guide_handle',
+        ]
+    for handle_name in possible_handles:
+        if handle := getattr(self, handle_name, None):
+            bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
+
     context.area.tag_redraw()
 
 def draw_callback_wall(self, context):
@@ -358,3 +361,149 @@ def ob_lock_location_cam_draw_panel(self, context):
     row.prop(self.ob, "location")
     row.use_property_decorate = False
     row.prop(self.ob, "lock_location", text="", emboss=False, icon='DECORATE_UNLOCKED')
+
+
+
+def zenith_view_callback(self, context):
+    """Draw a zenith view (perpendicular to current view) of the active object.
+    Displays a picture-in-picture view in the corner of the viewport.
+    
+    Required properties in self:
+    - pip_size (float): Size of the zenith view relative to viewport 
+    - pip_quality (int): Quality percentage of the rendered view
+    - pip_position (tuple): (x, y) offset position in the viewport
+    - pip_border_color (tuple): (r, g, b, a) color of the border
+    - pip_border_thickness (float): Thickness of the border
+
+    Optional:
+    - pip_offscreen: Will be created if not present
+    - current_area: Restricts drawing to the operator's original area
+    """
+    # Restrict to current viewport if specified
+    if hasattr(self, 'current_area') and context.area != self.current_area:
+        return
+
+    # Get properties with fallback values
+    size = getattr(self, 'pip_size', 0.25)
+    quality = getattr(self, 'pip_quality', 75)
+    position = getattr(self, 'pip_position', (40, 40)) # bottom-left corner
+    border_color = getattr(self, 'pip_border_color', (0.0, 0.5, 1.0, 0.7)) # Blue outline
+    border_thickness = getattr(self, 'pip_border_thickness', 1.0)
+
+    # Get or create offscreen
+    if not hasattr(self, 'pip_offscreen'):
+        width = int(context.region.width * size * quality / 100)
+        height = int(context.region.height * size * quality / 100)
+        self.pip_offscreen = gpu.types.GPUOffScreen(width, height)
+
+    # Get object's location - use active object or operator's object if available
+    if hasattr(self, 'ob'):
+        obj = self.ob
+    elif hasattr(self, 'object'):
+        obj = self.object
+    else:
+        obj = context.object
+    
+    if not obj:
+        return
+        
+    obj_loc = obj.matrix_world.translation
+    
+    # Calculate dimensions for the viewport
+    region_width = context.region.width
+    region_height = context.region.height
+    width = int(region_width * size)
+    height = int(region_height * size)
+    
+    # Get position from the offset or use default
+    x_pos, y_pos = position
+    
+    # Calculate position based on region
+    x = x_pos if x_pos >= 0 else region_width + x_pos - width
+    y = y_pos if y_pos >= 0 else region_height + y_pos - height
+    
+    # Get the current view's vectors
+    view_mat = context.space_data.region_3d.view_matrix
+
+    view_forward = -Vector((view_mat.col[2][0], view_mat.col[2][1], view_mat.col[2][2]))
+    # view_forward = Vector((0, 0, -1))
+    # view_forward.rotate(view_mat)
+
+    view_up = Vector((view_mat.col[1][0], view_mat.col[1][1], view_mat.col[1][2]))
+    # view_up = Vector((0, 1, 0))
+    # view_up.rotate(view_mat)
+    
+    # Create pip view position (above the object)
+    distance = 20.0  # Distance above object
+    pip_pos = obj_loc + Vector((0, 0, distance)) # Zenith view
+    # pip_pos = obj_loc + (view_up * distance) # Perpendicular to view
+
+    # The view direction is down (-Z)
+    forward = Vector((0, 0, -1))
+    
+    # Use the current view's forward as our up direction
+    up = view_forward
+    
+    # If forward and up are nearly parallel, use a different up vector
+    if abs(forward.dot(up)) > 0.99:
+        print('forward and up nearly parallel, using view_up')
+        up = view_up
+    
+    # Calculate the right direction
+    right = forward.cross(up).normalized()
+    
+    # Recalculate up for perfect orthogonality
+    up = right.cross(forward).normalized()
+    
+    ## Create the rotation matrix
+    ## World global Z view
+    rot_mat = Matrix.Identity(4)
+    rot_mat.col[0][:3] = -right
+    rot_mat.col[1][:3] = -up
+    rot_mat.col[2][:3] = (-forward[0], -forward[1], -forward[2])  # Negated for camera direction
+    pip_view_matrix = Matrix.Translation(pip_pos) @ rot_mat
+
+    # _, rot_mat, _ = view_mat.decompose()
+    # rot_90 = Matrix.Rotation(1.570796, 4, 'X') # -pi/2 = -1.570796 (90 degrees)
+    # rot_mat.rotate(rot_90)
+    # pip_view_matrix = Matrix.LocRotScale(pip_pos, rot_mat, Vector((1, 1, 1)))
+    
+    # Create view matrix
+    pip_view_matrix.invert()  # Convert to view matrix
+    
+    # Get a projection matrix that ensures the object is in view
+    # Start with the current projection
+    proj_matrix = context.space_data.region_3d.window_matrix.copy()
+    
+    # Draw the 3D view to offscreen
+    self.pip_offscreen.draw_view3d(
+        context.scene,
+        context.view_layer,
+        context.space_data,
+        context.region,
+        pip_view_matrix,
+        proj_matrix,
+        do_color_management=True)
+    
+    # Draw the offscreen buffer to screen
+    gpu.state.blend_set('ALPHA')
+    draw_texture_2d(self.pip_offscreen.texture_color, (x, y), width, height)
+    
+    # Draw border
+    vertices = [
+        (x, y),
+        (x + width, y),
+        (x + width, y + height),
+        (x, y + height),
+        (x, y),
+    ]
+    
+    shader = gpu.shader.from_builtin('UNIFORM_COLOR')
+    gpu.state.line_width_set(border_thickness)
+    batch = batch_for_shader(shader, 'LINE_STRIP', {"pos": vertices})
+    shader.bind()
+    shader.uniform_float("color", border_color)
+    batch.draw(shader)
+    
+    gpu.state.line_width_set(1.0)
+    gpu.state.blend_set('NONE')
