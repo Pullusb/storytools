@@ -281,7 +281,8 @@ class STORYTOOLS_OT_object_depth_move(Operator):
 
             # Setup pip view properties
             self.pip_size = 0.2  # Size relative to viewport
-            self.pip_quality = 95  # Render quality percentage
+            self.pip_quality = 100  # Render quality percentage
+            ## FIXME: Need to check toolbar margin
             offset_from_corner = 60
             bottom_pos = context.region.height * self.pip_size + offset_from_corner
             self.pip_position = (offset_from_corner, context.region.height - bottom_pos)  # Upper left corner

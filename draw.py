@@ -422,59 +422,56 @@ def zenith_view_callback(self, context):
     x = x_pos if x_pos >= 0 else region_width + x_pos - width
     y = y_pos if y_pos >= 0 else region_height + y_pos - height
     
-    # Get the current view's vectors
+    # Get vector from current view
     view_mat = context.space_data.region_3d.view_matrix
+    # view_forward = Vector((-view_mat.col[2][0], -view_mat.col[2][1], -view_mat.col[2][2]))
+    # view_up = Vector((view_mat.col[1][0], view_mat.col[1][1], view_mat.col[1][2]))
+    view_right = Vector((view_mat.col[0][0], view_mat.col[0][1], view_mat.col[0][2]))
 
-    view_forward = -Vector((view_mat.col[2][0], view_mat.col[2][1], view_mat.col[2][2]))
-    # view_forward = Vector((0, 0, -1))
-    # view_forward.rotate(view_mat)
+    # Get current view position
+    ## >> Use current viewpoint, we may want to use active camera (can be an optional self argument)
+    cam_pos = context.space_data.region_3d.view_matrix.inverted().translation
 
-    view_up = Vector((view_mat.col[1][0], view_mat.col[1][1], view_mat.col[1][2]))
-    # view_up = Vector((0, 1, 0))
-    # view_up.rotate(view_mat)
-    
-    # Create pip view position (above the object)
-    distance = 20.0  # Distance above object
-    pip_pos = obj_loc + Vector((0, 0, distance)) # Zenith view
-    # pip_pos = obj_loc + (view_up * distance) # Perpendicular to view
+    # Calculate vector from object to camera
+    obj_to_cam = cam_pos - obj_loc
+    obj_to_cam.z = 0  # Eemove z component
+    obj_to_cam.normalize()
 
-    # The view direction is down (-Z)
-    forward = Vector((0, 0, -1))
-    
-    # Use the current view's forward as our up direction
-    up = view_forward
-    
-    # If forward and up are nearly parallel, use a different up vector
-    if abs(forward.dot(up)) > 0.99:
-        print('forward and up nearly parallel, using view_up')
-        up = view_up
-    
-    # Calculate the right direction
-    right = forward.cross(up).normalized()
-    
-    # Recalculate up for perfect orthogonality
-    up = right.cross(forward).normalized()
-    
-    ## Create the rotation matrix
-    ## World global Z view
+    # Create a viewpoint that looks from the direction opposite to the camera
+    ## TODO: Make distance value an optional argument so it can be relative to object size
+    distance = 20.0
+    pip_pos = obj_loc + Vector((0, 0, distance)) # Final position above object
+
+    # view direction (always -Z)
+    pip_forward = Vector((0, 0, -1))
+
+    # The "up" direction of the zenith view points opposite to the main camera
+    # This ensures the bottom of the image points toward the camera
+    pip_up = -obj_to_cam  # Use the inverted object-to-camera vector as the "up" direction
+
+    # If pip_up and pip_forward are almost parallel, use an alternative reference
+    if abs(pip_up.dot(pip_forward)) > 0.98:
+        # Use view_right as an alternative reference
+        pip_up = view_right
+
+    # Calculate the "right" vector (perpendicular to the other two)
+    pip_right = pip_forward.cross(pip_up).normalized()
+
+    # Recalculate the "up" vector to ensure perfect orthogonality
+    pip_up = pip_right.cross(pip_forward).normalized()
+
+    # Create the rotation matrix
     rot_mat = Matrix.Identity(4)
-    rot_mat.col[0][:3] = -right
-    rot_mat.col[1][:3] = -up
-    rot_mat.col[2][:3] = (-forward[0], -forward[1], -forward[2])  # Negated for camera direction
-    pip_view_matrix = Matrix.Translation(pip_pos) @ rot_mat
+    rot_mat.col[0][:3] = pip_right
+    rot_mat.col[1][:3] = pip_up
+    rot_mat.col[2][:3] = (-pip_forward[0], -pip_forward[1], -pip_forward[2])
 
-    # _, rot_mat, _ = view_mat.decompose()
-    # rot_90 = Matrix.Rotation(1.570796, 4, 'X') # -pi/2 = -1.570796 (90 degrees)
-    # rot_mat.rotate(rot_90)
-    # pip_view_matrix = Matrix.LocRotScale(pip_pos, rot_mat, Vector((1, 1, 1)))
-    
     # Create view matrix
-    pip_view_matrix.invert()  # Convert to view matrix
-    
-    # Get a projection matrix that ensures the object is in view
-    # Start with the current projection
+    pip_view_matrix = Matrix.Translation(pip_pos) @ rot_mat
+    pip_view_matrix.invert()
+
     proj_matrix = context.space_data.region_3d.window_matrix.copy()
-    
+
     # Draw the 3D view to offscreen
     self.pip_offscreen.draw_view3d(
         context.scene,

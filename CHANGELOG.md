@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.16.0
+
+- added: #81 Zenith view overlay when using depth move to help unterstanding object in space
+
 2.15.3
 
 - added: #85 support for custom user brushes in toolpresets. In this case need to put the `relative_asset_path` in the `Brush` property of the tool preset keymap.
