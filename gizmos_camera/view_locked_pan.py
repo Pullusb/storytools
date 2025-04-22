@@ -35,7 +35,7 @@ class VIEW3D_OT_locked_pan(bpy.types.Operator):
 
 addon_keymaps = []
 def register_keymaps():
-    print("Register locked pan keymaps") #Dbg
+    # print("Register locked pan keymaps") #Dbg
     addon = bpy.context.window_manager.keyconfigs.addon
 
     ## Key properteis to compare
@@ -54,7 +54,7 @@ def register_keymaps():
     ## Scan current keymaps to replicate
     user_km = bpy.context.window_manager.keyconfigs.user.keymaps.get('3D View')
     if not user_km:
-        print('-- Storytools could not reach user keymap')
+        # print('-- Storytools could not reach user keymap') #Dbg
         return
 
     if len(addon_keymaps):
