@@ -2,6 +2,12 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.17.0
+
+- added: option to disable top view view in addon preferences
+- added: add temporary top view moving camera (depth and pan).
+- changed: improve temporary top view
+
 2.16.0
 
 - added: #81 Zenith view overlay when using depth move to help unterstanding object in space

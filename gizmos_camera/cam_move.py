@@ -7,6 +7,28 @@ from mathutils.geometry import intersect_line_plane
 from .. import fn
 from .. import draw
 
+def setup_top_view_map(self, context, distance=15.0):
+    prefs = fn.get_addon_prefs()
+    args = (self, context)
+    if not prefs.use_top_view_map:
+        return 
+    ## Setup pip view properties
+    ## Upper left corner
+    self.pip_size = prefs.top_view_map_size / 100  # Size relative to viewport
+    self.pip_quality = 92  # Render quality percentage
+    self.pip_from_camera = True
+
+    top_margin = fn.get_header_margin(context, bottom=False)
+    left_margin = next((r.width for r in context.area.regions if r.type == 'TOOLS'), 0)
+    offset_from_corner = 10
+    bottom_pos = context.region.height * self.pip_size + top_margin + offset_from_corner
+    self.pip_position = (left_margin + offset_from_corner, context.region.height - bottom_pos)
+
+    self.pip_object = self.cam
+
+    self.pip_distance = distance
+    self._pip_handle = bpy.types.SpaceView3D.draw_handler_add(draw.zenith_view_callback, args, 'WINDOW', 'POST_PIXEL')
+
 class STORYTOOLS_OT_camera_depth(Operator):
     bl_idname = "storytools.camera_depth"
     bl_label = 'Camera Depth Move'
@@ -45,6 +67,8 @@ class STORYTOOLS_OT_camera_depth(Operator):
         
         # camera forward vector
         self.cam_forward_vec = self.cam.matrix_world.to_quaternion() @ Vector((0,0,-1))
+        
+        args = (self, context) 
         if self.is_focal_mode:
             self.text_body = "Focal Length" if self.cam.data.type == 'PERSP' else "Orthographic Scale"
             # ui_scale = context.preferences.system.ui_scale
@@ -52,8 +76,13 @@ class STORYTOOLS_OT_camera_depth(Operator):
             self.text_position = (context.area.width / 2 - 120, event.mouse_region_y + 80) # mid area x
             # self.text_position = (event.mouse_region_x - 100, event.mouse_region_y + 80) # place x relative to mouse
             self.text_size = 18.0
-            args = (self, context)    
             self._text_handle = bpy.types.SpaceView3D.draw_handler_add(draw.text_draw_callback_px, args, 'WINDOW', 'POST_PIXEL')
+        
+        # Setup camera top view map if enabled
+        # if not self.shift_mode:
+        dist = 6.0 if self.is_focal_mode else 15.0
+        setup_top_view_map(self, context, dist)
+
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -102,12 +131,13 @@ class STORYTOOLS_OT_camera_depth(Operator):
 
         if event.type == 'LEFTMOUSE':
             context.window.cursor_set("DEFAULT")
+            draw.stop_callback(self, context)
+
             if self.is_focal_mode:
                 # Keyframe camera parameters
                 data_path = 'lens' if self.cam.data.type == 'PERSP' else 'ortho_scale'
                 # TODO: pass active keying set ? # options={'INSERTKEY_AVAILABLE'}
                 fn.key_data_path(self.cam.data, data_path=data_path, use_autokey=True)
-                draw.stop_callback(self, context)
             else:
                 fn.key_object(self.cam, scale=False, use_autokey=True)
             return {'FINISHED'}
@@ -260,6 +290,10 @@ class STORYTOOLS_OT_camera_pan(Operator):
         
         args = (self, context)
         self._handle = bpy.types.SpaceView3D.draw_handler_add(draw.lock_axis_draw_callback, args, 'WINDOW', 'POST_VIEW')
+
+        # if not self.shift_mode:
+        dist = 5.0 if self.shift_mode else 15.0
+        setup_top_view_map(self, context, dist)
 
         self.update_transform(context, event)
         context.window_manager.modal_handler_add(self)

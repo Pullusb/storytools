@@ -1,6 +1,5 @@
 import bpy
-import gpu
-import math
+import bl_math
 
 from time import time
 from math import pi, radians, degrees
@@ -224,6 +223,7 @@ class STORYTOOLS_OT_object_depth_move(Operator):
         # return context.object and context.object.type != 'CAMERA'
 
     def invoke(self, context, event):
+        prefs = fn.get_addon_prefs()
         self.cam = bpy.context.scene.camera
         if not self.cam:
             self.report({'ERROR'}, 'No active camera')
@@ -272,21 +272,33 @@ class STORYTOOLS_OT_object_depth_move(Operator):
         
         context.window.cursor_set("SCROLL_X")
 
-        if fn.get_addon_prefs().use_visual_hint:
-            ## Setup and add gpuDraw draw overlays
-            self.current_area = context.area
-
-            args = (self, context) # gpuDraw
+        ## Setup and add gpuDraw draw overlays
+        self.current_area = context.area
+        args = (self, context) # gpuDraw
+        if prefs.use_visual_hint:
             self._handle = bpy.types.SpaceView3D.draw_handler_add(draw.draw_callback_wall, args, 'WINDOW', 'POST_VIEW') # gpuDraw
 
-            # Setup pip view properties
-            self.pip_size = 0.2  # Size relative to viewport
-            self.pip_quality = 100  # Render quality percentage
-            ## FIXME: Need to check toolbar margin
-            offset_from_corner = 60
-            bottom_pos = context.region.height * self.pip_size + offset_from_corner
-            self.pip_position = (offset_from_corner, context.region.height - bottom_pos)  # Upper left corner
+        if prefs.use_top_view_map:
+            ## Setup pip view properties
+            ## Upper left corner
+            self.pip_size = prefs.top_view_map_size / 100  # Size relative to viewport
+            self.pip_quality = 92  # Render quality percentage
+            self.pip_from_camera = True
+            top_margin = fn.get_header_margin(context, bottom=False)
+            left_margin = next((r.width for r in context.area.regions if r.type == 'TOOLS'), 0)
+            offset_from_corner = 10
+            bottom_pos = context.region.height * self.pip_size + top_margin + offset_from_corner
+            self.pip_position = (left_margin + offset_from_corner, context.region.height - bottom_pos)
 
+            # self.pip_object = context.object # automatically get active object
+
+            ## Define height of pov from Object dimension
+            dist = context.object.dimensions.length
+            if dist == 0.0:
+                # Fixed in case of object with 0 dimensions
+                self.pip_distance = 8.0
+            else:
+                self.pip_distance = bl_math.clamp(dist * 5, 2.0, 150.0)
             self._pip_handle = bpy.types.SpaceView3D.draw_handler_add(draw.zenith_view_callback, args, 'WINDOW', 'POST_PIXEL')
 
         context.window_manager.modal_handler_add(self)
@@ -301,8 +313,6 @@ class STORYTOOLS_OT_object_depth_move(Operator):
 
     def exit_modal(self, context):
         draw.stop_callback(self, context)
-        if hasattr(self, 'pip_offscreen'):
-            self.pip_offscreen.free()
         restore_child_of(self.constraint_dict) # ChildConst
 
     def modal(self, context, event):

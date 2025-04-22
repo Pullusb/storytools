@@ -266,7 +266,7 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
 
     ## Distance overlay color
     use_visual_hint: BoolProperty(
-        name="Depth Move Use Visual Hint",
+        name="Move Object Use Visual Hint",
         description="Show colored visual hint when using depth move",
         default=True)
 
@@ -282,6 +282,16 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         name="Visual Hint End Color", subtype='COLOR_GAMMA', size=4,
         default=(0.7, 0.2, 0.2, 0.22), min=0.0, max=1.0,
         description="Color of the far plane visual hint when using Depth move")
+
+    use_top_view_map: BoolProperty(
+        name="Use Top View map",
+        description="Show top view Map during some transform, object and camera forward move",
+        default=True)
+
+    top_view_map_size: FloatProperty(
+        name="Top View Map Size, as percentage of viewport height",
+        default=20, min=2, max=90, soft_min=5, soft_max=40, subtype='PERCENTAGE')
+        # default=0.2, min=0.05, max=1.0, soft_min=0.1, soft_max=0.4)
 
     ### --- Grease pencil settings
 
@@ -453,6 +463,10 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             subcol.prop(self, 'visual_hint_end_color', text='Far Color')
             subcol.active = self.use_visual_hint
 
+            bcol.prop(self, 'use_top_view_map', text='Top View Insert')
+            subcol = bcol.column(align=True)
+            subcol.prop(self, 'top_view_map_size', text='Top View Size')
+            subcol.active = self.use_top_view_map
 
             box = col.box()
             bcol = box.column()

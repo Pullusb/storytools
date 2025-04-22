@@ -52,6 +52,10 @@ def stop_callback(self, context):
         if handle := getattr(self, handle_name, None):
             bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
 
+    ## Free offscreen
+    if hasattr(self, 'pip_offscreen'):
+        self.pip_offscreen.free()
+
     context.area.tag_redraw()
 
 def draw_callback_wall(self, context):
@@ -374,21 +378,30 @@ def zenith_view_callback(self, context):
     - pip_position (tuple): (x, y) offset position in the viewport
     - pip_border_color (tuple): (r, g, b, a) color of the border
     - pip_border_thickness (float): Thickness of the border
+    - pip_distance (float): Distance from the object
+    - pip_from_camera (bool): If True, use the camera's view instead of the current view
+    - pip_object (bool): Object to track (if not set, use the active object or the operator's "self.object")
 
     Optional:
     - pip_offscreen: Will be created if not present
     - current_area: Restricts drawing to the operator's original area
+
+    to free offscreen use:
+    if hasattr(self, 'pip_offscreen'):
+        self.pip_offscreen.free()
     """
     # Restrict to current viewport if specified
     if hasattr(self, 'current_area') and context.area != self.current_area:
         return
 
     # Get properties with fallback values
-    size = getattr(self, 'pip_size', 0.25)
-    quality = getattr(self, 'pip_quality', 75)
+    size = getattr(self, 'pip_size', 0.25) # size as percentage of viewport
+    quality = getattr(self, 'pip_quality', 75) # quality percentage
     position = getattr(self, 'pip_position', (40, 40)) # bottom-left corner
     border_color = getattr(self, 'pip_border_color', (0.0, 0.5, 1.0, 0.7)) # Blue outline
     border_thickness = getattr(self, 'pip_border_thickness', 1.0)
+    distance = getattr(self, 'pip_distance', 15.0)
+    from_camera = getattr(self, 'pip_from_camera', False)
 
     # Get or create offscreen
     if not hasattr(self, 'pip_offscreen'):
@@ -397,16 +410,16 @@ def zenith_view_callback(self, context):
         self.pip_offscreen = gpu.types.GPUOffScreen(width, height)
 
     # Get object's location - use active object or operator's object if available
-    if hasattr(self, 'ob'):
-        obj = self.ob
+    if hasattr(self, 'pip_object'):
+        obj = self.pip_object
     elif hasattr(self, 'object'):
         obj = self.object
     else:
         obj = context.object
-    
+
     if not obj:
         return
-        
+
     obj_loc = obj.matrix_world.translation
     
     # Calculate dimensions for the viewport
@@ -423,31 +436,49 @@ def zenith_view_callback(self, context):
     y = y_pos if y_pos >= 0 else region_height + y_pos - height
     
     # Get vector from current view
-    view_mat = context.space_data.region_3d.view_matrix
-    # view_forward = Vector((-view_mat.col[2][0], -view_mat.col[2][1], -view_mat.col[2][2]))
-    # view_up = Vector((view_mat.col[1][0], view_mat.col[1][1], view_mat.col[1][2]))
+    if from_camera and context.scene.camera:
+        # use camera
+        view_mat = context.scene.camera.matrix_world
+        # cam_pos = context.scene.camera.matrix_world.translation
+    else:
+        # use current viewpoint
+        view_mat = context.space_data.region_3d.view_matrix
+        # cam_pos = context.space_data.region_3d.view_matrix.inverted().translation
+    
     view_right = Vector((view_mat.col[0][0], view_mat.col[0][1], view_mat.col[0][2]))
-
-    # Get current view position
-    ## >> Use current viewpoint, we may want to use active camera (can be an optional self argument)
-    cam_pos = context.space_data.region_3d.view_matrix.inverted().translation
-
-    # Calculate vector from object to camera
-    obj_to_cam = cam_pos - obj_loc
-    obj_to_cam.z = 0  # Eemove z component
-    obj_to_cam.normalize()
+    view_forward = Vector((-view_mat.col[2][0], -view_mat.col[2][1], -view_mat.col[2][2]))
+    view_up = Vector((view_mat.col[1][0], view_mat.col[1][1], view_mat.col[1][2]))
 
     # Create a viewpoint that looks from the direction opposite to the camera
-    ## TODO: Make distance value an optional argument so it can be relative to object size
-    distance = 20.0
     pip_pos = obj_loc + Vector((0, 0, distance)) # Final position above object
 
     # view direction (always -Z)
     pip_forward = Vector((0, 0, -1))
 
-    # The "up" direction of the zenith view points opposite to the main camera
-    # This ensures the bottom of the image points toward the camera
-    pip_up = -obj_to_cam  # Use the inverted object-to-camera vector as the "up" direction
+    ## The "up" direction of the zenith view points opposite to the main camera
+    ## This ensures the bottom of the image points toward the camera
+
+    ## Calculate vector from object to camera (method solely based on object position)
+    # obj_to_cam = cam_pos - obj_loc
+    # obj_to_cam.z = 0  # Remove z component
+    # obj_to_cam.normalize()
+    # pip_up = -obj_to_cam  # Use the inverted object-to-camera vector as the "up" direction
+
+    ## Following method always align with camera. Avoid the 180 turn of method above
+    horizontal_view = view_forward.copy()
+    horizontal_view.z = 0  # Supprimer la composante verticale
+    if horizontal_view.length < 0.01:  # Si la vue est presque verticale
+        # Utiliser view_up comme référence alternative
+        horizontal_view = view_up.copy()
+        horizontal_view.z = 0
+        if horizontal_view.length < 0.01:
+            # Dernier recours: utiliser l'axe Y mondial
+            horizontal_view = Vector((0, -1, 0))
+
+    # Normaliser le vecteur horizontal
+    if horizontal_view.length > 0:
+        horizontal_view.normalize()
+    pip_up = horizontal_view
 
     # If pip_up and pip_forward are almost parallel, use an alternative reference
     if abs(pip_up.dot(pip_forward)) > 0.98:
@@ -470,7 +501,38 @@ def zenith_view_callback(self, context):
     pip_view_matrix = Matrix.Translation(pip_pos) @ rot_mat
     pip_view_matrix.invert()
 
-    proj_matrix = context.space_data.region_3d.window_matrix.copy()
+    ## Reuse current view projection matrix
+    # proj_matrix = context.space_data.region_3d.window_matrix.copy()
+    ## custom matrix
+    ## ortho
+    # proj_matrix = Matrix.OrthoProjection(pip_forward, 4) ## 
+
+
+    ## Generic Perspective proj matrix
+    # Calculate aspect ratio based on our offscreen dimensions
+    width = int(context.region.width * size)
+    height = int(context.region.height * size)
+    aspect_ratio = width / height
+    
+    
+    # Set near and far clipping planes
+    near_clip = 0.1
+    far_clip = distance * 6
+    
+    ## Create perspective projection matrix manually
+    # fov = radians(50.0) # field of view in radians
+    # f = 1.0 / tan(fov / 2.0)
+    # Hardcoded f value
+    f = 2.14450692
+    
+    # Build the projection matrix
+    proj_matrix = Matrix.Identity(4)
+    proj_matrix[0][0] = f / aspect_ratio
+    proj_matrix[1][1] = f
+    proj_matrix[2][2] = (far_clip + near_clip) / (near_clip - far_clip)
+    proj_matrix[2][3] = (2 * far_clip * near_clip) / (near_clip - far_clip)
+    proj_matrix[3][2] = -1.0
+    proj_matrix[3][3] = 0.0
 
     # Draw the 3D view to offscreen
     self.pip_offscreen.draw_view3d(
@@ -480,13 +542,29 @@ def zenith_view_callback(self, context):
         context.region,
         pip_view_matrix,
         proj_matrix,
-        do_color_management=True)
-    
+        do_color_management=False)
+
     # Draw the offscreen buffer to screen
     gpu.state.blend_set('ALPHA')
     draw_texture_2d(self.pip_offscreen.texture_color, (x, y), width, height)
     
-    # Draw border
+    ## Add extra Visual hints in the offscreen buffer
+    # with self.pip_offscreen.bind():
+    #     ## Draw crosshair at object
+    #     crosshair = [
+    #         (obj_loc.x - 3.0, obj_loc.y, obj_loc.z),
+    #         (obj_loc.x + 3.0, obj_loc.y, obj_loc.z),
+    #         (obj_loc.x, obj_loc.y - 3.0, obj_loc.z),
+    #         (obj_loc.x, obj_loc.y + 3.0, obj_loc.z),
+    #     ]
+    #     shader = gpu.shader.from_builtin('UNIFORM_COLOR')
+    #     gpu.state.line_width_set(1)
+    #     batch = batch_for_shader(shader, 'LINE_STRIP', {"pos": crosshair})
+    #     shader.bind()
+    #     shader.uniform_float("color", (1.0, 0.0, 0.2, 0.8))
+    #     batch.draw(shader)
+
+    ## Draw border
     vertices = [
         (x, y),
         (x + width, y),
@@ -501,6 +579,6 @@ def zenith_view_callback(self, context):
     shader.bind()
     shader.uniform_float("color", border_color)
     batch.draw(shader)
-    
+
     gpu.state.line_width_set(1.0)
     gpu.state.blend_set('NONE')
