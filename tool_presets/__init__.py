@@ -1,11 +1,11 @@
 from .. import (
             properties,
-            tool_list,
+            # tool_list,
                )
 
 modules = (
     properties,
-    tool_list,
+    # tool_list,
 )
 
 def register():

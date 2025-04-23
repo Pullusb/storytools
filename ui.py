@@ -764,7 +764,6 @@ def storyboard_file_new(self, context):
 panel_classes = (
     # STORYTOOLS_MT_focal_presets,
     # STORYTOOLS_PT_focal_presets,
-    STORYTOOLS_OT_info_note,
     STORYTOOLS_PT_camera_settings,
     STORYTOOLS_PT_camera_exclusion_settings,
     STORYTOOLS_PT_gp_objects_list_options,
@@ -782,6 +781,7 @@ panel_classes = (
 
 def register(): 
     bpy.utils.register_class(STORYTOOLS_MT_material_context_menu)
+    bpy.utils.register_class(STORYTOOLS_OT_info_note)
     
     if get_addon_prefs().show_sidebar_ui:
         # Register only if needed
@@ -800,6 +800,7 @@ def unregister():
         for cls in reversed(panel_classes):
             bpy.utils.unregister_class(cls)    
 
+    bpy.utils.unregister_class(STORYTOOLS_OT_info_note)
     bpy.utils.unregister_class(STORYTOOLS_MT_material_context_menu)
 
     bpy.types.TOPBAR_MT_file_new.remove(storyboard_file_new)
