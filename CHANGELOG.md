@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.17.1
+
+- fixed: #86 toolpreset bar not disabled by preference at restart
+
 2.17.0
 
 - added: option to disable top view view in addon preferences
