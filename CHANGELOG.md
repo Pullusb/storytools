@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+1.21.2
+
+- fixed: fix toolpreset bar not disabled by preference at restart (backported from main)
+
 1.21.1
 
 - fixed: layer-material sync when using dual main window (hack used when storyboarding using storypencil / spa-sequencer)
