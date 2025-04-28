@@ -118,13 +118,13 @@ classes=(
 )
 
 def register():
-    if not fn.get_addon_prefs().active_toolbar:
+    if not fn.get_addon_prefs().active_presetbar:
         return
     for cls in classes:
         bpy.utils.register_class(cls)
 
 def unregister():
-    if not fn.get_addon_prefs().active_toolbar:
+    if not fn.get_addon_prefs().active_presetbar:
         return
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
