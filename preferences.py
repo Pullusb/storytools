@@ -53,56 +53,23 @@ class STORYTOOLS_OT_reload_toolpreset_ui(bpy.types.Operator):
         return {'FINISHED'}
 
 def ui_in_sidebar_update(self, _):
-    from .ui import (
-        STORYTOOLS_PT_storytools_ui,
-        STORYTOOLS_PT_camera_ui,
-        STORYTOOLS_PT_drawings_ui,
-        STORYTOOLS_PT_layers_ui,
-        STORYTOOLS_PT_materials_ui,
-        STORYTOOLS_PT_brushes_ui,
-        STORYTOOLS_PT_colors_ui,
-        STORYTOOLS_PT_palette_ui,
-        STORYTOOLS_PT_tool_ui,
-                     )
-    
-    cls_and_id = (
-        (STORYTOOLS_PT_storytools_ui, 'STORYTOOLS_PT_storytools_ui'),
-        (STORYTOOLS_PT_camera_ui, 'STORYTOOLS_PT_camera_ui'),
-        (STORYTOOLS_PT_drawings_ui, 'STORYTOOLS_PT_drawings_ui'),
-        (STORYTOOLS_PT_layers_ui, 'STORYTOOLS_PT_layers_ui'),
-        (STORYTOOLS_PT_materials_ui, 'STORYTOOLS_PT_materials_ui'),
-        (STORYTOOLS_PT_brushes_ui, 'STORYTOOLS_PT_brushes_ui'),
-        (STORYTOOLS_PT_colors_ui, 'STORYTOOLS_PT_colors_ui'),
-        (STORYTOOLS_PT_palette_ui, 'STORYTOOLS_PT_palette_ui'),
-        (STORYTOOLS_PT_tool_ui, 'STORYTOOLS_PT_tool_ui'),
-    )
+    from .ui import panel_classes
 
-    ## loop to register
-    for cls, idname in cls_and_id: 
+    for cls in panel_classes:
+        idname = cls.__name__
+        # print('idname: ', idname)
         has_panel = hasattr(bpy.types, idname)
         if has_panel:
             try:
                 bpy.utils.unregister_class(cls)
             except:
+                # print('in ui_update, could not unregister class', idname)
                 pass
 
         if self.show_sidebar_ui:
             # STORYTOOLS_PT_storytools_ui.bl_space_type = self.panel_space_type
             cls.bl_category = self.category.strip()
             bpy.utils.register_class(cls)
-
-    ## Old with single panel
-    # has_panel = hasattr(bpy.types, 'STORYTOOLS_PT_storytools_ui')
-    # if has_panel:
-    #     try:
-    #         bpy.utils.unregister_class(STORYTOOLS_PT_storytools_ui)
-    #     except:
-    #         pass
-
-    # if self.show_sidebar_ui:
-    #     # STORYTOOLS_PT_storytools_ui.bl_space_type = self.panel_space_type
-    #     STORYTOOLS_PT_storytools_ui.bl_category = self.category.strip()
-    #     bpy.utils.register_class(STORYTOOLS_PT_storytools_ui)
 
 def toolset_edit_ui(col):
     col.use_property_split = True
@@ -284,8 +251,8 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         description="Color of the far plane visual hint when using Depth move")
 
     use_top_view_map: BoolProperty(
-        name="Use Top View map",
-        description="Show top view Map during some transform, object and camera forward move",
+        name="Minimap Corner During Transforms",
+        description="Show a top view minimap in viewport corner during some transforms actions",
         default=True)
 
     top_view_map_size: FloatProperty(
@@ -463,7 +430,8 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             subcol.prop(self, 'visual_hint_end_color', text='Far Color')
             subcol.active = self.use_visual_hint
 
-            bcol.prop(self, 'use_top_view_map', text='Top View Insert')
+            bcol.separator()
+            bcol.prop(self, 'use_top_view_map', text='Minimap View During Transforms')
             subcol = bcol.column(align=True)
             subcol.prop(self, 'top_view_map_size', text='Top View Size')
             subcol.active = self.use_top_view_map
