@@ -772,36 +772,54 @@ panel_classes = (
     STORYTOOLS_PT_drawings_ui,
     STORYTOOLS_PT_layers_ui,
     STORYTOOLS_PT_materials_ui,
-    STORYTOOLS_PT_brushes_ui, # Reference native panel
-    STORYTOOLS_PT_colors_ui, # Reference native panel
-    STORYTOOLS_PT_palette_ui, # Reference native panel
+    STORYTOOLS_PT_brushes_ui, # Wrapper : Reference a native panel
+    STORYTOOLS_PT_colors_ui, # Wrapper : Reference a native panel
+    STORYTOOLS_PT_palette_ui, # Wrapper : Reference a native panel
     STORYTOOLS_PT_tool_ui,
 )
 
 
-def register(): 
+def register_panels(category_name=None):
+    """
+    Register all panel classes with the given category name.
+    If category_name is None, use the category from preferences.
+    """
+    if category_name is None:
+        category_name = get_addon_prefs().category.strip()
+        
+    for cls in panel_classes:
+        try:
+            # Set the category before registering
+            cls.bl_category = category_name
+            # Check if already registered to avoid duplicates
+            if not hasattr(bpy.types, cls.__name__):
+                bpy.utils.register_class(cls)
+        except Exception as e:
+            print(f"Error registering {cls.__name__}: {e}")
+
+def unregister_panels():
+    for cls in reversed(panel_classes):
+        try:
+            if hasattr(bpy.types, cls.__name__):
+                bpy.utils.unregister_class(cls)
+        except Exception as e:
+            print(f"Error unregistering {cls.__name__}: {e}")
+
+def register():
     bpy.utils.register_class(STORYTOOLS_MT_material_context_menu)
     bpy.utils.register_class(STORYTOOLS_OT_info_note)
     
     if get_addon_prefs().show_sidebar_ui:
-        # Register only if needed
-        for cls in panel_classes:
-            bpy.utils.register_class(cls)    
+        register_panels()
 
     bpy.types.TOPBAR_MT_file_new.append(storyboard_file_new)
     bpy.types.VIEW3D_PT_overlay_grease_pencil_options.append(additional_gp_overlay_options)
-    # bpy.types.GPENCIL_MT_material_context_menu.append(palette_manager_menu)
 
 def unregister():
-    # bpy.types.GPENCIL_MT_material_context_menu.remove(palette_manager_menu)
-
-    if hasattr(bpy.types, 'STORYTOOLS_PT_storytools_ui'):
-        # Unregister only if already there.
-        for cls in reversed(panel_classes):
-            bpy.utils.unregister_class(cls)    
-
+    bpy.types.VIEW3D_PT_overlay_grease_pencil_options.remove(additional_gp_overlay_options)
+    bpy.types.TOPBAR_MT_file_new.remove(storyboard_file_new)
+    
+    unregister_panels()
+    
     bpy.utils.unregister_class(STORYTOOLS_OT_info_note)
     bpy.utils.unregister_class(STORYTOOLS_MT_material_context_menu)
-
-    bpy.types.TOPBAR_MT_file_new.remove(storyboard_file_new)
-    bpy.types.VIEW3D_PT_overlay_grease_pencil_options.remove(additional_gp_overlay_options)

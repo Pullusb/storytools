@@ -53,23 +53,22 @@ class STORYTOOLS_OT_reload_toolpreset_ui(bpy.types.Operator):
         return {'FINISHED'}
 
 def ui_in_sidebar_update(self, _):
-    from .ui import panel_classes
+    """
+    Update function called when sidebar UI settings are changed.
+    Handles unregistering panels with the old category name and
+    registering them with the new category name.
+    """
+    # Import at function level to avoid circular imports
+    from .ui import (
+        panel_classes,
+        unregister_panels,
+        register_panels,
+    )
+    
+    unregister_panels()
 
-    for cls in panel_classes:
-        idname = cls.__name__
-        # print('idname: ', idname)
-        has_panel = hasattr(bpy.types, idname)
-        if has_panel:
-            try:
-                bpy.utils.unregister_class(cls)
-            except:
-                # print('in ui_update, could not unregister class', idname)
-                pass
-
-        if self.show_sidebar_ui:
-            # STORYTOOLS_PT_storytools_ui.bl_space_type = self.panel_space_type
-            cls.bl_category = self.category.strip()
-            bpy.utils.register_class(cls)
+    if self.show_sidebar_ui:
+        register_panels(self.category.strip())
 
 def toolset_edit_ui(col):
     col.use_property_split = True

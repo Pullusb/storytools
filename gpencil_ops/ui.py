@@ -9,7 +9,7 @@ from .. import fn
 class STORYTOOLS_PT_gp_settings_ui(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "Storytools"
+    bl_category = "Tool"
     bl_label = "Grease pencil options"
     bl_options = {'INSTANCED'}
 

@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.17.2
+
+- fixed: #87 Bugged sidebar when disabling or when changing the tab name
+
 2.17.1
 
 - fixed: #86 toolpreset bar not disabled by preference at restart
