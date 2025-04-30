@@ -109,6 +109,143 @@ def vertices_to_line_loop(v_list, closed=True) -> list:
     return loop
 
 
+def circle_3d(x, y, radius, segments):
+    coords = []
+    m = (1.0 / (segments - 1)) * (pi * 2)
+    for p in range(segments):
+        p1 = x + cos(m * p) * radius
+        p2 = y + sin(m * p) * radius
+        coords.append(Vector((p1, p2, 0)))
+    return coords
+
+def get_frustum_lines(loc, left, right, orient, near_clip_point, far_clip_point, view_type):
+    """return points of quad representing view frustum
+    sequence reresent following pairs to be used draw batch LINES
+    # Left and Right lines:
+    left near -> left far
+    right near -> right far
+    
+    ## near clip and far clip perpendicular lines:
+    left near -> right near
+    left far -> right far
+
+    """
+
+    if view_type == 'ORTHO':
+        view_list = [
+            # Left
+            intersect_line_plane(left, left + orient, near_clip_point, orient),
+            intersect_line_plane(left, left + orient, far_clip_point, orient),
+            # Right
+            intersect_line_plane(right, right + orient, near_clip_point, orient),
+            intersect_line_plane(right, right + orient, far_clip_point, orient),
+        ]
+    else:
+        ###  Cone Coors
+
+        ## Basic view cone
+        # view_list = [
+        #     loc, extrapolate_points_by_length(loc, right, 2000),
+        #     loc, extrapolate_points_by_length(loc, left, 2000)
+        # ]
+        
+        # View cone with clipping display
+        view_list = [
+            # Left
+            intersect_line_plane(loc, left, near_clip_point, orient),
+            intersect_line_plane(loc, left, far_clip_point, orient),
+            # Right
+            intersect_line_plane(loc, right, near_clip_point, orient),
+            intersect_line_plane(loc, right, far_clip_point, orient),
+        ]
+
+    # if post_pixel:
+    #     view_list = [fn.location_to_region(v) for v in view_list]
+
+    # Add perpenticular lines 
+    view_list.append(view_list[0])
+    view_list.append(view_list[2])
+    view_list.append(view_list[1])
+    view_list.append(view_list[3])
+    
+    return view_list
+
+def get_camera_frustum(cam, context=None):
+    """
+    Get camera frustum coordinates in 3D space
+    
+    cam (Object): Camera object
+    context (Context, optional): Blender context for scene information
+    
+    Returns:
+    list: 3D coordinates of camera frustum lines, or empty list if camera is invalid
+    """
+    if not cam or cam.type != 'CAMERA':
+        return []
+        
+    if context is None:
+        context = bpy.context
+        
+    scene = context.scene
+    
+    # Get camera frame
+    frame = [cam.matrix_world @ v for v in cam.data.view_frame(scene=scene)]
+    mat = cam.matrix_world
+    loc = mat.to_translation()
+    
+    # Calculate midpoints for left and right sides
+    right = (frame[0] + frame[1]) / 2
+    left = (frame[2] + frame[3]) / 2
+    
+    # Calculate near and far clip points
+    near_clip_point = mat @ Vector((0,0,-cam.data.clip_start))
+    far_clip_point = mat @ Vector((0,0,-cam.data.clip_end))
+    
+    # Get orientation vector
+    orient = Vector((0,0,1))
+    orient.rotate(mat)
+    
+    # Get frustum lines using the existing function
+    return get_frustum_lines(loc, left, right, orient, near_clip_point, far_clip_point, cam.data.type)
+
+def get_viewport_frustum(area, region, rv3d, space):
+    """
+    Get viewport frustum coordinates in 3D space
+    
+    area (Area): Viewport area
+    region (Region): Region of the viewport
+    rv3d (RegionView3D): 3D region view
+    space (SpaceView3D): View space for clip distances
+    
+    Returns:
+    list: 3D coordinates of viewport frustum lines
+    """
+
+    ## Return camrera frustum if un camera view (supposed to be the same)
+    # if rv3d.view_perspective == 'CAMERA':
+    #     return get_camera_frustum(space.active.camera, context=bpy.context)
+        
+    # Construct view orientation
+    view_mat = rv3d.view_matrix.inverted()
+    view_orient = Vector((0, 0, 1))
+    view_orient.rotate(view_mat)
+    
+    # Get user camera coordinates
+    user_cam = generate_user_camera(area, region, rv3d)
+    
+    # Extract location and view frame points
+    loc = user_cam[6]  # View location point
+    left = (user_cam[2] + user_cam[3]) / 2  # Left midpoint
+    right = (user_cam[0] + user_cam[1]) / 2  # Right midpoint
+    
+    # Calculate near and far clip points
+    near_clip_point = view_mat @ Vector((0, 0, -space.clip_start))
+    far_clip_point = view_mat @ Vector((0, 0, -space.clip_end))
+    
+    # Get frustum lines using the existing function
+    return get_frustum_lines(loc, left, right, view_orient, near_clip_point, 
+                            far_clip_point, rv3d.view_perspective)
+
 def name_to_hue(name):
     # Use MD5 hash for consistency across sessions
     hash_value = hashlib.md5(name.encode()).hexdigest()
@@ -197,43 +334,20 @@ def draw_map_callback_2d():
     if cam:
         ## ? Instead highlight camera basic Gizmo ?
 
-        frame = [cam.matrix_world @ v for v in cam.data.view_frame(scene=context.scene)]
-        mat = cam.matrix_world
-        loc = mat.to_translation()
-        gpu.state.line_width_set(3.0) # Thick only on camera tri ?
-
-        right = (frame[0] + frame[1]) / 2
-        left = (frame[2] + frame[3]) / 2
-        # cam_tri = [loc, left, right]
-
-        near_clip_point = mat @ Vector((0,0,-cam.data.clip_start))
-        far_clip_point = mat @ Vector((0,0,-cam.data.clip_end))
-        orient = Vector((0,0,1))
-        orient.rotate(mat)
-
-        ## Redefined left right (interchangeably) by taking most distants point to center in 2d space for the cone
-        ## (/!\ Does not work when perfecly looking up/down...)
-        # center_2d = fn.location_to_region(sum(frame, start=Vector()) / 4)
-        # frame_region = [(fn.location_to_region(v), v) for v in frame]
-        # frame_region.sort(key=lambda x: (x[0] - center_2d).length)
-        # left, right = frame_region[-2][1], frame_region[-1][1] # Keep second element of the last two pair
-
-        # View cone with clipping display
-        cam_view = get_frustum_lines(loc, left, right, orient, near_clip_point, far_clip_point, cam.data.type)
-
-        cam_view = [fn.location_to_region(v) for v in cam_view]
+        cam_view = get_camera_frustum(cam, context=context) # get in 3D space
+        cam_view = [fn.location_to_region(v) for v in cam_view] # convert to 2D space
 
         ## TODO : Trace cam Tri  
-
+        gpu.state.line_width_set(3.0) # Thick only on camera tri ?
         cam_lines = batch_for_shader(shader_uniform, 'LINES', {"pos": cam_view})
         shader_uniform.bind()
         shader_uniform.uniform_float("color", (0.5, 0.5, 1.0, 0.5))
         cam_lines.draw(shader_uniform)
 
     ## return here to skip viewport frustum display
+    gpu.state.line_width_set(1.0) # reset line width
     return
     # FIXME: Works by setting a property in loop. need a proper method to refresh view trace
-    gpu.state.line_width_set(1.0)
 
     ## Iterate over non-minimap viewports
 
@@ -263,23 +377,14 @@ def draw_map_callback_2d():
                 if region is None:
                     continue
                 ## Construct lines - naive method for now (consider view is always z-aligned)
-                view_mat = rv3d.view_matrix.inverted()
-                view_orient = Vector((0,0,1))
-                view_orient.rotate(view_mat)
                 
-                user_cam = generate_user_camera(area, region, rv3d)
-                # loc = rv3d.view_matrix.inverted().to_translation()
-                loc = user_cam[6]
-                left = (user_cam[2] + user_cam[3]) / 2
-                right = (user_cam[0] + user_cam[1]) / 2
-                near_clip_point = view_mat @ Vector((0, 0, -space.clip_start))
-                far_clip_point = view_mat @ Vector((0, 0, -space.clip_end))
-                
-                view_lines = get_frustum_lines(loc, left, right, view_orient, near_clip_point, far_clip_point, rv3d.view_perspective)
+                # Get viewport frustum lines in 3D
+                view_lines_3d = get_viewport_frustum(area, region, rv3d, space)
 
-                ## specify current region (no need, using current context is OK)
+                ## Specify current region (Here no need, using current context is OK)
                 # view_lines = [location_3d_to_region_2d(current_region, current_rv3d, v) for v in view_lines]
-                view_lines = [fn.location_to_region(v) for v in view_lines]
+
+                view_lines = [fn.location_to_region(v) for v in view_lines_3d]
 
                 ## Add focal point (view-loc) Line
                 # view_lines += [fn.location_to_region(v) for v in user_cam[5:7]]
@@ -323,67 +428,6 @@ def draw_map_callback_2d():
 
 
 
-
-def circle_3d(x, y, radius, segments):
-    coords = []
-    m = (1.0 / (segments - 1)) * (pi * 2)
-    for p in range(segments):
-        p1 = x + cos(m * p) * radius
-        p2 = y + sin(m * p) * radius
-        coords.append(Vector((p1, p2, 0)))
-    return coords
-
-def get_frustum_lines(loc, left, right, orient, near_clip_point, far_clip_point, view_type):
-    """return points of quad representing view frustum
-    sequence reresent following pairs to be used draw batch LINES
-    # Left and Right lines:
-    left near -> left far
-    right near -> right far
-    
-    ## near clip and far clip perpendicular lines:
-    left near -> right near
-    left far -> right far
-
-    """
-
-    if view_type == 'ORTHO':
-        view_list = [
-            # Left
-            intersect_line_plane(left, left + orient, near_clip_point, orient),
-            intersect_line_plane(left, left + orient, far_clip_point, orient),
-            # Right
-            intersect_line_plane(right, right + orient, near_clip_point, orient),
-            intersect_line_plane(right, right + orient, far_clip_point, orient),
-        ]
-    else:
-        ###  Cone Coors
-
-        ## Basic view cone
-        # view_list = [
-        #     loc, extrapolate_points_by_length(loc, right, 2000),
-        #     loc, extrapolate_points_by_length(loc, left, 2000)
-        # ]
-        
-        # View cone with clipping display
-        view_list = [
-            # Left
-            intersect_line_plane(loc, left, near_clip_point, orient),
-            intersect_line_plane(loc, left, far_clip_point, orient),
-            # Right
-            intersect_line_plane(loc, right, near_clip_point, orient),
-            intersect_line_plane(loc, right, far_clip_point, orient),
-        ]
-
-    # if post_pixel:
-    #     view_list = [fn.location_to_region(v) for v in view_list]
-
-    # Add perpenticular lines 
-    view_list.append(view_list[0])
-    view_list.append(view_list[2])
-    view_list.append(view_list[1])
-    view_list.append(view_list[3])
-    
-    return view_list
 '''
 ## Not used: used 2D POST_PIXEL version
 def draw_map_callback():
