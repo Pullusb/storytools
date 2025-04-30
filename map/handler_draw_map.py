@@ -2,257 +2,16 @@ import bpy
 import gpu
 import blf
 import numpy as np
-import hashlib
 
-from math import pi, cos, sin
 from gpu_extras.presets import draw_circle_2d
 from gpu_extras.batch import batch_for_shader
 from bpy_extras.view3d_utils import location_3d_to_region_2d
-from mathutils.geometry import intersect_line_plane
 from mathutils import Vector, Color
-from bpy_extras import view3d_utils
 from time import time
 
 from bpy.app.handlers import persistent
 from .. import fn
 
-
-## User view calculation from Swann Martinez's Multi-user addon
-def project_to_viewport(region: bpy.types.Region, rv3d: bpy.types.RegionView3D, coords: list, distance: float = 1.0) -> Vector:
-    """ Compute a projection from 2D to 3D viewport coordinate
-
-        :param region: target windows region
-        :type region:  bpy.types.Region
-        :param rv3d: view 3D
-        :type rv3d: bpy.types.RegionView3D
-        :param coords: coordinate to project
-        :type coords: list
-        :param distance: distance offset into viewport
-        :type distance: float
-        :return: Vector() list of coordinates [x,y,z]
-    """
-    target = [0, 0, 0]
-
-    if coords and region and rv3d:
-        view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, coords)
-        ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, coords)
-        target = ray_origin + view_vector * distance
-
-    return Vector((target.x, target.y, target.z))
-
-def generate_user_camera(area, region, rv3d) -> list:
-    """ Generate a basic camera represention of the user point of view
-    v1-4 first point represent the square
-    v5: frame center point
-    v6: view location (orbit point)
-    v7: 
-
-    :return: list of 7 points
-    """
-
-    # area, region, rv3d = view3d_find()
-
-    v1 = v2 = v3 = v4 = v5 = v6 = v7 = [0, 0, 0]
-
-    if area and region and rv3d:
-        width = region.width
-        height = region.height
-
-        v1 = project_to_viewport(region, rv3d, (width, height))
-        v2 = project_to_viewport(region, rv3d, (width, 0))
-        v3 = project_to_viewport(region, rv3d, (0, 0))
-        v4 = project_to_viewport(region, rv3d, (0, height))
-
-        v5 = project_to_viewport(region, rv3d, (width/2, height/2))
-        v6 = rv3d.view_location # list(rv3d.view_location)
-        v7 = project_to_viewport(
-            region, rv3d, (width/2, height/2), distance=-.8)
-
-    coords = [v1, v2, v3, v4, v5, v6, v7]
-
-    return coords
-
-def extrapolate_points_by_length(a, b, length):
-    '''
-    Return a third point C from by continuing in AB direction
-    Length define BC distance. both vector2 and vector3
-    '''
-    # return b + ((b - a).normalized() * length)# one shot
-    ab = b - a
-    if not ab:
-        return None
-    return b + (ab.normalized() * length)
-
-def view3d_camera_border_2d(context, cam):
-    # based on https://blender.stackexchange.com/questions/6377/coordinates-of-corners-of-camera-view-border
-    # cam = context.scene.camera
-    frame = cam.data.view_frame(scene=context.scene)
-    # to world-space
-    frame = [cam.matrix_world @ v for v in frame]
-    # to pixelspace
-    region, rv3d = context.region, context.space_data.region_3d
-    frame_px = [location_3d_to_region_2d(region, rv3d, v) for v in frame]
-    return frame_px
-
-def vertices_to_line_loop(v_list, closed=True) -> list:
-    '''Take a sequence of vertices
-    return a position lists of segments to create a line loop passing in all points
-    the result is usable with gpu_shader 'LINES'
-    ex: vlist = [a,b,c] -> closed=True return [a,b,b,c,c,a], closed=False return [a,b,b,c]
-    '''
-    loop = []
-    for i in range(len(v_list) - 1):
-        loop += [v_list[i], v_list[i + 1]]
-    if closed:
-        # Add segment between last and first to close loop
-        loop += [v_list[-1], v_list[0]]
-    return loop
-
-
-def circle_3d(x, y, radius, segments):
-    coords = []
-    m = (1.0 / (segments - 1)) * (pi * 2)
-    for p in range(segments):
-        p1 = x + cos(m * p) * radius
-        p2 = y + sin(m * p) * radius
-        coords.append(Vector((p1, p2, 0)))
-    return coords
-
-def get_frustum_lines(loc, left, right, orient, near_clip_point, far_clip_point, view_type):
-    """return points of quad representing view frustum
-    sequence reresent following pairs to be used draw batch LINES
-    # Left and Right lines:
-    left near -> left far
-    right near -> right far
-    
-    ## near clip and far clip perpendicular lines:
-    left near -> right near
-    left far -> right far
-
-    """
-
-    if view_type == 'ORTHO':
-        view_list = [
-            # Left
-            intersect_line_plane(left, left + orient, near_clip_point, orient),
-            intersect_line_plane(left, left + orient, far_clip_point, orient),
-            # Right
-            intersect_line_plane(right, right + orient, near_clip_point, orient),
-            intersect_line_plane(right, right + orient, far_clip_point, orient),
-        ]
-    else:
-        ###  Cone Coors
-
-        ## Basic view cone
-        # view_list = [
-        #     loc, extrapolate_points_by_length(loc, right, 2000),
-        #     loc, extrapolate_points_by_length(loc, left, 2000)
-        # ]
-        
-        # View cone with clipping display
-        view_list = [
-            # Left
-            intersect_line_plane(loc, left, near_clip_point, orient),
-            intersect_line_plane(loc, left, far_clip_point, orient),
-            # Right
-            intersect_line_plane(loc, right, near_clip_point, orient),
-            intersect_line_plane(loc, right, far_clip_point, orient),
-        ]
-
-    # if post_pixel:
-    #     view_list = [fn.location_to_region(v) for v in view_list]
-
-    # Add perpenticular lines 
-    view_list.append(view_list[0])
-    view_list.append(view_list[2])
-    view_list.append(view_list[1])
-    view_list.append(view_list[3])
-    
-    return view_list
-
-def get_camera_frustum(cam, context=None):
-    """
-    Get camera frustum coordinates in 3D space
-    
-    cam (Object): Camera object
-    context (Context, optional): Blender context for scene information
-    
-    Returns:
-    list: 3D coordinates of camera frustum lines, or empty list if camera is invalid
-    """
-    if not cam or cam.type != 'CAMERA':
-        return []
-        
-    if context is None:
-        context = bpy.context
-        
-    scene = context.scene
-    
-    # Get camera frame
-    frame = [cam.matrix_world @ v for v in cam.data.view_frame(scene=scene)]
-    mat = cam.matrix_world
-    loc = mat.to_translation()
-    
-    # Calculate midpoints for left and right sides
-    right = (frame[0] + frame[1]) / 2
-    left = (frame[2] + frame[3]) / 2
-    
-    # Calculate near and far clip points
-    near_clip_point = mat @ Vector((0,0,-cam.data.clip_start))
-    far_clip_point = mat @ Vector((0,0,-cam.data.clip_end))
-    
-    # Get orientation vector
-    orient = Vector((0,0,1))
-    orient.rotate(mat)
-    
-    # Get frustum lines using the existing function
-    return get_frustum_lines(loc, left, right, orient, near_clip_point, far_clip_point, cam.data.type)
-
-def get_viewport_frustum(area, region, rv3d, space):
-    """
-    Get viewport frustum coordinates in 3D space
-    
-    area (Area): Viewport area
-    region (Region): Region of the viewport
-    rv3d (RegionView3D): 3D region view
-    space (SpaceView3D): View space for clip distances
-    
-    Returns:
-    list: 3D coordinates of viewport frustum lines
-    """
-
-    ## Return camrera frustum if un camera view (supposed to be the same)
-    # if rv3d.view_perspective == 'CAMERA':
-    #     return get_camera_frustum(space.active.camera, context=bpy.context)
-        
-    # Construct view orientation
-    view_mat = rv3d.view_matrix.inverted()
-    view_orient = Vector((0, 0, 1))
-    view_orient.rotate(view_mat)
-    
-    # Get user camera coordinates
-    user_cam = generate_user_camera(area, region, rv3d)
-    
-    # Extract location and view frame points
-    loc = user_cam[6]  # View location point
-    left = (user_cam[2] + user_cam[3]) / 2  # Left midpoint
-    right = (user_cam[0] + user_cam[1]) / 2  # Right midpoint
-    
-    # Calculate near and far clip points
-    near_clip_point = view_mat @ Vector((0, 0, -space.clip_start))
-    far_clip_point = view_mat @ Vector((0, 0, -space.clip_end))
-    
-    # Get frustum lines using the existing function
-    return get_frustum_lines(loc, left, right, view_orient, near_clip_point, 
-                            far_clip_point, rv3d.view_perspective)
-
-def name_to_hue(name):
-    # Use MD5 hash for consistency across sessions
-    hash_value = hashlib.md5(name.encode()).hexdigest()
-    # Convert first 8 characters of hash to integer and scale to 0-1
-    return int(hash_value[:8], 16) / 0xffffffff
-
-shadow_offset = Vector((1,-1))
 
 ## 2D minimap drawing
 def draw_map_callback_2d():
@@ -263,6 +22,7 @@ def draw_map_callback_2d():
     # if context.region_data.view_perspective != 'CAMERA':
     #     return
     
+    shadow_offset = Vector((1,-1))
     settings = fn.get_addon_prefs()
     gpu.state.blend_set('ALPHA')
     shader_uniform = gpu.shader.from_builtin('UNIFORM_COLOR')
@@ -299,7 +59,7 @@ def draw_map_callback_2d():
             # color = (0.7, 0.7, 0.0, 0.85) # All same color
             color = (0.7, 0.7, 0.0)
         color = Color(color)
-        color.h = name_to_hue(ob.name) # Hue by name
+        color.h = fn.name_to_hue(ob.name) # Hue by name
         color = (*color, 1.0) # Add alpha
 
         loc = fn.location_to_region(Vector(np.mean([ob.matrix_world @ Vector(corner) for corner in ob.bound_box], axis=0)))
@@ -334,7 +94,7 @@ def draw_map_callback_2d():
     if cam:
         ## ? Instead highlight camera basic Gizmo ?
 
-        cam_view = get_camera_frustum(cam, context=context) # get in 3D space
+        cam_view = fn.get_camera_frustum(cam, context=context) # get in 3D space
         cam_view = [fn.location_to_region(v) for v in cam_view] # convert to 2D space
 
         ## TODO : Trace cam Tri  
@@ -347,7 +107,8 @@ def draw_map_callback_2d():
     ## return here to skip viewport frustum display
     gpu.state.line_width_set(1.0) # reset line width
     return
-    # FIXME: Works by setting a property in loop. need a proper method to refresh view trace
+
+    # FIXME: Can Works by setting a property in loop. Need a proper method to refresh view trace, or activate only in specific cases
 
     ## Iterate over non-minimap viewports
 
@@ -379,7 +140,7 @@ def draw_map_callback_2d():
                 ## Construct lines - naive method for now (consider view is always z-aligned)
                 
                 # Get viewport frustum lines in 3D
-                view_lines_3d = get_viewport_frustum(area, region, rv3d, space)
+                view_lines_3d = fn.get_viewport_frustum(area, region, rv3d, space)
 
                 ## Specify current region (Here no need, using current context is OK)
                 # view_lines = [location_3d_to_region_2d(current_region, current_rv3d, v) for v in view_lines]
