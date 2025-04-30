@@ -5,7 +5,6 @@ import gpu
 from mathutils import Vector, Matrix
 from gpu_extras.batch import batch_for_shader
 from gpu_extras.presets import draw_texture_2d
-from bpy_extras import view3d_utils
 from . import fn
 
 ## Draw utils
@@ -545,137 +544,25 @@ def zenith_view_callback(self, context):
         proj_matrix,
         do_color_management=False)
 
-    gpu.state.blend_set('ALPHA')
-
-    ## / Extra Visual hints in the offscreen buffer
-    # Replace the section under "## / Extra Visual hints in the offscreen buffer" with this:
-
-    with self.pip_offscreen.bind():
-        width = self.pip_offscreen.width
-        height = self.pip_offscreen.height
-        
-        # First draw the 2D overlay (yellow rectangle)
-        shader_2d = gpu.shader.from_builtin('UNIFORM_COLOR')
-        
-        # Create a yellow rectangle in the bottom-left corner
-        rect_width = width * 0.2
-        rect_height = height * 0.2
-        
-        vertices_2d = [
-            (10, 10),
-            (10 + rect_width, 10),
-            (10 + rect_width, 10 + rect_height),
-            (10, 10 + rect_height),
-        ]
-        
-        indices = [(0, 1, 2), (0, 2, 3)]
-        
-        batch_2d = batch_for_shader(shader_2d, 'TRIS', {"pos": vertices_2d}, indices=indices)
-        shader_2d.bind()
-        shader_2d.uniform_float("color", (1.0, 1.0, 0.0, 0.5))  # Yellow with 50% opacity
-        batch_2d.draw(shader_2d)
-        
-        # Draw the axes differently - project the world points to screen space first
-        try:
-            # Define axes in world space
-            world_points = [
-                (0, 0, 0),        # Origin
-                (100, 0, 0),      # X axis end
-                (0, 100, 0),      # Y axis end
-                (0, 0, 100)       # Z axis end
-            ]
-            
-            # Convert to 2D screen coordinates
-            screen_points = []
-            for point in world_points:
-                # Create a 4D vector (x, y, z, 1)
-                p = Vector((point[0], point[1], point[2], 1.0))
-                
-                # Apply view matrix
-                p_view = pip_view_matrix @ p
-                
-                # Apply projection matrix
-                p_clip = proj_matrix @ p_view
-                
-                # Perspective division
-                if abs(p_clip.w) > 0.0001:
-                    p_ndc = Vector((p_clip.x / p_clip.w, p_clip.y / p_clip.w, p_clip.z / p_clip.w))
-                else:
-                    p_ndc = Vector((0, 0, 0))  # Fallback for invalid points
-                
-                # Convert NDC to screen coordinates
-                p_screen = Vector(((p_ndc.x + 1.0) * 0.5 * width, 
-                                (p_ndc.y + 1.0) * 0.5 * height))
-                
-                screen_points.append(p_screen)
-            
-            # Now draw 2D lines using the projected points
-            # Draw X axis (red)
-            batch = batch_for_shader(shader_2d, 'LINES', {"pos": [
-                (screen_points[0].x, screen_points[0].y), 
-                (screen_points[1].x, screen_points[1].y)
-            ]})
-            shader_2d.bind()
-            shader_2d.uniform_float("color", (1.0, 0.0, 0.0, 1.0))  # Red
-            gpu.state.line_width_set(3)
-            batch.draw(shader_2d)
-            
-            # Draw Y axis (green)
-            batch = batch_for_shader(shader_2d, 'LINES', {"pos": [
-                (screen_points[0].x, screen_points[0].y), 
-                (screen_points[2].x, screen_points[2].y)
-            ]})
-            shader_2d.bind()
-            shader_2d.uniform_float("color", (0.0, 1.0, 0.0, 1.0))  # Green
-            batch.draw(shader_2d)
-            
-            # Draw Z axis (blue)
-            batch = batch_for_shader(shader_2d, 'LINES', {"pos": [
-                (screen_points[0].x, screen_points[0].y), 
-                (screen_points[3].x, screen_points[3].y)
-            ]})
-            shader_2d.bind()
-            shader_2d.uniform_float("color", (0.0, 0.0, 1.0, 1.0))  # Blue
-            batch.draw(shader_2d)
-            
-            # Draw a small crosshair at the origin
-            origin_x = screen_points[0].x
-            origin_y = screen_points[0].y
-            size = 10
-            
-            crosshair_points = [
-                [(origin_x - size, origin_y), (origin_x + size, origin_y)],
-                [(origin_x, origin_y - size), (origin_x, origin_y + size)]
-            ]
-            
-            for points in crosshair_points:
-                batch = batch_for_shader(shader_2d, 'LINES', {"pos": points})
-                shader_2d.bind()
-                shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1.0))  # White
-                batch.draw(shader_2d)
-                
-        except Exception as e:
-            # If an error occurs, print to console for debugging
-            print(f"Error in drawing: {e}")
-            
-            # Draw a red rectangle to indicate an error occurred
-            error_rect = [
-                (width - 50, height - 50),
-                (width - 10, height - 50),
-                (width - 10, height - 10),
-                (width - 50, height - 10),
-            ]
-            
-            indices = [(0, 1, 2), (0, 2, 3)]
-            
-            batch = batch_for_shader(shader_2d, 'TRIS', {"pos": error_rect}, indices=indices)
-            shader_2d.bind()
-            shader_2d.uniform_float("color", (1.0, 0.0, 0.0, 1.0))  # Red
-            batch.draw(shader_2d)
-    ## end of extra Visual hints in the offscreen buffer /
-
     # Draw the offscreen buffer to screen
-    draw_texture_2d(self.pip_offscreen.texture_color, (x, y), width, height)    
+    gpu.state.blend_set('ALPHA')
+    draw_texture_2d(self.pip_offscreen.texture_color, (x, y), width, height)
+    
+    ## Add extra Visual hints in the offscreen buffer
+    # with self.pip_offscreen.bind():
+    #     ## Draw crosshair at object
+    #     crosshair = [
+    #         (obj_loc.x - 3.0, obj_loc.y, obj_loc.z),
+    #         (obj_loc.x + 3.0, obj_loc.y, obj_loc.z),
+    #         (obj_loc.x, obj_loc.y - 3.0, obj_loc.z),
+    #         (obj_loc.x, obj_loc.y + 3.0, obj_loc.z),
+    #     ]
+    #     shader = gpu.shader.from_builtin('UNIFORM_COLOR')
+    #     gpu.state.line_width_set(1)
+    #     batch = batch_for_shader(shader, 'LINE_STRIP', {"pos": crosshair})
+    #     shader.bind()
+    #     shader.uniform_float("color", (1.0, 0.0, 0.2, 0.8))
+    #     batch.draw(shader)
 
     ## Draw border
     vertices = [
