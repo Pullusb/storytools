@@ -390,6 +390,7 @@ def zenith_view_callback(self, context):
     if hasattr(self, 'pip_offscreen'):
         self.pip_offscreen.free()
     """
+
     # Restrict to current viewport if specified
     if hasattr(self, 'current_area') and context.area != self.current_area:
         return
@@ -397,6 +398,10 @@ def zenith_view_callback(self, context):
     # Get properties with fallback values
     size = getattr(self, 'pip_size', 0.25) # size as percentage of viewport
     quality = getattr(self, 'pip_quality', 75) # quality percentage
+    
+    ## Use the original position from the object, or default to upper left corner
+    # default_position = getattr(self, 'pip_position', (40, context.region.height - 40 - int(context.region.height * size)))
+    # position = default_position
     position = getattr(self, 'pip_position', (40, 40)) # bottom-left corner
     border_color = getattr(self, 'pip_border_color', (0.0, 0.5, 1.0, 0.7)) # Blue outline
     border_thickness = getattr(self, 'pip_border_thickness', 1.0)
@@ -439,21 +444,20 @@ def zenith_view_callback(self, context):
     if from_camera and context.scene.camera:
         # use camera
         view_mat = context.scene.camera.matrix_world
-        # cam_pos = context.scene.camera.matrix_world.translation
     else:
         # use current viewpoint
-        view_mat = context.space_data.region_3d.view_matrix
-        # cam_pos = context.space_data.region_3d.view_matrix.inverted().translation
+        view_mat = context.space_data.region_3d.view_matrix.inverted()
     
     view_right = Vector((view_mat.col[0][0], view_mat.col[0][1], view_mat.col[0][2]))
     view_forward = Vector((-view_mat.col[2][0], -view_mat.col[2][1], -view_mat.col[2][2]))
     view_up = Vector((view_mat.col[1][0], view_mat.col[1][1], view_mat.col[1][2]))
 
-    # Create a viewpoint that looks from the direction opposite to the camera
+    # Create a viewpoint that looks from directly above the object
     pip_pos = obj_loc + Vector((0, 0, distance)) # Final position above object
-
     # view direction (always -Z)
-    pip_forward = Vector((0, 0, -1))
+    pip_forward = Vector((0, 0, -1))  # Looking down
+    
+    ## Calculate the horizontal view direction from current view
 
     ## The "up" direction of the zenith view points opposite to the main camera
     ## This ensures the bottom of the image points toward the camera
@@ -466,64 +470,48 @@ def zenith_view_callback(self, context):
 
     ## Following method always align with camera. Avoid the 180 turn of method above
     horizontal_view = view_forward.copy()
-    horizontal_view.z = 0  # Supprimer la composante verticale
-    if horizontal_view.length < 0.01:  # Si la vue est presque verticale
-        # Utiliser view_up comme référence alternative
+    horizontal_view.z = 0  # Remove vertical component
+    
+    # If horizontal view is too small, use alternative references
+    if horizontal_view.length < 0.01:
         horizontal_view = view_up.copy()
         horizontal_view.z = 0
         if horizontal_view.length < 0.01:
-            # Dernier recours: utiliser l'axe Y mondial
-            horizontal_view = Vector((0, -1, 0))
+            horizontal_view = Vector((0, -1, 0))  # Fallback to world Y
 
-    # Normaliser le vecteur horizontal
+    # Normalize the horizontal vector
     if horizontal_view.length > 0:
         horizontal_view.normalize()
-    pip_up = horizontal_view
+    pip_up = horizontal_view  # Use this as the "up" direction for pip view
 
-    # If pip_up and pip_forward are almost parallel, use an alternative reference
+    # Ensure vectors are perpendicular
     if abs(pip_up.dot(pip_forward)) > 0.98:
-        # Use view_right as an alternative reference
-        pip_up = view_right
+        pip_up = view_right  # Use right vector as alternative
 
-    # Calculate the "right" vector (perpendicular to the other two)
+    # Calculate orthogonal basis
     pip_right = pip_forward.cross(pip_up).normalized()
+    pip_up = pip_right.cross(pip_forward).normalized() # Recalculate to ensure orthogonality
 
-    # Recalculate the "up" vector to ensure perfect orthogonality
-    pip_up = pip_right.cross(pip_forward).normalized()
-
-    # Create the rotation matrix
+    # Create view matrix
     rot_mat = Matrix.Identity(4)
     rot_mat.col[0][:3] = pip_right
     rot_mat.col[1][:3] = pip_up
     rot_mat.col[2][:3] = (-pip_forward[0], -pip_forward[1], -pip_forward[2])
-
-    # Create view matrix
     pip_view_matrix = Matrix.Translation(pip_pos) @ rot_mat
     pip_view_matrix.invert()
 
-    ## Reuse current view projection matrix
-    # proj_matrix = context.space_data.region_3d.window_matrix.copy()
-    ## custom matrix
-    ## ortho
-    # proj_matrix = Matrix.OrthoProjection(pip_forward, 4) ## 
-
-
-    ## Generic Perspective proj matrix
-    # Calculate aspect ratio based on our offscreen dimensions
-    width = int(context.region.width * size)
-    height = int(context.region.height * size)
+    # Create perspective projection matrix
     aspect_ratio = width / height
-    
-    
+
     # Set near and far clipping planes
     near_clip = 0.1
     far_clip = distance * 6
     
-    ## Create perspective projection matrix manually
+    ## Create standard perspective projection matrix
     # fov = radians(50.0) # field of view in radians
     # f = 1.0 / tan(fov / 2.0)
     # Hardcoded f value
-    f = 2.14450692
+    f = 2.14450692 # ~50 degrees fov
     
     # Build the projection matrix
     proj_matrix = Matrix.Identity(4)
@@ -544,7 +532,11 @@ def zenith_view_callback(self, context):
         proj_matrix,
         do_color_management=False)
 
-    # Draw the offscreen buffer to screen
+    # Store original state
+    original_blend = gpu.state.blend_get()
+    original_depth_test = gpu.state.depth_test_get()
+    
+    # Draw the offscreen buffer to viewport
     gpu.state.blend_set('ALPHA')
     draw_texture_2d(self.pip_offscreen.texture_color, (x, y), width, height)
     
@@ -564,7 +556,7 @@ def zenith_view_callback(self, context):
     #     shader.uniform_float("color", (1.0, 0.0, 0.2, 0.8))
     #     batch.draw(shader)
 
-    ## Draw border
+    ## Draw border around PIP view
     vertices = [
         (x, y),
         (x + width, y),
@@ -579,6 +571,82 @@ def zenith_view_callback(self, context):
     shader.bind()
     shader.uniform_float("color", border_color)
     batch.draw(shader)
+    
+    ## Draw subtle crosshair at the object position (center of PIP view)
+    # center_x = x + width / 2
+    # center_y = y + height / 2
+    
+    # marker_size = min(width, height) * 0.02  # 2% of view size
+    
+    # crosshair_vertices = [
+    #     # Horizontal line
+    #     (center_x - marker_size, center_y),
+    #     (center_x + marker_size, center_y),
+    #     # Vertical line
+    #     (center_x, center_y - marker_size),
+    #     (center_x, center_y + marker_size)
+    # ]
 
+    # batch = batch_for_shader(shader, 'LINES', {"pos": crosshair_vertices})
+    # shader.bind()
+    # shader.uniform_float("color", (1.0, 1.0, 1.0, 0.3))
+    # gpu.state.line_width_set(1)
+    # batch.draw(shader)
+    
+    ## Draw camera frustum if camera exists
+    # cam = context.scene.camera
+    # if cam:
+    #     # Calculate camera frustum points
+    #     frustum_points = fn.get_camera_frustum(cam, context=context)
+
+    #     # Add connecting lines
+    #     frustum_lines = [
+    #         # Left side
+    #         frustum_points[0], frustum_points[1],
+    #         # Right side
+    #         frustum_points[2], frustum_points[3],
+    #         # Near clip
+    #         frustum_points[0], frustum_points[2],
+    #         # Far clip
+    #         frustum_points[1], frustum_points[3]
+    #     ]
+        
+    #     # Project to 2D space in the PIP view
+    #     frustum_lines_2d = []
+    #     for point_3d in frustum_lines:
+    #         # Convert world space to normalized device coordinates (NDC)
+    #         point_4d = Vector((point_3d.x, point_3d.y, point_3d.z, 1.0))
+    #         point_view = pip_view_matrix @ point_4d
+    #         point_clip = proj_matrix @ point_view
+            
+    #         # Perspective division
+    #         if abs(point_clip.w) > 0.0001:
+    #             point_ndc = Vector((
+    #                 point_clip.x / point_clip.w,
+    #                 point_clip.y / point_clip.w
+    #             ))
+                
+    #             # Convert NDC to screen coordinates in the PIP view
+    #             screen_x = x + (point_ndc.x + 1.0) * 0.5 * width
+    #             screen_y = y + (point_ndc.y + 1.0) * 0.5 * height
+    #             frustum_lines_2d.append((screen_x, screen_y))
+    #         else:
+    #             # Skip if the point is at infinity
+    #             frustum_lines_2d.append((0, 0)) # Need to maintain parity for the pairs
+        
+    #     # Draw frustum lines
+    #     if len(frustum_lines_2d) >= 8:  # We need 4 pairs of points
+    #         for i in range(0, len(frustum_lines_2d), 2):
+    #             if i + 1 < len(frustum_lines_2d):
+    #                 batch = batch_for_shader(shader, 'LINES', {"pos": [
+    #                     frustum_lines_2d[i], frustum_lines_2d[i+1]
+    #                 ]})
+    #                 shader.bind()
+    #                 shader.uniform_float("color", (0.5, 0.5, 1.0, 0.7))  # Light blue
+    #                 gpu.state.line_width_set(1)
+    #                 batch.draw(shader)
+    
+    # Restore state
+    gpu.state.blend_set(original_blend)
+    gpu.state.depth_test_set(original_depth_test)
     gpu.state.line_width_set(1.0)
-    gpu.state.blend_set('NONE')
