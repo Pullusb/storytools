@@ -381,6 +381,7 @@ def zenith_view_callback(self, context):
     - pip_distance (float): Distance from the object
     - pip_from_camera (bool): If True, use the camera's view instead of the current view
     - pip_object (bool): Object to track (if not set, use the active object or the operator's "self.object")
+    - pip_use_crosshair (bool): If True, draw a crosshair at center
 
     Optional:
     - pip_offscreen: Will be created if not present
@@ -403,10 +404,11 @@ def zenith_view_callback(self, context):
     # default_position = getattr(self, 'pip_position', (40, context.region.height - 40 - int(context.region.height * size)))
     # position = default_position
     position = getattr(self, 'pip_position', (40, 40)) # bottom-left corner
-    border_color = getattr(self, 'pip_border_color', (0.0, 0.5, 1.0, 0.7)) # Blue outline
+    border_color = getattr(self, 'pip_border_color', (0.4, 0.4, 0.4, 1.0)) # Grey # Blue outline :(0.0, 0.5, 1.0, 0.7))
     border_thickness = getattr(self, 'pip_border_thickness', 1.0)
     distance = getattr(self, 'pip_distance', 15.0)
     from_camera = getattr(self, 'pip_from_camera', False)
+    use_crosshair = getattr(self, 'pip_use_crosshair', False)
 
     # Get or create offscreen
     if not hasattr(self, 'pip_offscreen'):
@@ -538,23 +540,120 @@ def zenith_view_callback(self, context):
     
     # Draw the offscreen buffer to viewport
     gpu.state.blend_set('ALPHA')
-    draw_texture_2d(self.pip_offscreen.texture_color, (x, y), width, height)
     
+    ## !! Drawing in the offscreen buffer does not work !! 
     ## Add extra Visual hints in the offscreen buffer
     # with self.pip_offscreen.bind():
     #     ## Draw crosshair at object
     #     crosshair = [
-    #         (obj_loc.x - 3.0, obj_loc.y, obj_loc.z),
-    #         (obj_loc.x + 3.0, obj_loc.y, obj_loc.z),
-    #         (obj_loc.x, obj_loc.y - 3.0, obj_loc.z),
-    #         (obj_loc.x, obj_loc.y + 3.0, obj_loc.z),
+    #         Vector((obj_loc.x - 3.0, obj_loc.y, obj_loc.z)),
+    #         Vector((obj_loc.x + 3.0, obj_loc.y, obj_loc.z)),
+    #         Vector((obj_loc.x, obj_loc.y - 3.0, obj_loc.z)),
+    #         Vector((obj_loc.x, obj_loc.y + 3.0, obj_loc.z)),
     #     ]
+
+    #     crosshair += [Vector((0, 0, 0)), Vector((0, 3, 3))]
+
     #     shader = gpu.shader.from_builtin('UNIFORM_COLOR')
     #     gpu.state.line_width_set(1)
-    #     batch = batch_for_shader(shader, 'LINE_STRIP', {"pos": crosshair})
+    #     batch = batch_for_shader(shader, 'LINES', {"pos": crosshair})
     #     shader.bind()
     #     shader.uniform_float("color", (1.0, 0.0, 0.2, 0.8))
     #     batch.draw(shader)
+
+    draw_texture_2d(self.pip_offscreen.texture_color, (x, y), width, height)
+
+    ## Shader for all 2D line below
+    shader = gpu.shader.from_builtin('UNIFORM_COLOR')
+
+    
+    ## Draw subtle crosshair at center of PIP view
+    if use_crosshair:
+        center_x = x + width / 2
+        center_y = y + height / 2
+        
+        marker_size = int(min(width, height) * 0.03)  # 3% of view size
+        
+        crosshair_vertices = [
+            # Horizontal line
+            (center_x - marker_size, center_y),
+            (center_x + marker_size, center_y),
+            # Vertical line
+            (center_x, center_y - marker_size),
+            (center_x, center_y + marker_size)
+        ]
+
+        batch = batch_for_shader(shader, 'LINES', {"pos": crosshair_vertices})
+        shader.bind()
+        shader.uniform_float("color", (1.0, 1.0, 1.0, 0.4))
+        gpu.state.line_width_set(1)
+        batch.draw(shader)
+
+    ## Draw camera frustum if camera exists
+    cam = context.scene.camera
+    if cam:
+        # Calculate camera frustum points
+        frustum_points = fn.get_camera_frustum(cam, context=context)
+
+        # Add connecting lines
+        frustum_lines = [
+            # Left side
+            frustum_points[0], frustum_points[1],
+            # Right side
+            frustum_points[2], frustum_points[3],
+            # Near clip
+            frustum_points[0], frustum_points[2],
+            # Far clip
+            frustum_points[1], frustum_points[3]
+        ]
+        
+        ## Add view line ? (camera axis))
+        # far_point = (frustum_points[1] + frustum_points[3]) / 2
+        # view_line = [cam.matrix_world.translation, far_point]
+        # frustum_lines += view_line
+
+        # Project to 2D space in the PIP view
+        frustum_lines_2d = []
+        for point_3d in frustum_lines:
+            # Convert world space to normalized device coordinates (NDC)
+            point_4d = Vector((point_3d.x, point_3d.y, point_3d.z, 1.0))
+            point_view = pip_view_matrix @ point_4d
+            point_clip = proj_matrix @ point_view
+            
+            # Perspective division
+            if abs(point_clip.w) > 0.0001:
+                point_ndc = Vector((
+                    point_clip.x / point_clip.w,
+                    point_clip.y / point_clip.w
+                ))
+                
+                # Convert NDC to screen coordinates in the PIP view
+                screen_x = x + (point_ndc.x + 1.0) * 0.5 * width
+                screen_y = y + (point_ndc.y + 1.0) * 0.5 * height
+                frustum_lines_2d.append(Vector((screen_x, screen_y)))
+            else:
+                # Skip if the point is at infinity
+                frustum_lines_2d.append(Vector((0, 0))) # Need to maintain parity for the pairs
+        
+
+        ## Clip to pip rectangle
+        rect_min = Vector((x, y))
+        rect_max = Vector((x + width, y + height))
+        clipped_frustum_lines_2d = []
+        for i in range(0, len(frustum_lines_2d), 2):
+            if i + 1 < len(frustum_lines_2d):
+                clipped_coords = fn.clip_line_to_rectangle(frustum_lines_2d[i], frustum_lines_2d[i+1], rect_min, rect_max)
+                if clipped_coords:
+                    clipped_frustum_lines_2d.extend(clipped_coords)        
+        frustum_lines_2d = clipped_frustum_lines_2d
+
+        # Draw frustum lines
+        if len(frustum_lines_2d) >= 2:
+            batch = batch_for_shader(shader, 'LINES', {"pos": frustum_lines_2d})
+            shader.bind()
+            shader.uniform_float("color", (0.5, 0.5, 1.0, 0.5)) # violet-blue
+            gpu.state.line_width_set(1)
+            batch.draw(shader)
 
     ## Draw border around PIP view
     vertices = [
@@ -564,88 +663,13 @@ def zenith_view_callback(self, context):
         (x, y + height),
         (x, y),
     ]
-    
-    shader = gpu.shader.from_builtin('UNIFORM_COLOR')
+
     gpu.state.line_width_set(border_thickness)
     batch = batch_for_shader(shader, 'LINE_STRIP', {"pos": vertices})
     shader.bind()
     shader.uniform_float("color", border_color)
     batch.draw(shader)
-    
-    ## Draw subtle crosshair at the object position (center of PIP view)
-    # center_x = x + width / 2
-    # center_y = y + height / 2
-    
-    # marker_size = min(width, height) * 0.02  # 2% of view size
-    
-    # crosshair_vertices = [
-    #     # Horizontal line
-    #     (center_x - marker_size, center_y),
-    #     (center_x + marker_size, center_y),
-    #     # Vertical line
-    #     (center_x, center_y - marker_size),
-    #     (center_x, center_y + marker_size)
-    # ]
 
-    # batch = batch_for_shader(shader, 'LINES', {"pos": crosshair_vertices})
-    # shader.bind()
-    # shader.uniform_float("color", (1.0, 1.0, 1.0, 0.3))
-    # gpu.state.line_width_set(1)
-    # batch.draw(shader)
-    
-    ## Draw camera frustum if camera exists
-    # cam = context.scene.camera
-    # if cam:
-    #     # Calculate camera frustum points
-    #     frustum_points = fn.get_camera_frustum(cam, context=context)
-
-    #     # Add connecting lines
-    #     frustum_lines = [
-    #         # Left side
-    #         frustum_points[0], frustum_points[1],
-    #         # Right side
-    #         frustum_points[2], frustum_points[3],
-    #         # Near clip
-    #         frustum_points[0], frustum_points[2],
-    #         # Far clip
-    #         frustum_points[1], frustum_points[3]
-    #     ]
-        
-    #     # Project to 2D space in the PIP view
-    #     frustum_lines_2d = []
-    #     for point_3d in frustum_lines:
-    #         # Convert world space to normalized device coordinates (NDC)
-    #         point_4d = Vector((point_3d.x, point_3d.y, point_3d.z, 1.0))
-    #         point_view = pip_view_matrix @ point_4d
-    #         point_clip = proj_matrix @ point_view
-            
-    #         # Perspective division
-    #         if abs(point_clip.w) > 0.0001:
-    #             point_ndc = Vector((
-    #                 point_clip.x / point_clip.w,
-    #                 point_clip.y / point_clip.w
-    #             ))
-                
-    #             # Convert NDC to screen coordinates in the PIP view
-    #             screen_x = x + (point_ndc.x + 1.0) * 0.5 * width
-    #             screen_y = y + (point_ndc.y + 1.0) * 0.5 * height
-    #             frustum_lines_2d.append((screen_x, screen_y))
-    #         else:
-    #             # Skip if the point is at infinity
-    #             frustum_lines_2d.append((0, 0)) # Need to maintain parity for the pairs
-        
-    #     # Draw frustum lines
-    #     if len(frustum_lines_2d) >= 8:  # We need 4 pairs of points
-    #         for i in range(0, len(frustum_lines_2d), 2):
-    #             if i + 1 < len(frustum_lines_2d):
-    #                 batch = batch_for_shader(shader, 'LINES', {"pos": [
-    #                     frustum_lines_2d[i], frustum_lines_2d[i+1]
-    #                 ]})
-    #                 shader.bind()
-    #                 shader.uniform_float("color", (0.5, 0.5, 1.0, 0.7))  # Light blue
-    #                 gpu.state.line_width_set(1)
-    #                 batch.draw(shader)
-    
     # Restore state
     gpu.state.blend_set(original_blend)
     gpu.state.depth_test_set(original_depth_test)

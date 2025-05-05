@@ -254,7 +254,7 @@ def get_view_orientation_from_matrix(view_matrix):
 ### -- Camera/View Frustum --
 
 ## User view calculation from Swann Martinez's Multi-user addon
-def project_to_viewport(region: bpy.types.Region, rv3d: bpy.types.RegionView3D, coords: list, distance: float = 1.0) -> Vector:
+def project_to_viewport(region: bpy.types.Region, rv3d: bpy.types.RegionView3D, coords: tuple, distance: float = 1.0) -> Vector:
     """ Compute a projection from 2D to 3D viewport coordinate
 
         :param region: target windows region
@@ -307,6 +307,118 @@ def generate_user_camera(area, region, rv3d) -> list:
     coords = [v1, v2, v3, v4, v5, v6, v7]
 
     return coords
+
+
+def clip_line_to_rectangle(line_start, line_end, rect_min, rect_max):
+    """
+    Clip a line segment to a rectangle using Cohen-Sutherland algorithm.
+    https://www.tutorialspoint.com/computer_graphics/computer_graphics_cohen_sutherland_line_clipping.htm
+    
+    Parameters:
+        line_start (Vector2): Starting point of the line
+        line_end (Vector2): Ending point of the line
+        rect_min (Vector2): Bottom-left corner of the rectangle
+        rect_max (Vector2): Top-right corner of the rectangle
+        
+    Returns:
+        tuple: (Vector2, Vector2) representing the clipped line's start and end points,
+               or None if the line is completely outside the rectangle
+    """
+    # Define region codes
+    INSIDE = 0  # 0000
+    LEFT = 1    # 0001
+    RIGHT = 2   # 0010
+    BOTTOM = 4  # 0100
+    TOP = 8     # 1000
+    
+    # Calculate the region code for a point
+    def compute_code(x, y):
+        code = INSIDE
+        if x < rect_min.x:      # to the left of rectangle
+            code |= LEFT
+        elif x > rect_max.x:    # to the right of rectangle
+            code |= RIGHT
+        if y < rect_min.y:      # below the rectangle
+            code |= BOTTOM
+        elif y > rect_max.y:    # above the rectangle
+            code |= TOP
+        return code
+    
+    # Extract coordinates
+    x0, y0 = line_start.x, line_start.y
+    x1, y1 = line_end.x, line_end.y
+    xmin, ymin = rect_min.x, rect_min.y
+    xmax, ymax = rect_max.x, rect_max.y
+    
+    # Compute region codes for P0, P1
+    code0 = compute_code(x0, y0)
+    code1 = compute_code(x1, y1)
+    
+    # Initialize line as outside the rectangular window
+    accept = False
+    
+    # Add safety counter to prevent infinite loops
+    max_iterations = 10  # Usually 4 iterations is more than enough
+    iteration = 0
+    
+    while iteration < max_iterations:
+        iteration += 1
+        
+        # Both endpoints inside rectangle
+        if code0 == 0 and code1 == 0:
+            accept = True
+            break
+        
+        # Both endpoints share an outside region, so line is outside
+        elif (code0 & code1) != 0:
+            break
+        
+        # Calculate the line segment from outside to inside
+        else:
+            # At least one endpoint is outside the rectangle
+            # Select one of them
+            code_out = code1 if code0 == 0 else code0
+            
+            # Find intersection point
+            x, y = x0, y0  # Default values
+            
+            if code_out & TOP:
+                # point is above the clip rectangle
+                if y1 != y0:  # Prevent division by zero
+                    x = x0 + (x1 - x0) * (ymax - y0) / (y1 - y0)
+                y = ymax
+            elif code_out & BOTTOM:
+                # point is below the clip rectangle
+                if y1 != y0:  # Prevent division by zero
+                    x = x0 + (x1 - x0) * (ymin - y0) / (y1 - y0)
+                y = ymin
+            elif code_out & RIGHT:
+                # point is to the right of clip rectangle
+                if x1 != x0:  # Prevent division by zero
+                    y = y0 + (y1 - y0) * (xmax - x0) / (x1 - x0)
+                x = xmax
+            elif code_out & LEFT:
+                # point is to the left of clip rectangle
+                if x1 != x0:  # Prevent division by zero
+                    y = y0 + (y1 - y0) * (xmin - x0) / (x1 - x0)
+                x = xmin
+            
+            # Update the outside point
+            if code_out == code0:
+                x0, y0 = x, y
+                code0 = compute_code(x0, y0)
+            else:
+                x1, y1 = x, y
+                code1 = compute_code(x1, y1)
+    
+    # If we've reached max iterations without convergence, assume the line is outside
+    if iteration >= max_iterations and not accept:
+        return None
+        
+    if accept:
+        return [Vector((x0, y0)), Vector((x1, y1))]
+    else:
+        return None
 
 def extrapolate_points_by_length(a, b, length):
     '''

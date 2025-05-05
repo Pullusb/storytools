@@ -256,7 +256,7 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
 
     top_view_map_size: FloatProperty(
         name="Top View Map Size, as percentage of viewport height",
-        default=20, min=2, max=90, soft_min=5, soft_max=40, subtype='PERCENTAGE')
+        default=22, min=2, max=90, soft_min=5, soft_max=40, subtype='PERCENTAGE')
         # default=0.2, min=0.05, max=1.0, soft_min=0.1, soft_max=0.4)
 
     ### --- Grease pencil settings

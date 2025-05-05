@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.18.0
+
+- added: topview improvement with line overlays to see camera frustum lines and crosshair when object has no dimensions
+
 2.17.2
 
 - fixed: #87 Bugged sidebar when disabling or when changing the tab name

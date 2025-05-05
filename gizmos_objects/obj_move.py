@@ -284,6 +284,9 @@ class STORYTOOLS_OT_object_depth_move(Operator):
             self.pip_size = prefs.top_view_map_size / 100  # Size relative to viewport
             self.pip_quality = 92  # Render quality percentage
             self.pip_from_camera = True
+            if context.object.type != 'EMPTY' and context.object.dimensions.length == 0:
+                # Show crosshair if object has a size of 0
+                self.pip_use_crosshair = True
             top_margin = fn.get_header_margin(context, bottom=False)
             left_margin = next((r.width for r in context.area.regions if r.type == 'TOOLS'), 0)
             offset_from_corner = 10
