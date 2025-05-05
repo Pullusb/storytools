@@ -442,6 +442,11 @@ def zenith_view_callback(self, context):
     x = x_pos if x_pos >= 0 else region_width + x_pos - width
     y = y_pos if y_pos >= 0 else region_height + y_pos - height
     
+    x = int(x)
+    y = int(y)
+    width = int(width)
+    height = int(height)
+
     # Get vector from current view
     if from_camera and context.scene.camera:
         # use camera
@@ -537,7 +542,7 @@ def zenith_view_callback(self, context):
     # Store original state
     original_blend = gpu.state.blend_get()
     original_depth_test = gpu.state.depth_test_get()
-    
+
     # Draw the offscreen buffer to viewport
     gpu.state.blend_set('ALPHA')
     
@@ -634,26 +639,25 @@ def zenith_view_callback(self, context):
             else:
                 # Skip if the point is at infinity
                 frustum_lines_2d.append(Vector((0, 0))) # Need to maintain parity for the pairs
-        
-
-        ## Clip to pip rectangle
-        rect_min = Vector((x, y))
-        rect_max = Vector((x + width, y + height))
-        clipped_frustum_lines_2d = []
-        for i in range(0, len(frustum_lines_2d), 2):
-            if i + 1 < len(frustum_lines_2d):
-                clipped_coords = fn.clip_line_to_rectangle(frustum_lines_2d[i], frustum_lines_2d[i+1], rect_min, rect_max)
-                if clipped_coords:
-                    clipped_frustum_lines_2d.extend(clipped_coords)        
-        frustum_lines_2d = clipped_frustum_lines_2d
 
         # Draw frustum lines
         if len(frustum_lines_2d) >= 2:
             batch = batch_for_shader(shader, 'LINES', {"pos": frustum_lines_2d})
+
             shader.bind()
             shader.uniform_float("color", (0.5, 0.5, 1.0, 0.5)) # violet-blue
             gpu.state.line_width_set(1)
+            
+            ## clip lines to the zone using scissor test
+            original_scissor = gpu.state.scissor_get()  # Store original scissor state
+            gpu.state.scissor_test_set(True) # Enable scissor test
+            gpu.state.scissor_set(x, y, width, height) # Set scissor to PIP view area
+            
             batch.draw(shader)
+            
+            gpu.state.scissor_test_set(False) # Disable scissor test
+            # Disable scissor test to draw border (lost when rebind anyway)
+            gpu.state.scissor_set(*original_scissor)  # Restore original scissor state
 
     ## Draw border around PIP view
     vertices = [
