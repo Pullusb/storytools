@@ -15,7 +15,7 @@ def setup_top_view_map(self, context, distance=15.0):
     ## Setup pip view properties
     ## Upper left corner
     self.pip_size = prefs.top_view_map_size / 100  # Size relative to viewport
-    self.pip_quality = 92  # Render quality percentage
+    # self.pip_quality = 100  # Render quality percentage
     self.pip_from_camera = True
 
     top_margin = fn.get_header_margin(context, bottom=False)

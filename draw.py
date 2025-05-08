@@ -398,7 +398,7 @@ def zenith_view_callback(self, context):
 
     # Get properties with fallback values
     size = getattr(self, 'pip_size', 0.25) # size as percentage of viewport
-    quality = getattr(self, 'pip_quality', 75) # quality percentage
+    quality = getattr(self, 'pip_quality', 95) # quality percentage
     
     ## Use the original position from the object, or default to upper left corner
     # default_position = getattr(self, 'pip_position', (40, context.region.height - 40 - int(context.region.height * size)))
