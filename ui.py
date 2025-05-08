@@ -444,6 +444,7 @@ def tool_layout(self, layout, context):
     row = layout.row(align=True)
     row.operator('storytools.align_view_to_object', text='Align View To Object')
     row.operator('storytools.opposite_view', text='', icon='FORCE_MAGNETIC') # CON_ROTLIMIT
+    # layout.operator('storytools.dolly_zoom_cam', text='Dolly Focale', icon='MESH_CONE')
 
     ## Test to see if it's worth adding as gizmo
     # layout.operator('storytools.camera_shift', text='Camera Shift')
