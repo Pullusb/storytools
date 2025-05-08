@@ -21,7 +21,7 @@ class STORYTOOLS_OT_snap_3d_cursor(Operator):
 
     all_scene : bpy.props.BoolProperty(default=True)
 
-    set_cursor_rotation : bpy.props.BoolProperty(default=False, options={'SKIP_SAVE'})
+    set_cursor_rotation : bpy.props.BoolProperty(default=False)
 
     def invoke(self, context, event):
         ## store the initial matrix of the cursor
