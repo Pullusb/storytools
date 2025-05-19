@@ -5,7 +5,7 @@ from .. import fn
 
 class STORYTOOLS_OT_dolly_zoom_cam(bpy.types.Operator):
     bl_idname = "storytools.dolly_zoom_cam"
-    bl_label = "Dolly Focale Change"
+    bl_label = "Dolly Zoom Camera"
     bl_description = "Dolly/vertigo zoom effect: change focal length while adapting camera position to compensate\
         \nFocus on active object or 3D cursor if there is None"
     bl_options = {'REGISTER', 'UNDO'}
