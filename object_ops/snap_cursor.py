@@ -155,7 +155,12 @@ class STORYTOOLS_OT_snap_3d_cursor(Operator):
                     ## Project on GP plane (calculated in invoke)
                     mouse_3d = fn.region_to_location(mouse, self.arbitrary_depth_coord)
                     ## "raycast" to the plane
-                    drawing_plane_hit = geometry.intersect_line_plane(self.origin, mouse_3d, self.plane_co, self.plane_no, True)
+                    # if context.region_data.view_perspective == 'ORTHO':
+                    if context.space_data.region_3d.view_perspective == 'ORTHO':
+                        view_vec = fn.get_viewport_view_vector(context)
+                        drawing_plane_hit = geometry.intersect_line_plane(mouse_3d - view_vec*1000, mouse_3d + view_vec*10000, self.plane_co, self.plane_no, True)
+                    else:
+                        drawing_plane_hit = geometry.intersect_line_plane(self.origin, mouse_3d, self.plane_co, self.plane_no, True)
 
                     if drawing_plane_hit:
                         context.scene.cursor.location = drawing_plane_hit
