@@ -41,7 +41,7 @@ class STORYTOOLS_OT_dolly_zoom_cam(bpy.types.Operator):
         )
         
         camera.matrix_world.translation = new_position
-        return {'FINISHED'}
+        return
 
     def invoke(self, context, event):
         camera = context.scene.camera
@@ -90,7 +90,7 @@ class STORYTOOLS_OT_dolly_zoom_cam(bpy.types.Operator):
             self.exit(context)
             return {'CANCELLED'}
 
-        if event.type in {'LEFTMOUSE', 'RET', 'NUMPAD_ENTER', 'SPACE'}:
+        if event.type in {'LEFTMOUSE', 'RET', 'NUMPAD_ENTER', 'SPACE'} and event.value == 'PRESS':
             self.exit(context)
             return {'FINISHED'}
 

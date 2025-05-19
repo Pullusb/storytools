@@ -70,11 +70,21 @@ class STORYTOOLS_OT_camera_depth(Operator):
             ## or 3d cursor
             self.focal_target = context.scene.cursor.location.copy()
 
+        self.cam_forward_vec = Vector((0,0,-1))
+        self.cam_forward_vec.rotate(self.cam.matrix_world)
+
+        ## If point is behind camera, use camera focus distance in front of camera.
+        if (self.cam.matrix_world.inverted() @ self.focal_target).z > 0:
+            distance = self.cam.data.dof.focus_distance
+            if not distance:
+                distance = 10
+            self.focal_target = distance * self.cam_forward_vec + self.init_pos
+
+        ## Stay centered on camera
+        self.focal_target = intersect_line_plane(self.init_pos, self.init_pos + self.cam_forward_vec * 100000, self.focal_target, self.cam_forward_vec)
+
         context.window.cursor_set("SCROLL_X")
         context.window_manager.modal_handler_add(self)
-        
-        # camera forward vector
-        self.cam_forward_vec = self.cam.matrix_world.to_quaternion() @ Vector((0,0,-1))
 
         args = (self, context) 
         if self.is_focal_mode:
