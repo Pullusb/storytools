@@ -41,17 +41,18 @@ class STORYTOOLS_OT_camera_depth(Operator):
     def poll(cls, context):
         return context.scene.camera
 
+    dolly_mode : bpy.props.BoolProperty(name="Dolly Mode", default=False)
+
     def invoke(self, context, event):
         self.current_area = context.area
         self.cam = context.scene.camera
         # Store the initial ctrl state
         self.is_focal_mode = event.ctrl
-        
         if not self.is_focal_mode and any(self.cam.lock_location):
             self.report({'ERROR'}, 'Camera location is locked')
             return {'CANCELLED'}
 
-        self.init_pos = self.cam.location.copy()
+        self.init_pos = self.cam.matrix_world.translation.copy()
         self.init_mouse_x = event.mouse_x
         
         # Store initial camera values
@@ -62,12 +63,19 @@ class STORYTOOLS_OT_camera_depth(Operator):
         self.current_delta = 0
         self.cumulated_delta = 0
 
+        if context.active_object and context.active_object != self.cam:
+            self.focal_target = context.active_object.matrix_world.translation.copy()
+        else:
+            ## either use current focal point (could be used with view too ! so maybe more logic)
+            ## or 3d cursor
+            self.focal_target = context.scene.cursor.location.copy()
+
         context.window.cursor_set("SCROLL_X")
         context.window_manager.modal_handler_add(self)
         
         # camera forward vector
         self.cam_forward_vec = self.cam.matrix_world.to_quaternion() @ Vector((0,0,-1))
-        
+
         args = (self, context) 
         if self.is_focal_mode:
             self.text_body = "Focal Length" if self.cam.data.type == 'PERSP' else "Orthographic Scale"
@@ -79,7 +87,6 @@ class STORYTOOLS_OT_camera_depth(Operator):
             self._text_handle = bpy.types.SpaceView3D.draw_handler_add(draw.text_draw_callback_px, args, 'WINDOW', 'POST_PIXEL')
         
         # Setup camera top view map if enabled
-        # if not self.shift_mode:
         dist = 6.0 if self.is_focal_mode else 15.0
         setup_top_view_map(self, context, dist)
 
@@ -90,7 +97,6 @@ class STORYTOOLS_OT_camera_depth(Operator):
             fac = 0.001 if event.shift else 0.01
         else:
             fac = 0.01 if event.shift else 0.1
-
 
         if event.shift != self.shift_pressed:
             self.shift_pressed = event.shift
@@ -110,17 +116,37 @@ class STORYTOOLS_OT_camera_depth(Operator):
                 self.cam.data.ortho_scale = new_scale
 
                 # self.text_body = f"Orthographic Scale: {self.cam.data.ortho_scale:.2f}"
-                self.text_body = f"Orthographic Scale: {self.init_ortho_scale:.1f} -> {self.cam.data.ortho_scale:.{decimals}f}"
+                self.text_body = f"Orthographic Scale: {self.init_ortho_scale:.{decimals}f} -> {self.cam.data.ortho_scale:.{decimals}f}"
                 context.area.header_text_set(f'Orthographic Scale Offset: {move_val:.2f}')
             else:
                 # For perspective camera, adjust focal length
-                # new_focal = self.init_lens * (1 + move_val)
-                new_focal = self.init_lens + move_val
-                self.cam.data.lens = new_focal
+                # lens = self.init_lens * (1 + move_val)
+                lens = self.init_lens + move_val
+                self.cam.data.lens = lens
 
-                # self.text_body = f"Focal Length: {self.cam.data.lens:.1f}"
-                self.text_body = f"Focal Length: {self.init_lens:.1f} -> {self.cam.data.lens:.{decimals}f}"
-                context.area.header_text_set(f'Focal Length Offset: {move_val:.2f}')
+                if event.type == 'D' and event.value == 'PRESS':
+                    # Toggle dolly mode
+                    self.dolly_mode = not self.dolly_mode
+                    if not self.dolly_mode:
+                        # Reset position
+                        self.cam.matrix_world.translation = self.init_pos
+
+                if self.dolly_mode:
+                    # Calculate and update camera position
+                    self.cam.matrix_world.translation = fn.calculate_dolly_zoom_position(
+                        self.init_pos,
+                        self.focal_target,
+                        self.init_lens,
+                        lens
+                    )
+
+                dolly_text = 'On' if self.dolly_mode else 'Off'
+
+                body = f"Focal Length: {self.init_lens:.{decimals}f} -> {lens:.{decimals}f}"
+                self.text_body = body
+                offset_text = f"(Offset: +{move_val:.2f})" if move_val >= 0 else f"(Offset: {move_val:.2f})"
+                context.area.header_text_set(f'{body} {offset_text} | Dolly Toggle (D): {dolly_text}')
+
         else:
             # Position-based behavior
             new_position = self.init_pos + self.cam_forward_vec * move_val
@@ -148,7 +174,7 @@ class STORYTOOLS_OT_camera_depth(Operator):
                 self.cam.data.lens = self.init_lens
                 self.cam.data.ortho_scale = self.init_ortho_scale
             else:
-                self.cam.location = self.init_pos
+                self.cam.matrix_world.translation = self.init_pos
             context.window.cursor_set("DEFAULT")
             draw.stop_callback(self, context)
             return {'CANCELLED'}

@@ -124,6 +124,13 @@ def get_camera_view_vector():
     view_vector.rotate(bpy.context.scene.camera.matrix_world)
     return view_vector
 
+def get_viewport_view_vector(context=None):
+    '''return current viewport view vector (normalized direction)'''
+    context = context or bpy.context
+    view_vector = Vector((0,0,-1))
+    view_vector.rotate(context.space_data.region_3d.view_rotation)
+    return view_vector
+
 def coord_distance_from_cam(coord=None, context=None):
     """Get the distance between the camera and a 3D point, parallel to view vector axis"""
     context = context or bpy.context
@@ -168,6 +175,33 @@ def get_cam_frame_world_center(cam, scene=None):
     #-# Get center
     # return np.sum(frame, axis=0) / 4
     return np.add.reduce(frame) / 4
+
+def calculate_dolly_zoom_position(old_position, target_position, old_focal_length, new_focal_length):
+    """
+    Calculates a new camera position for a dolly zoom effect based on focal length change.
+    Designed to be used in a modal operator with a slider.
+    
+    Args:
+        old_position: The previous/current camera position (mathutils.Vector)
+        target_position: The target position (mathutils.Vector)
+        old_focal_length: The previous/current focal length in mm
+        new_focal_length: The new focal length in mm
+    
+    Returns:
+        Vector: The new camera position
+    """
+    # Get direction vector from old camera position to target
+    direction = (target_position - old_position).normalized()
+    
+    # Calculate current distance
+    current_distance = (target_position - old_position).length
+    
+    # Calculate new distance to maintain same field of view for subject
+    # The ratio of distances should equal the ratio of focal lengths
+    new_distance = current_distance * (new_focal_length / old_focal_length)
+    
+    # Calculate new position
+    return target_position - direction * new_distance    
 
 def replace_rotation_matrix(M1, M2):
     '''Replace rotation component of matrix 1 with matrix 2

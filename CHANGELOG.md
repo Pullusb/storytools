@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.19.0
+
+- added: Dolly (vertigo) option when using focal tweak (Ctrl+ drag on camera move forward). Toggle with `D` key, off by default
+- fixed: drag-n-drop snap cursor bugged in orthographic view
+
 2.18.1
 
 - changed: default picture in picture view quality.

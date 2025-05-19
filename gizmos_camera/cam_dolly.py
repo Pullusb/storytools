@@ -1,36 +1,7 @@
 import bpy
 from mathutils.geometry import intersect_line_plane
 from mathutils import Vector
-
-
-def calculate_dolly_zoom_position(old_position, target_position, old_focal_length, new_focal_length):
-    """
-    Calculates a new camera position for a dolly zoom effect based on focal length change.
-    Designed to be used in a modal operator with a slider.
-    
-    Args:
-        old_position: The previous/current camera position (mathutils.Vector)
-        target_position: The target position (mathutils.Vector)
-        old_focal_length: The previous/current focal length in mm
-        new_focal_length: The new focal length in mm
-    
-    Returns:
-        mathutils.Vector: The new camera position
-    """
-    # Get direction vector from old camera position to target
-    direction = (target_position - old_position).normalized()
-    
-    # Calculate current distance
-    current_distance = (target_position - old_position).length
-    
-    # Calculate new distance to maintain same field of view for subject
-    # The ratio of distances should equal the ratio of focal lengths
-    new_distance = current_distance * (new_focal_length / old_focal_length)
-    
-    # Calculate new position
-    new_position = target_position - direction * new_distance
-    
-    return new_position
+from .. import fn
 
 class STORYTOOLS_OT_dolly_zoom_cam(bpy.types.Operator):
     bl_idname = "storytools.dolly_zoom_cam"
@@ -62,7 +33,7 @@ class STORYTOOLS_OT_dolly_zoom_cam(bpy.types.Operator):
         camera.data.lens = self.focal_length
         
         # Calculate and update camera position
-        new_position = calculate_dolly_zoom_position(
+        new_position = fn.calculate_dolly_zoom_position(
             Vector(self.initial_camera_position),
             Vector(self.target_position),
             self.initial_focal_length,
