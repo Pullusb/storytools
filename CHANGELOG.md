@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.20.0
+
+- added: Button to create material from current vertex color
+
 2.19.0
 
 - added: Dolly (vertigo) option when using focal tweak (Ctrl+ drag on camera move forward). Toggle with `D` key, off by default

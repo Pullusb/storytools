@@ -1,6 +1,8 @@
 import bpy
 import re
 
+from mathutils import Color
+from math import isclose
 from bpy.types import Operator, PropertyGroup
 from bpy.props import (
     StringProperty,
@@ -169,11 +171,117 @@ class STORYTOOLS_OT_add_existing_materials(Operator):
     def execute(self, context):
         return {"FINISHED"}
 
+class STORYTOOLS_OT_create_material_from_color(bpy.types.Operator):
+    bl_idname = "storytools.create_material_from_color"
+    bl_label = "Create Material From Color"
+    bl_description = "Add new material from current greaese pencil vertex color"
+    bl_options = {"REGISTER", "INTERNAL"}
+
+    mode : bpy.props.EnumProperty(
+        items=(
+            ('STROKE', "Stroke", "Create a new material from color, with Stroke enabled"),
+            ('FILL', "Fill", "Create a new material from color, with Fill enabled"),
+            ('BOTH', "Both", "Create a new material from color, with Stroke and Fill enabled"),
+        ),
+        default='STROKE',
+        name="Mode",
+        description="New material stroke and fill settings",
+    )
+
+    @classmethod
+    def poll(cls, context):
+        return context.object and context.object.type == 'GREASEPENCIL'
+
+
+    def invoke(self, context, event):
+        self.obj = context.object
+        settings = context.tool_settings.gpencil_paint
+        ## Get current color and use it to crewate material
+        color = Color(settings.brush.color)
+        
+        ## Get the non-gamma corrected color
+        color = color.from_srgb_to_scene_linear()
+
+        ## Custom property to store an individual color
+        # print('color: ', color)
+
+        ## Add alpha 1.0 (need 4 components)
+        self.color = (color[0], color[1], color[2], 1.0)
+
+        ## TODO: check color against existing materials
+        ## if exists propose to use it (would happen for absolute color, of if comming from a palette)
+        ## list all materials with same value
+
+        self.similar_materials = []
+        for material in bpy.data.materials:
+            if not material.is_grease_pencil:
+                continue
+            if self.mode == 'STROKE' and (not material.grease_pencil.show_stroke or material.grease_pencil.show_fill):
+                continue
+            if self.mode == 'FILL' and (material.grease_pencil.show_stroke or not material.grease_pencil.show_fill):
+                continue
+            if self.mode == 'BOTH' and (not material.grease_pencil.show_stroke or not material.grease_pencil.show_fill):
+                continue
+
+            if self.mode in ('STROKE', 'BOTH'):
+                ref = material.grease_pencil.color
+            else:
+                ref = material.grease_pencil.fill_color
+
+            if material.grease_pencil.color:
+                # if not all(abs(ref[i] - self.color[i]) > 0.00000001 for i in range(3)):
+                if all(isclose(ref[i], self.color[i], abs_tol=0.0001) for i in range(3)):
+                    self.similar_materials.append(material)
+
+        if not self.similar_materials:
+            return self.execute(context)
+
+        return context.window_manager.invoke_props_dialog(
+            self,
+            width=360, 
+            title='Similar Materials Detected', 
+            confirm_text='Create New Material',
+            cancel_default=False)
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        col.label(text='Materials exists with same color:', icon='INFO')
+        for material in self.similar_materials:
+            row = col.row(align=True)
+            row.label(text=material.name) # , icon_value=material.preview_ensure().icon_id
+            text = 'Add To Stack'
+            icon = 'ADD'
+            if material in self.obj.data.materials[:]:
+                text = 'Already In Stack'
+                icon = 'CHECKMARK'
+                row.enabled = False
+            row.operator("storytools.load_material", text=text, icon=icon).name = material.name
+
+    def execute(self, context):
+        ## Find the name or use default
+        mat_name = "Color_fill" if self.mode == 'FILL' else "Color"
+        mat = bpy.data.materials.new(name=mat_name)
+        bpy.data.materials.create_gpencil_data(mat)
+        self.obj.data.materials.append(mat)
+
+        mat.grease_pencil.show_stroke = self.mode in ('STROKE', 'BOTH')
+        mat.grease_pencil.show_fill = self.mode in ('FILL', 'BOTH')
+        mat.grease_pencil.color = self.color
+        mat.grease_pencil.fill_color = self.color
+
+        ## Make new slot active
+        self.obj.active_material_index = len(self.obj.material_slots)
+
+        self.report({'INFO'}, f'Created material {mat.name}')
+        return {"FINISHED"}
+
 
 classes=(
     STORYTOOLS_OT_load_material,
     STORYTOOLS_OT_add_existing_materials,
     STORYTOOLS_OT_load_materials_from_object,
+    STORYTOOLS_OT_create_material_from_color,
 )
 
 def register(): 

@@ -556,7 +556,7 @@ class STORYTOOLS_PT_colors_ui(Panel):
             row.prop(mat.grease_pencil, "show_fill", text="Fill")
             row.prop(mat.grease_pencil, "fill_color", text="")
             return
-            
+
             ## Tried to show the full original "Surface" panel (use context.material that does not exists in viewport context):
             ## AttributeError: 'Context' object has no attribute 'material'
             # if not hasattr(bpy.types, "MATERIAL_PT_gpencil_surface"):
@@ -583,7 +583,7 @@ class STORYTOOLS_PT_create_material_ui(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Storytools" # Gpencil
-    bl_label = "Create Materials"
+    bl_label = "Create Material From Vertex Color"
     bl_parent_id = "STORYTOOLS_PT_colors_ui" # as_subpanel
     bl_options = {'DEFAULT_CLOSED'}
 
@@ -597,13 +597,18 @@ class STORYTOOLS_PT_create_material_ui(Panel):
         
         
         col = layout.column(align=True)
-        col.label(text='Create Material From Vertex Color:')
-        if settings.color_mode == 'MATERIAL':
+        # col.label(text='Create Material From Vertex Color:')
+        try:
+            # if settings.color_mode == 'MATERIAL':
             col.prop(settings.brush, 'color', text='')
-        row = col.row(align=True)
-        row.operator('storytools.create_material_from_color', text='Stroke').mode = 'STROKE'
-        row.operator('storytools.create_material_from_color', text='Fill').mode = 'FILL'
-        row.operator('storytools.create_material_from_color', text='Both').mode = 'BOTH'
+
+            row = col.row(align=True)
+            row.operator('storytools.create_material_from_color', text='Stroke').mode = 'STROKE'
+            row.operator('storytools.create_material_from_color', text='Fill').mode = 'FILL'
+            row.operator('storytools.create_material_from_color', text='Both').mode = 'BOTH'
+        
+        except Exception:
+            col.label(text='Need to enter draw mode once', icon='ERROR')
 
         ### Mix color and palette show greyed cause of the poll !
         ## Mix color
@@ -822,7 +827,7 @@ panel_classes = (
     STORYTOOLS_PT_materials_ui,
     STORYTOOLS_PT_brushes_ui, # Wrapper : Reference a native panel
     STORYTOOLS_PT_colors_ui, # Wrapper : Reference a native panel
-    # STORYTOOLS_PT_create_material_ui, # Wrapper : Reference a native panel, children of colors
+    STORYTOOLS_PT_create_material_ui, # Wrapper : Reference a native panel, children of colors
     STORYTOOLS_PT_palette_ui, # Wrapper : Reference a native panel
     STORYTOOLS_PT_tool_ui,
 )
