@@ -567,7 +567,7 @@ class STORYTOOLS_PT_colors_ui(Panel):
             #     material_surface_cls.draw(self, context)
             # else:
             #     layout.label(text="Can't display this panel here!", icon="ERROR")
-            
+
             # return
 
         if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_v3_brush_mixcolor"):
@@ -578,6 +578,53 @@ class STORYTOOLS_PT_colors_ui(Panel):
             mixcolor_cls.draw(self, context)
         else:
             layout.label(text="Can't display this panel here!", icon="ERROR")
+
+class STORYTOOLS_PT_create_material_ui(Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Storytools" # Gpencil
+    bl_label = "Create Materials"
+    bl_parent_id = "STORYTOOLS_PT_colors_ui" # as_subpanel
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.object and context.object.type == 'GREASEPENCIL'
+
+    def draw(self, context):
+        layout = self.layout
+        settings = context.scene.tool_settings.gpencil_paint
+        
+        
+        col = layout.column(align=True)
+        col.label(text='Create Material From Vertex Color:')
+        if settings.color_mode == 'MATERIAL':
+            col.prop(settings.brush, 'color', text='')
+        row = col.row(align=True)
+        row.operator('storytools.create_material_from_color', text='Stroke').mode = 'STROKE'
+        row.operator('storytools.create_material_from_color', text='Fill').mode = 'FILL'
+        row.operator('storytools.create_material_from_color', text='Both').mode = 'BOTH'
+
+        ### Mix color and palette show greyed cause of the poll !
+        ## Mix color
+        # if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_v3_brush_mixcolor"):
+        #     return
+        
+        # mixcolor_cls = bpy.types.VIEW3D_PT_tools_grease_pencil_v3_brush_mixcolor
+        # if not hasattr(mixcolor_cls, "poll") or mixcolor_cls.poll(context):
+        #     mixcolor_cls.draw(self, context)
+        # else:
+        #     layout.label(text="Can't display this panel here!", icon="ERROR")
+
+        ## Palette
+        # if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_brush_mix_palette"):
+        #     return
+        # palette_cls = bpy.types.VIEW3D_PT_tools_grease_pencil_brush_mix_palette
+        # if not hasattr(palette_cls, "poll") or palette_cls.poll(context):
+        #     palette_cls.draw(self, context)
+            
+        # else:
+        #     layout.label(text="Can't display this panel here!", icon="ERROR")
 
 class STORYTOOLS_PT_palette_ui(Panel):
     bl_space_type = "VIEW_3D"
@@ -775,6 +822,7 @@ panel_classes = (
     STORYTOOLS_PT_materials_ui,
     STORYTOOLS_PT_brushes_ui, # Wrapper : Reference a native panel
     STORYTOOLS_PT_colors_ui, # Wrapper : Reference a native panel
+    # STORYTOOLS_PT_create_material_ui, # Wrapper : Reference a native panel, children of colors
     STORYTOOLS_PT_palette_ui, # Wrapper : Reference a native panel
     STORYTOOLS_PT_tool_ui,
 )
