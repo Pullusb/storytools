@@ -5,6 +5,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 2.20.1
 
 - added: overlay origin position when scaling using gizmo button
+- added: another material in defaut material stack: line blue, to contrast with line red
 - changed: stronger highlight for toolpresets
 
 2.20.0
