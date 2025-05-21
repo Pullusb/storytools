@@ -163,7 +163,7 @@ class STORYTOOLS_OT_object_pan(Operator):
             ## Use intersect line plane on object origin and cam X-Z plane
             if lock == 'X':
                 plane_no = self.view_rotation @ Vector((0,1,0))
-            if lock == 'Y':
+            else: # lock == 'Y':
                 plane_no = self.view_rotation @ Vector((1,0,0))
             locked_pos = intersect_line_plane(new_loc, new_loc + plane_no, self.init_world_loc, plane_no)
             if locked_pos is not None:
@@ -602,6 +602,7 @@ class STORYTOOLS_OT_object_scale(Operator):
         if any(context.object.lock_scale):
             self.report({'ERROR'}, "Active object's scale is locked")
             return {'CANCELLED'}
+
         self.init_scale = context.object.scale.copy()
         self.init_mouse_x = event.mouse_x
 
@@ -609,11 +610,21 @@ class STORYTOOLS_OT_object_scale(Operator):
         self.current_delta = 0
         self.cumulated_delta = 0
 
+        self.object = context.object # Dcb optional
+        args = (self, context) # Dcb
+        self._pos_handle = bpy.types.SpaceView3D.draw_handler_add(draw.origin_position_callback, args, 'WINDOW', 'POST_VIEW') # Dcb
+
         context.window.cursor_set("SCROLL_X")
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
+    def exit_modal(self, context):
+        # context.area.header_text_set(None)
+        context.window.cursor_set("DEFAULT")
+        draw.stop_callback(self, context) # Dcb
+
     def modal(self, context, event):
+        # context.area.tag_redraw()
         multiplier = 0.01 if not event.shift else 0.001
         if event.shift != self.shift_pressed:
             self.shift_pressed = event.shift
@@ -631,22 +642,24 @@ class STORYTOOLS_OT_object_scale(Operator):
         # context.object.scale = self.init_scale + Vector([scale_offset]*3)
 
         if event.type == 'LEFTMOUSE':
-            context.window.cursor_set("DEFAULT")
-
             ## Key all transforms
             fn.key_object(context.object, use_autokey=True)
-
             ## Key only scale
             # fn.key_object(context.object, loc=False, rot=False, use_autokey=True)
-
+            
+            self.exit_modal(context)
             return {'FINISHED'}
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
             context.object.scale = self.init_scale
-            context.window.cursor_set("DEFAULT")
+            
+            self.exit_modal(context)
             return {'CANCELLED'}
         
         return {'RUNNING_MODAL'}
+
+    def execute(self, context):
+        return {"FINISHED"}
 
 class STORYTOOLS_OT_object_key_transform(Operator):
     bl_idname = "storytools.object_key_transform"

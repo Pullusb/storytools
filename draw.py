@@ -121,6 +121,8 @@ def origin_position_callback(self, context):
     elif hasattr(self, 'ob'):
         ## Single object
         coords = [self.ob.matrix_world @ v for v in cross_coord]
+    elif context.object:
+        coords = [context.object.matrix_world @ v for v in cross_coord]
     else:
         return
 

@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.20.1
+
+- added: overlay origin position when scaling using gizmo button
+- changed: stronger highlight for toolpresets
+
 2.20.0
 
 - added: Button to create material from current vertex color

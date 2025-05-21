@@ -57,12 +57,7 @@ class STORYTOOLS_GGT_toolpreset_bar(GizmoGroup):
             if not kmi.active or not props.show:
                 continue
             gz = self.gizmos.new("GIZMO_GT_button_2d")
-
-            # fallback_icon = 'GPBRUSH_PEN' if bpy.app.version < (4,3,0) else 'GREASEPENCIL'
-            # icon = props.icon if props.icon in available_icons else fallback_icon
-            # fn.set_gizmo_settings(gz, icon=icon, alpha=0, alpha_highlight=0.2)
-
-            fn.set_gizmo_settings(gz, icon=props.icon, alpha=0, alpha_highlight=0.2)
+            fn.set_gizmo_settings(gz, icon=props.icon, alpha=0, alpha_highlight=0.6) # , alpha=0.4, alpha_highlight=0.5
 
             op = gz.target_set_operator("storytools.set_draw_tool")
             op.name = props.name
