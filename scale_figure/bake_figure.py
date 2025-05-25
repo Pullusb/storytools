@@ -115,6 +115,11 @@ def scale_figure_as_layer():
     flat_positions = sum(chains, []) # list of vec3
     start = drawing.curve_offsets[len(drawing.strokes) - len(chains)].value
     end = drawing.curve_offsets[len(drawing.strokes)].value
+
+    ## Ensure the 'radius' attribute exists (had error in blender 4.4.3)
+    if drawing.attributes.get('radius') is None:
+        drawing.attributes.new("radius", 'FLOAT', 'POINT')
+
     for i in range(start, end):
         drawing.attributes['position'].data[i].vector = flat_positions[i-start]
         drawing.attributes['radius'].data[i].value = 0.008

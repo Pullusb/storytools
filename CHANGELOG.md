@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.20.2
+
+- fixed: error with the scale figure layer baking
+
 2.20.1
 
 - added: overlay origin position when scaling using gizmo button
