@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.20.3
+
+- fixed: bug with GP offset frame (using `ctrl+click` on new frame) due to API changes in blender 4.4
+
 2.20.2
 
 - fixed: error with the scale figure layer baking

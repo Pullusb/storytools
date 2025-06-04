@@ -39,7 +39,10 @@ def apply_offset_at_frame(available_layers, frame_number, offset):
     for layer in available_layers:
         for frame in reversed(layer.frames):
             if frame.frame_number >= frame_number:
-                frame.frame_number = frame.frame_number + offset
+                if bpy.app.version < (4, 4, 0):
+                    frame.frame_number = frame.frame_number + offset
+                else:
+                    layer.frames.move(frame.frame_number, frame.frame_number + offset)
 
 class STORYTOOLS_OT_new_frame(Operator):
     bl_idname = "storytools.new_frame"
