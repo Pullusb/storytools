@@ -5,6 +5,11 @@ from bpy.props import FloatProperty, IntProperty, EnumProperty, BoolProperty
 from bpy.types import Operator, Panel
 from mathutils import Vector
 
+# TODO:
+# - Add option to add a frame for the canvas itself
+# - Add option to create an orthographic camera facing the canvas
+# - Optionally : Add place for action notes, dialog notes, scene, panel numbers
+# - Out of this operator scope, but find a way to somehow detect the frames for easy rearange, duplicate, add, remove, etc
 
 class STORYTOOLS_OT_create_frame_grid(Operator):
     """Create a grid of frames using grease pencil strokes"""
@@ -305,7 +310,11 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         
         # Setup layer, frame, material
         if not (layer := gp.layers.get('Frames')):
-            layer = gp.layers.new('Frames')
+            layer = gp.layers.new('Frames', set_active=False)
+            layer.lock = True
+            ## Sent to bottom -> Should probably stay at the top of the stack to see even with overlapping drawings.
+            gp.layers.move_bottom(layer)
+
         
         frame = next((f for f in layer.frames), None)
         if frame is None:
@@ -388,8 +397,9 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
                     pt.position = corners[i]
                     pt.radius = 0.02
         
-        self.report({'INFO'}, 
-            f"Created {self.rows * self.columns} frames ({self.rows}x{self.columns} grid)")
+        ## Loop when using redo panel
+        # self.report({'INFO'}, 
+        #     f"Created {self.rows * self.columns} frames ({self.rows}x{self.columns} grid)")
         
         return {'FINISHED'}
 
