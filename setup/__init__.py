@@ -3,6 +3,7 @@ from . import (workspace_setup,
                viewport_options,
                story_palettes,
                git_update,
+               create_panel_grid,
                ui,
                )
 
@@ -12,6 +13,7 @@ modules = (
     viewport_options,
     story_palettes,
     git_update,
+    create_panel_grid,
     ui,
 )
 
