@@ -6,8 +6,7 @@ from bpy.props import FloatProperty, IntProperty, EnumProperty, BoolProperty
 from bpy.types import Operator, Panel
 from mathutils import Vector
 
-# Ensure orthographic camera(s) fit the pages
-# Add separate material for the lines
+# Option 
 # Add option for radius
 
 class STORYTOOLS_OT_create_frame_grid(Operator):
@@ -195,7 +194,8 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         description="Number of pages to create (stacked vertically)",
         default=1,
         min=1,
-        max=10
+        soft_max=100,
+        max=1000
     )
     
     page_spacing: FloatProperty(
@@ -212,7 +212,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
     show_canvas_frame: BoolProperty(
         name="Show Canvas Frame",
         description="Add a border around the canvas to visualize its bounds",
-        default=True
+        default=False
     )
     
     # Camera setup
@@ -274,7 +274,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         
         # Canvas settings
         box = layout.box()
-        box.label(text="Canvas Settings", icon='MESH_PLANE')
+        box.label(text="Canvas Settings", icon='FILE') # MESH_PLANE
         
         row = box.row()
         row.prop(self, "canvas_preset")
@@ -296,7 +296,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         
         # Frame settings  
         box = layout.box()
-        box.label(text="Panel Settings", icon='IMAGE_RGB')
+        box.label(text="Panel Settings", icon='OUTLINER_DATA_GP_LAYER') # IMAGE_RGB
         box.prop(self, "ratio_preset")
         if self.ratio_preset == 'CUSTOM':
             box.prop(self, "use_custom_xy")
@@ -446,9 +446,19 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
                 reused_count += 1
             else:
                 # Create new camera
-                bpy.ops.object.camera_add(location=(0, -10, 0))
-                camera_obj = context.active_object
-                camera_obj.name = camera_name
+                cam_data = bpy.data.cameras.new(camera_name)
+                camera_obj = bpy.data.objects.new(camera_name, cam_data)
+                # TODO: add in dedicated Storyboard camera collections (easy to hide if needed)
+                if not (cam_collection := bpy.data.collections.get("Storyboard Cameras")):
+                    # Create collection if it doesn't exist
+                    cam_collection = bpy.data.collections.new("Storyboard Cameras")
+                if not cam_collection in context.scene.collection.children_recursive:
+                    context.scene.collection.children.link(cam_collection)
+
+                # bpy.context.scene.collection.objects.link(camera_obj)
+                # if not camera_obj in context.scene.collection.all_objects:
+                cam_collection.objects.link(camera_obj)
+
                 created_count += 1
             
             camera = camera_obj.data
