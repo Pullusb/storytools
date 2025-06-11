@@ -1,23 +1,20 @@
-## Create a grid of panel suitable for quick storyboard thumbnails.
+## Create a grid of panel suitable for static storyboard or quick thumbnails.
+# 1.1
 
 import bpy
 from bpy.props import FloatProperty, IntProperty, EnumProperty, BoolProperty
 from bpy.types import Operator, Panel
 from mathutils import Vector
 
-# TODO:
-# - option: Reserve a space at the right of each panel zone to let user write action and dialog notes (with little space on top for scene, panel numbers).
-# - option: Add panel_margin value, to add a space between each panel, this is different than the "coverage" value that affect the size within reserved drawing space.
-# - option: create an orthographic camera facing the canvas with the right orthographic scale to fit the page (and set scene resolution to match ratio)
-# - option: add a frame to visualize the canvas itself
-
-# - Out of this operator scope, but find a way to somehow detect the frames for easy rearange, duplicate, add, remove, etc
+# Ensure orthographic camera(s) fit the pages
+# Add separate material for the lines
+# Add option for radius
 
 class STORYTOOLS_OT_create_frame_grid(Operator):
     """Create a grid of frames using grease pencil strokes"""
     bl_idname = "storytools.create_frame_grid"
     bl_label = "Create Frame Grid"
-    bl_description = "Create a grid of rectangular frames"
+    bl_description = "Create storyboard grid with cutomizable features"
     bl_options = {'REGISTER', 'UNDO'}
     
     # Canvas presets
@@ -84,10 +81,21 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         max=20
     )
     
+    # Panel margin
+    panel_margin: FloatProperty(
+        name="Panel Margin",
+        description="Space between panels in the grid",
+        default=0.2,
+        min=0.0,
+        max=2.0,
+        step=0.1,
+        precision=2
+    )
+    
     # Frame settings
     coverage: FloatProperty(
         name="Coverage (%)",
-        description="Percentage of space each frame occupies",
+        description="Percentage of space each frame occupies within its allocated area",
         default=90.0,
         min=10.0,
         max=100.0,
@@ -148,6 +156,82 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         default='16_9'
     )
     
+    # NEW: Notes space
+    include_notes: BoolProperty(
+        name="Include Notes Space",
+        description="Reserve space on the right for action and dialog notes",
+        default=True
+    )
+    
+    notes_width_percent: FloatProperty(
+        name="Notes Width (%)",
+        description="Percentage of panel width to reserve for notes",
+        default=30.0,
+        min=10.0,
+        max=50.0,
+        step=1,
+        precision=1
+    )
+    
+    notes_header_height: FloatProperty(
+        name="Notes Header Height",
+        description="Height reserved for scene/panel number at top of notes area",
+        default=0.3,
+        min=0.0,
+        max=1.0,
+        step=0.1,
+        precision=2
+    )
+    
+    show_notes_frames: BoolProperty(
+        name="Show Notes Frames",
+        description="Show frame lines around the notes area (enclosing whole panel)",
+        default=True
+    )
+    
+    # NEW: Multiple pages
+    num_pages: IntProperty(
+        name="Number of Pages",
+        description="Number of pages to create (stacked vertically)",
+        default=1,
+        min=1,
+        max=10
+    )
+    
+    page_spacing: FloatProperty(
+        name="Page Spacing",
+        description="Vertical spacing between pages",
+        default=1.0,
+        min=0.0,
+        max=5.0,
+        step=0.1,
+        precision=2
+    )
+    
+    # NEW: Canvas frame
+    show_canvas_frame: BoolProperty(
+        name="Show Canvas Frame",
+        description="Add a border around the canvas to visualize its bounds",
+        default=True
+    )
+    
+    # NEW: Camera setup
+    create_camera: BoolProperty(
+        name="Create Camera",
+        description="Create an orthographic camera to frame the storyboard",
+        default=True
+    )
+    
+    camera_margin: FloatProperty(
+        name="Camera Margin",
+        description="Extra space around the canvas for the camera view",
+        default=1.0,
+        min=0.0,
+        max=5.0,
+        step=0.1,
+        precision=2
+    )
+    
     force_new_object: BoolProperty(
         name="Create New Object",
         description="Force creation of a new grease pencil object instead of using the active one",
@@ -174,10 +258,9 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         elif self.canvas_preset == 'SQUARE_MEDIUM':
             self.canvas_x = 12.0
             self.canvas_y = 12.0
-        # CUSTOM doesn't change values
     
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=400)
+        return context.window_manager.invoke_props_dialog(self, width=450)
     
     def draw(self, context):
         layout = self.layout
@@ -186,23 +269,27 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         box = layout.box()
         box.label(text="Canvas Settings", icon='MESH_PLANE')
         
-        # Canvas preset with update callback
         row = box.row()
         row.prop(self, "canvas_preset")
-        # if self.canvas_preset != 'CUSTOM':
-        #     row.operator("storytools.update_canvas_preset", text="", icon='FILE_REFRESH')
         
         col = box.column(align=True)
-        # TODO: add value to choose overall canvas size when not in custom to affect the end real world size.
         col.enabled = self.canvas_preset == 'CUSTOM'
         col.prop(self, "canvas_x")
         col.prop(self, "canvas_y")
             
         box.prop(self, "canvas_margin")
+        box.prop(self, "show_canvas_frame")
+        
+        # Multiple pages
+        box = layout.box()
+        box.label(text="Pages", icon='DOCUMENTS')
+        box.prop(self, "num_pages")
+        if self.num_pages > 1:
+            box.prop(self, "page_spacing")
         
         # Frame settings  
         box = layout.box()
-        box.label(text="Panel Settings", icon='IMAGE_RGB') # Frame Settings
+        box.label(text="Panel Settings", icon='IMAGE_RGB')
         box.prop(self, "ratio_preset")
         if self.ratio_preset == 'CUSTOM':
             box.prop(self, "use_custom_xy")
@@ -210,7 +297,6 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
                 col = box.column(align=True)
                 col.prop(self, "custom_ratio_x")
                 col.prop(self, "custom_ratio_y")
-                # Show calculated ratio
                 if self.custom_ratio_y > 0:
                     calculated_ratio = self.custom_ratio_x / self.custom_ratio_y
                     box.label(text=f"Ratio: {calculated_ratio:.3f}")
@@ -224,55 +310,205 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         col = box.column(align=True)
         col.prop(self, "rows")
         col.prop(self, "columns")
+        box.prop(self, "panel_margin")
+        
+        # Notes settings
+        box = layout.box()
+        box.label(text="Notes Settings", icon='TEXT')
+        box.prop(self, "include_notes")
+        if self.include_notes:
+            box.prop(self, "notes_width_percent")
+            box.prop(self, "notes_header_height")
+            box.prop(self, "show_notes_frames")
+        
+        # Camera settings
+        box = layout.box()
+        box.label(text="Camera Settings", icon='CAMERA_DATA')
+        box.prop(self, "create_camera")
+        if self.create_camera:
+            box.prop(self, "camera_margin")
         
         # Object settings
         box = layout.box()
         box.label(text="Object Settings", icon='OUTLINER_OB_GREASEPENCIL')
         box.prop(self, "force_new_object")
-        # TODO: Add option to create separate material or use line (if exists)
         
         # Preview info
         layout.separator()
-        total_frames = self.rows * self.columns
-        layout.label(text=f"Total Frames: {total_frames}", icon='INFO')
+        total_frames = self.rows * self.columns * self.num_pages
+        layout.label(text=f"Total Frames: {total_frames} ({self.rows}x{self.columns} x {self.num_pages} pages)", icon='INFO')
         
         # Calculate and show frame dimensions
+        self._show_frame_dimensions(layout)
+    
+    def _show_frame_dimensions(self, layout):
+        """Calculate and display frame dimensions in the UI"""
         effective_canvas_x = self.canvas_x - (2 * self.canvas_margin)
         effective_canvas_y = self.canvas_y - (2 * self.canvas_margin)
         
         if effective_canvas_x > 0 and effective_canvas_y > 0:
-            space_x = effective_canvas_x / self.columns
-            space_y = effective_canvas_y / self.rows
+            # Account for panel margins
+            grid_width = effective_canvas_x - (self.columns - 1) * self.panel_margin
+            grid_height = effective_canvas_y - (self.rows - 1) * self.panel_margin
             
-            available_x = space_x * self.coverage / 100
-            available_y = space_y * self.coverage / 100
-            
-            # Get current ratio
-            current_ratio = self.frame_ratio
-            if self.ratio_preset != 'CUSTOM':
-                ratio_values = {
-                    '16_9': 1.778, '16_10': 1.600, '4_3': 1.333, '3_2': 1.500,
-                    '185_1': 1.850, '235_1': 2.350, '1_1': 1.000, '9_16': 0.563
-                }
-                current_ratio = ratio_values[self.ratio_preset]
-            elif self.use_custom_xy and self.custom_ratio_y > 0:
-                current_ratio = self.custom_ratio_x / self.custom_ratio_y
-            
-            # Calculate frame size
-            if available_x / current_ratio <= available_y:
-                frame_width = available_x
-                frame_height = available_x / current_ratio
-            else:
-                frame_height = available_y
-                frame_width = available_y * current_ratio
+            if grid_width > 0 and grid_height > 0:
+                space_x = grid_width / self.columns
+                space_y = grid_height / self.rows
                 
-            layout.label(text=f"Frame Size: {frame_width:.2f} x {frame_height:.2f}")
+                # Calculate drawing area within each panel space
+                if self.include_notes:
+                    drawing_width = space_x * (100 - self.notes_width_percent) / 100
+                    notes_width = space_x * self.notes_width_percent / 100
+                else:
+                    drawing_width = space_x
+                    notes_width = 0
+                
+                # Apply coverage to get available drawing space
+                available_x = drawing_width * self.coverage / 100
+                available_y = space_y * self.coverage / 100
+                
+                # Get current ratio
+                current_ratio = self._get_current_ratio()
+                
+                # Calculate final frame size
+                if available_x / current_ratio <= available_y:
+                    frame_width = available_x
+                    frame_height = available_x / current_ratio
+                else:
+                    frame_height = available_y
+                    frame_width = available_y * current_ratio
+                    
+                layout.label(text=f"Frame Size: {frame_width:.2f} x {frame_height:.2f}")
+                layout.label(text=f"Drawing Area: {drawing_width:.2f} x {space_y:.2f}")
+                if self.include_notes:
+                    layout.label(text=f"Notes Area: {notes_width:.2f} x {space_y:.2f}")
+                    
+                # Show coverage effect
+                if self.coverage < 100:
+                    layout.label(text=f"Available Space: {available_x:.2f} x {available_y:.2f}")
+            else:
+                layout.label(text="Error: Panel margins too large!", icon='ERROR')
+    
+    def _get_current_ratio(self):
+        """Get the current aspect ratio based on settings"""
+        if self.ratio_preset != 'CUSTOM':
+            ratio_values = {
+                '16_9': 1.778, '16_10': 1.600, '4_3': 1.333, '3_2': 1.500,
+                '185_1': 1.850, '235_1': 2.350, '1_1': 1.000, '9_16': 0.563
+            }
+            return ratio_values[self.ratio_preset]
+        elif self.use_custom_xy and self.custom_ratio_y > 0:
+            return self.custom_ratio_x / self.custom_ratio_y
+        else:
+            return self.frame_ratio
+    
+    def _create_camera(self, context, total_canvas_height):
+        """Create and setup orthographic camera"""
+        # Calculate camera bounds
+        cam_width = self.canvas_x + 2 * self.camera_margin
+        cam_height = total_canvas_height + 2 * self.camera_margin
+        
+        # Create camera
+        bpy.ops.object.camera_add(location=(0, -10, 0))
+        camera_obj = context.active_object
+        camera_obj.name = "Storyboard Camera"
+        camera = camera_obj.data
+        
+        # Set to orthographic
+        camera.type = 'ORTHO'
+        camera.ortho_scale = max(cam_width, cam_height)
+        
+        # Position camera to look at the center of all pages
+        camera_obj.location = (0, -10, total_canvas_height / 2 - self.canvas_y / 2)
+        camera_obj.rotation_euler = (1.5708, 0, 0)  # 90 degrees in radians
+        
+        # Set scene resolution to match canvas ratio
+        scene = context.scene
+        if cam_width > cam_height:
+            scene.render.resolution_x = 1920
+            scene.render.resolution_y = int(1920 * cam_height / cam_width)
+        else:
+            scene.render.resolution_y = 1920
+            scene.render.resolution_x = int(1920 * cam_width / cam_height)
+        
+        # Set camera as active
+        scene.camera = camera_obj
+        
+        return camera_obj
+    
+    def _create_canvas_frame(self, drawing, mat_index, page_y_offset=0):
+        """Create a border frame around the canvas"""
+        half_width = self.canvas_x / 2
+        half_height = self.canvas_y / 2
+        
+        corners = [
+            Vector((-half_width, 0, half_height + page_y_offset)),    # top-left
+            Vector((half_width, 0, half_height + page_y_offset)),     # top-right
+            Vector((half_width, 0, -half_height + page_y_offset)),    # bottom-right
+            Vector((-half_width, 0, -half_height + page_y_offset)),   # bottom-left
+        ]
+        
+        drawing.add_strokes([4])
+        stroke = drawing.strokes[-1]
+        stroke.cyclic = True
+        stroke.material_index = mat_index
+        
+        for i, pt in enumerate(stroke.points):
+            pt.position = corners[i]
+            pt.radius = 0.03  # Slightly thicker for canvas frame
+    
+    def _create_panel_frame(self, drawing, mat_index, center_x, center_y, width, height):
+        """Create a frame around the entire panel area with notes separator lines"""
+        half_width = width / 2
+        half_height = height / 2
+        
+        # Create outer frame around entire panel
+        corners = [
+            Vector((center_x - half_width, 0, center_y + half_height)),  # top-left
+            Vector((center_x + half_width, 0, center_y + half_height)),  # top-right
+            Vector((center_x + half_width, 0, center_y - half_height)),  # bottom-right
+            Vector((center_x - half_width, 0, center_y - half_height)),  # bottom-left
+        ]
+        
+        drawing.add_strokes([4])
+        stroke = drawing.strokes[-1]
+        stroke.cyclic = True
+        stroke.material_index = mat_index
+        
+        for i, pt in enumerate(stroke.points):
+            pt.position = corners[i]
+            pt.radius = 0.015
+        
+        # Add vertical separator line between drawing and notes area
+        notes_width_ratio = self.notes_width_percent / 100
+        separator_x = center_x - half_width + width * (1 - notes_width_ratio)
+        
+        drawing.add_strokes([2])
+        stroke = drawing.strokes[-1]
+        stroke.material_index = mat_index
+        
+        stroke.points[0].position = Vector((separator_x, 0, center_y + half_height))
+        stroke.points[1].position = Vector((separator_x, 0, center_y - half_height))
+        stroke.points[0].radius = 0.015
+        stroke.points[1].radius = 0.015
+        
+        # Add header separator line in notes area if header height > 0
+        if self.notes_header_height > 0:
+            header_y = center_y + half_height - self.notes_header_height
+            
+            drawing.add_strokes([2])
+            stroke = drawing.strokes[-1]
+            stroke.material_index = mat_index
+            
+            stroke.points[0].position = Vector((separator_x, 0, header_y))
+            stroke.points[1].position = Vector((center_x + half_width, 0, header_y))
+            stroke.points[0].radius = 0.015
+            stroke.points[1].radius = 0.015
     
     def execute(self, context):
-        # Update canvas dimensions from preset
+        # Update canvas dimensions and ratio from presets
         self.update_canvas_preset(context)
         
-        # Update ratio from preset if not custom
         if self.ratio_preset != 'CUSTOM':
             ratio_values = {
                 '16_9': 1.778, '16_10': 1.600, '4_3': 1.333, '3_2': 1.500,
@@ -280,26 +516,22 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
             }
             self.frame_ratio = ratio_values[self.ratio_preset]
         elif self.use_custom_xy:
-            # Calculate ratio from x:y values
             if self.custom_ratio_y > 0:
                 self.frame_ratio = self.custom_ratio_x / self.custom_ratio_y
         
-        # Determine if we need to create a new grease pencil object
+        # Create or get grease pencil object
         need_new_object = (self.force_new_object or 
                           not context.object or 
                           context.object.type != 'GREASEPENCIL')
         
         if need_new_object:
-            # Create a new grease pencil object
-            STORYTOOLS_data = bpy.data.grease_pencils_v3.new("Frame Grid")
-            obj = bpy.data.objects.new("Frame Grid", STORYTOOLS_data)
+            gp_data = bpy.data.grease_pencils_v3.new("Storyboard Grid")
+            obj = bpy.data.objects.new("Storyboard Grid", gp_data)
             context.collection.objects.link(obj)
             
-            # Make it the active object
             context.view_layer.objects.active = obj
             obj.select_set(True)
             
-            # Deselect other objects
             for other_obj in context.selected_objects:
                 if other_obj != obj:
                     other_obj.select_set(False)
@@ -310,13 +542,11 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         
         gp = obj.data
         
-        # Setup layer, frame, material
+        # Setup layers and materials
         if not (layer := gp.layers.get('Frames')):
             layer = gp.layers.new('Frames', set_active=False)
             layer.lock = True
-            ## Sent to bottom -> Should probably stay at the top of the stack to see even with overlapping drawings.
             gp.layers.move_bottom(layer)
-
         
         frame = next((f for f in layer.frames), None)
         if frame is None:
@@ -342,7 +572,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         # Clear existing strokes
         drawing.remove_strokes()
         
-        # Apply margin to canvas
+        # Calculate dimensions
         effective_canvas_x = self.canvas_x - (2 * self.canvas_margin)
         effective_canvas_y = self.canvas_y - (2 * self.canvas_margin)
         
@@ -350,13 +580,26 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
             self.report({'ERROR'}, 'Canvas margin too large for canvas size')
             return {'CANCELLED'}
         
-        # Calculate frame dimensions
-        space_x = effective_canvas_x / self.columns
-        space_y = effective_canvas_y / self.rows
+        # Account for panel margins
+        grid_width = effective_canvas_x - (self.columns - 1) * self.panel_margin
+        grid_height = effective_canvas_y - (self.rows - 1) * self.panel_margin
         
-        available_x = space_x * self.coverage / 100
+        if grid_width <= 0 or grid_height <= 0:
+            self.report({'ERROR'}, 'Panel margin too large for grid')
+            return {'CANCELLED'}
+        
+        space_x = grid_width / self.columns
+        space_y = grid_height / self.rows
+        
+        # Calculate drawing area (accounting for notes)
+        drawing_width = space_x
+        if self.include_notes:
+            drawing_width = space_x * (100 - self.notes_width_percent) / 100
+        
+        available_x = drawing_width * self.coverage / 100
         available_y = space_y * self.coverage / 100
         
+        # Calculate frame size
         if available_x / self.frame_ratio <= available_y:
             frame_width = available_x
             frame_height = available_x / self.frame_ratio
@@ -364,44 +607,90 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
             frame_height = available_y
             frame_width = available_y * self.frame_ratio
         
-        # Calculate start position (accounting for margin)
-        start_corner = Vector((
-            -(effective_canvas_x / 2), 
-            0, 
-            (effective_canvas_y / 2)
-        ))
+        # Create frames for all pages
+        total_canvas_height = self.num_pages * self.canvas_y + (self.num_pages - 1) * self.page_spacing
         
-        # Create frames
-        for r_idx in range(self.rows):
-            for c_idx in range(self.columns):
-                # Calculate frame center position
-                center_x = start_corner.x + (c_idx + 0.5) * space_x
-                center_y = start_corner.z - (r_idx + 0.5) * space_y
-                
-                # Calculate corners
-                half_width = frame_width / 2
-                half_height = frame_height / 2
-                
-                corners = [
-                    Vector((center_x - half_width, 0, center_y + half_height)),  # top-left
-                    Vector((center_x + half_width, 0, center_y + half_height)),  # top-right
-                    Vector((center_x + half_width, 0, center_y - half_height)),  # bottom-right
-                    Vector((center_x - half_width, 0, center_y - half_height)),  # bottom-left
-                ]
-                
-                # Create stroke
-                drawing.add_strokes([4])
-                stroke = drawing.strokes[-1]
-                stroke.cyclic = True
-                stroke.material_index = mat_index
-                
-                for i, pt in enumerate(stroke.points):
-                    pt.position = corners[i]
-                    pt.radius = 0.02
+        for page in range(self.num_pages):
+            page_y_offset = -(page * (self.canvas_y + self.page_spacing))
+            
+            # Create canvas frame if requested
+            if self.show_canvas_frame:
+                self._create_canvas_frame(drawing, mat_index, page_y_offset)
+            
+            # Calculate start position for this page (top-left of the drawing area)
+            start_x = -(effective_canvas_x / 2)
+            start_y = (effective_canvas_y / 2) + page_y_offset
+            
+            # Create panel frames
+            panel_count = 0
+            for r_idx in range(self.rows):
+                for c_idx in range(self.columns):
+                    panel_count += 1
+                    
+                    # Calculate panel boundaries (including margins)
+                    panel_left = start_x + c_idx * (space_x + self.panel_margin)
+                    panel_right = panel_left + space_x
+                    panel_top = start_y - r_idx * (space_y + self.panel_margin)
+                    panel_bottom = panel_top - space_y
+                    
+                    panel_center_y = (panel_top + panel_bottom) / 2
+                    
+                    # Calculate drawing area within the panel
+                    if self.include_notes:
+                        # Drawing area is on the left side of the panel
+                        drawing_left = panel_left
+                        drawing_right = panel_left + drawing_width
+                    else:
+                        # Drawing area is centered in the panel
+                        drawing_left = panel_left + (space_x - drawing_width) / 2
+                        drawing_right = drawing_left + drawing_width
+                    
+                    drawing_center_x = (drawing_left + drawing_right) / 2
+                    
+                    # Apply coverage to center the frame within the drawing area
+                    available_drawing_x = drawing_width * self.coverage / 100
+                    available_drawing_y = space_y * self.coverage / 100
+                    
+                    # Calculate final frame size (already calculated above, but recalculate for clarity)
+                    if available_drawing_x / self.frame_ratio <= available_drawing_y:
+                        final_frame_width = available_drawing_x
+                        final_frame_height = available_drawing_x / self.frame_ratio
+                    else:
+                        final_frame_height = available_drawing_y
+                        final_frame_width = available_drawing_y * self.frame_ratio
+                    
+                    # Create drawing frame (centered within the drawing area)
+                    half_width = final_frame_width / 2
+                    half_height = final_frame_height / 2
+                    
+                    corners = [
+                        Vector((drawing_center_x - half_width, 0, panel_center_y + half_height)),  # top-left
+                        Vector((drawing_center_x + half_width, 0, panel_center_y + half_height)),  # top-right
+                        Vector((drawing_center_x + half_width, 0, panel_center_y - half_height)),  # bottom-right
+                        Vector((drawing_center_x - half_width, 0, panel_center_y - half_height)),  # bottom-left
+                    ]
+                    
+                    drawing.add_strokes([4])
+                    stroke = drawing.strokes[-1]
+                    stroke.cyclic = True
+                    stroke.material_index = mat_index
+                    
+                    for i, pt in enumerate(stroke.points):
+                        pt.position = corners[i]
+                        pt.radius = 0.02
+                    
+                    # Create notes frame if requested and if show_notes_frames is enabled
+                    if self.include_notes and self.show_notes_frames:
+                        # Create frame around the entire panel area (not just notes portion)
+                        panel_center_x = (panel_left + panel_right) / 2
+                        self._create_panel_frame(drawing, mat_index, panel_center_x, panel_center_y, space_x, space_y)
         
-        ## Loop when using redo panel
-        # self.report({'INFO'}, 
-        #     f"Created {self.rows * self.columns} frames ({self.rows}x{self.columns} grid)")
+        # Create camera if requested
+        if self.create_camera:
+            self._create_camera(context, total_canvas_height)
+        
+        total_frames = self.rows * self.columns * self.num_pages
+        self.report({'INFO'}, f"Created {total_frames} frames on {self.num_pages} page(s)")
         
         return {'FINISHED'}
 
@@ -420,7 +709,7 @@ class STORYTOOLS_PT_frame_grid_panel(Panel):
 
 classes = (
     STORYTOOLS_OT_create_frame_grid,
-    # STORYTOOLS_PT_frame_grid_panel,  # Panel for use in standalone mode, should fo into storuytools.ui
+    # STORYTOOLS_PT_frame_grid_panel,  # Panel for use in standalone mode
 )
 
 def register():
