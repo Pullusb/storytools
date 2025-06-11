@@ -156,7 +156,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         default='16_9'
     )
     
-    # NEW: Notes space
+    # Notes space
     include_notes: BoolProperty(
         name="Include Notes Space",
         description="Reserve space on the right for action and dialog notes",
@@ -189,7 +189,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         default=True
     )
     
-    # NEW: Multiple pages
+    # Multiple pages
     num_pages: IntProperty(
         name="Number of Pages",
         description="Number of pages to create (stacked vertically)",
@@ -208,14 +208,14 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         precision=2
     )
     
-    # NEW: Canvas frame
+    # Canvas frame
     show_canvas_frame: BoolProperty(
         name="Show Canvas Frame",
         description="Add a border around the canvas to visualize its bounds",
         default=True
     )
     
-    # NEW: Camera setup
+    # Camera setup
     create_camera: BoolProperty(
         name="Create Camera",
         description="Create an orthographic camera to frame the storyboard",
@@ -230,6 +230,13 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         max=5.0,
         step=0.1,
         precision=2
+    )
+    
+    # Timeline markers
+    add_timeline_markers: BoolProperty(
+        name="Add Timeline Markers",
+        description="Add timeline markers bound to camera frame numbers",
+        default=False
     )
     
     force_new_object: BoolProperty(
@@ -327,6 +334,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         box.prop(self, "create_camera")
         if self.create_camera:
             box.prop(self, "camera_margin")
+            box.prop(self, "add_timeline_markers")
         
         # Object settings
         box = layout.box()
@@ -416,8 +424,10 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
             return self.frame_ratio
     
     def _create_cameras(self, context):
-        """Create and setup orthographic cameras for each page"""
+        """Create or reuse orthographic cameras for each page"""
         camera_objects = []
+        created_count = 0
+        reused_count = 0
         
         for page in range(self.num_pages):
             # Calculate camera bounds for this page
@@ -427,11 +437,20 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
             # Calculate Y offset for this page
             page_y_offset = -(page * (self.canvas_y + self.page_spacing))
             
-            # Create camera with numbered name
+            # Check if camera already exists
             camera_name = f"stb_cam_{page + 1:02d}"
-            bpy.ops.object.camera_add(location=(0, -10, 0))
-            camera_obj = context.active_object
-            camera_obj.name = camera_name
+            camera_obj = bpy.data.objects.get(camera_name)
+            
+            if camera_obj and camera_obj.type == 'CAMERA':
+                # Reuse existing camera
+                reused_count += 1
+            else:
+                # Create new camera
+                bpy.ops.object.camera_add(location=(0, -10, 0))
+                camera_obj = context.active_object
+                camera_obj.name = camera_name
+                created_count += 1
+            
             camera = camera_obj.data
             
             # Set to orthographic
@@ -458,6 +477,36 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
             camera_objects.append(camera_obj)
         
         return camera_objects
+    
+    def _create_timeline_markers(self, context, camera_objects):
+        """Create timeline markers for each camera"""
+        scene = context.scene
+        created_markers = 0
+        updated_markers = 0
+        
+        for page, camera_obj in enumerate(camera_objects):
+            marker_name = camera_obj.name  # Use same name as camera
+            frame_number = page + 1  # Frame 1, 2, 3, etc.
+            
+            # Check if marker already exists
+            existing_marker = None
+            for marker in scene.timeline_markers:
+                if marker.name == marker_name:
+                    existing_marker = marker
+                    break
+            
+            if existing_marker:
+                # Update existing marker
+                existing_marker.frame = frame_number
+                if hasattr(existing_marker, 'camera'):
+                    existing_marker.camera = camera_obj
+                updated_markers += 1
+            else:
+                # Create new marker
+                marker = scene.timeline_markers.new(marker_name, frame=frame_number)
+                # Note: timeline markers don't have a direct camera property in most Blender versions
+                # but we can still create them with the camera name for reference
+                created_markers += 1
     
     def _create_canvas_frame(self, drawing, mat_index, page_y_offset=0):
         """Create a border frame around the canvas"""
@@ -708,10 +757,13 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
                         self._create_panel_frame(drawing, panels_mat_index, panel_center_x, panel_center_y, space_x, space_y)
         
         # Create cameras if requested
+        camera_objects = []
         if self.create_camera:
             camera_objects = self._create_cameras(context)
-            ## Print infos on created cameras
-            # self.report({'INFO'}, f"Created {len(camera_objects)} camera(s)")
+            
+            # Create timeline markers if requested
+            if self.add_timeline_markers:
+                self._create_timeline_markers(context, camera_objects)
         
         ## Print infos
         # total_frames = self.rows * self.columns * self.num_pages
