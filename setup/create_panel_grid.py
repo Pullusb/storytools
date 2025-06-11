@@ -225,7 +225,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
     camera_margin: FloatProperty(
         name="Camera Margin",
         description="Extra space around the canvas for the camera view",
-        default=1.0,
+        default=0.0,
         min=0.0,
         max=5.0,
         step=0.1,
@@ -341,6 +341,19 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         # Calculate and show frame dimensions
         self._show_frame_dimensions(layout)
     
+    def _get_create_material(self, gp, name, color=(0.0, 0.0, 0.0, 1.0), fill_color=(1.0, 1.0, 1.0, 1.0)):
+        if not (mat := gp.materials.get(name)):
+            mat = bpy.data.materials.get(name)
+            if mat and mat.is_grease_pencil:
+                gp.materials.append(mat)
+            else:
+                mat = bpy.data.materials.new(name)
+                bpy.data.materials.create_gpencil_data(mat)
+                mat.grease_pencil.color = color  # Set stroke color
+                mat.grease_pencil.fill_color = fill_color  # Set fill color
+                gp.materials.append(mat)
+        return mat
+
     def _show_frame_dimensions(self, layout):
         """Calculate and display frame dimensions in the UI"""
         effective_canvas_x = self.canvas_x - (2 * self.canvas_margin)
@@ -402,39 +415,49 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         else:
             return self.frame_ratio
     
-    def _create_camera(self, context, total_canvas_height):
-        """Create and setup orthographic camera"""
-        # Calculate camera bounds
-        cam_width = self.canvas_x + 2 * self.camera_margin
-        cam_height = total_canvas_height + 2 * self.camera_margin
+    def _create_cameras(self, context):
+        """Create and setup orthographic cameras for each page"""
+        camera_objects = []
         
-        # Create camera
-        bpy.ops.object.camera_add(location=(0, -10, 0))
-        camera_obj = context.active_object
-        camera_obj.name = "Storyboard Camera"
-        camera = camera_obj.data
+        for page in range(self.num_pages):
+            # Calculate camera bounds for this page
+            cam_width = self.canvas_x + 2 * self.camera_margin
+            cam_height = self.canvas_y + 2 * self.camera_margin
+            
+            # Calculate Y offset for this page
+            page_y_offset = -(page * (self.canvas_y + self.page_spacing))
+            
+            # Create camera with numbered name
+            camera_name = f"stb_cam_{page + 1:02d}"
+            bpy.ops.object.camera_add(location=(0, -10, 0))
+            camera_obj = context.active_object
+            camera_obj.name = camera_name
+            camera = camera_obj.data
+            
+            # Set to orthographic
+            camera.type = 'ORTHO'
+            camera.ortho_scale = max(cam_width, cam_height)
+            
+            # Position camera to look at the center of this specific page
+            camera_obj.location = (0, -10, page_y_offset)
+            camera_obj.rotation_euler = (1.5708, 0, 0)  # 90 degrees in radians
+            
+            # Set scene resolution to match canvas ratio (only for the first camera)
+            if page == 0:
+                scene = context.scene
+                if cam_width > cam_height:
+                    scene.render.resolution_x = 1920
+                    scene.render.resolution_y = int(1920 * cam_height / cam_width)
+                else:
+                    scene.render.resolution_y = 1920
+                    scene.render.resolution_x = int(1920 * cam_width / cam_height)
+                
+                # Set first camera as active scene camera
+                scene.camera = camera_obj
+            
+            camera_objects.append(camera_obj)
         
-        # Set to orthographic
-        camera.type = 'ORTHO'
-        camera.ortho_scale = max(cam_width, cam_height)
-        
-        # Position camera to look at the center of all pages
-        camera_obj.location = (0, -10, total_canvas_height / 2 - self.canvas_y / 2)
-        camera_obj.rotation_euler = (1.5708, 0, 0)  # 90 degrees in radians
-        
-        # Set scene resolution to match canvas ratio
-        scene = context.scene
-        if cam_width > cam_height:
-            scene.render.resolution_x = 1920
-            scene.render.resolution_y = int(1920 * cam_height / cam_width)
-        else:
-            scene.render.resolution_y = 1920
-            scene.render.resolution_x = int(1920 * cam_width / cam_height)
-        
-        # Set camera as active
-        scene.camera = camera_obj
-        
-        return camera_obj
+        return camera_objects
     
     def _create_canvas_frame(self, drawing, mat_index, page_y_offset=0):
         """Create a border frame around the canvas"""
@@ -455,9 +478,9 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         
         for i, pt in enumerate(stroke.points):
             pt.position = corners[i]
-            pt.radius = 0.03  # Slightly thicker for canvas frame
+            pt.radius = 0.005 # Set a smaller radius
     
-    def _create_panel_frame(self, drawing, mat_index, center_x, center_y, width, height):
+    def _create_panel_frame(self, drawing, panels_mat_index, center_x, center_y, width, height):
         """Create a frame around the entire panel area with notes separator lines"""
         half_width = width / 2
         half_height = height / 2
@@ -473,7 +496,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         drawing.add_strokes([4])
         stroke = drawing.strokes[-1]
         stroke.cyclic = True
-        stroke.material_index = mat_index
+        stroke.material_index = panels_mat_index
         
         for i, pt in enumerate(stroke.points):
             pt.position = corners[i]
@@ -485,7 +508,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         
         drawing.add_strokes([2])
         stroke = drawing.strokes[-1]
-        stroke.material_index = mat_index
+        stroke.material_index = panels_mat_index
         
         stroke.points[0].position = Vector((separator_x, 0, center_y + half_height))
         stroke.points[1].position = Vector((separator_x, 0, center_y - half_height))
@@ -498,7 +521,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
             
             drawing.add_strokes([2])
             stroke = drawing.strokes[-1]
-            stroke.material_index = mat_index
+            stroke.material_index = panels_mat_index
             
             stroke.points[0].position = Vector((separator_x, 0, header_y))
             stroke.points[1].position = Vector((center_x + half_width, 0, header_y))
@@ -535,8 +558,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
             for other_obj in context.selected_objects:
                 if other_obj != obj:
                     other_obj.select_set(False)
-                    
-            self.report({'INFO'}, "Created new Grease Pencil object")
+
         else:
             obj = context.object
         
@@ -554,20 +576,22 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         
         drawing = frame.drawing
         
-        # Setup material
-        if not (material := gp.materials.get('Frames')):
-            material = bpy.data.materials.get('Frames')
-            if material and material.is_grease_pencil:
-                gp.materials.append(material)
-            else:
-                material = bpy.data.materials.new('Frames')
-                bpy.data.materials.create_gpencil_data(material)
-                gp.materials.append(material)
+        # Setup Frames material (for drawing frames)
+        frames_material = self._get_create_material(gp, 'Frames')
         
-        mat_index = next((i for i, mat in enumerate(gp.materials) if mat == material), None)
-        if mat_index is None:
+        frames_mat_index = next((i for i, mat in enumerate(gp.materials) if mat == frames_material), None)
+        if frames_mat_index is None:
             self.report({'ERROR'}, 'No material index for Frames material')
             return {'CANCELLED'}
+        
+        # Setup Panels material (for notes/panel frames) - only if notes are enabled
+        panels_mat_index = None
+        if (self.include_notes and self.show_notes_frames) or self.show_canvas_frame:
+            panels_material = self._get_create_material(gp, 'Panels', color=(0.01, 0.01, 0.01, 1.0))
+            panels_mat_index = next((i for i, mat in enumerate(gp.materials) if mat == panels_material), None)
+            if panels_mat_index is None:
+                self.report({'ERROR'}, 'No material index for Panels material')
+                return {'CANCELLED'}
         
         # Clear existing strokes
         drawing.remove_strokes()
@@ -607,15 +631,13 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
             frame_height = available_y
             frame_width = available_y * self.frame_ratio
         
-        # Create frames for all pages
-        total_canvas_height = self.num_pages * self.canvas_y + (self.num_pages - 1) * self.page_spacing
-        
+        # Create frames for all pages        
         for page in range(self.num_pages):
             page_y_offset = -(page * (self.canvas_y + self.page_spacing))
             
             # Create canvas frame if requested
             if self.show_canvas_frame:
-                self._create_canvas_frame(drawing, mat_index, page_y_offset)
+                self._create_canvas_frame(drawing, panels_mat_index, page_y_offset)
             
             # Calculate start position for this page (top-left of the drawing area)
             start_x = -(effective_canvas_x / 2)
@@ -659,7 +681,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
                         final_frame_height = available_drawing_y
                         final_frame_width = available_drawing_y * self.frame_ratio
                     
-                    # Create drawing frame (centered within the drawing area)
+                    # Create drawing frame (centered within the drawing area) - using Frames material
                     half_width = final_frame_width / 2
                     half_height = final_frame_height / 2
                     
@@ -673,24 +695,27 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
                     drawing.add_strokes([4])
                     stroke = drawing.strokes[-1]
                     stroke.cyclic = True
-                    stroke.material_index = mat_index
+                    stroke.material_index = frames_mat_index  # Use Frames material for drawing frames
                     
                     for i, pt in enumerate(stroke.points):
                         pt.position = corners[i]
                         pt.radius = 0.02
                     
-                    # Create notes frame if requested and if show_notes_frames is enabled
-                    if self.include_notes and self.show_notes_frames:
+                    # Create notes frame if requested and if show_notes_frames is enabled - using Panels material
+                    if self.include_notes and self.show_notes_frames and panels_mat_index is not None:
                         # Create frame around the entire panel area (not just notes portion)
                         panel_center_x = (panel_left + panel_right) / 2
-                        self._create_panel_frame(drawing, mat_index, panel_center_x, panel_center_y, space_x, space_y)
+                        self._create_panel_frame(drawing, panels_mat_index, panel_center_x, panel_center_y, space_x, space_y)
         
-        # Create camera if requested
+        # Create cameras if requested
         if self.create_camera:
-            self._create_camera(context, total_canvas_height)
+            camera_objects = self._create_cameras(context)
+            ## Print infos on created cameras
+            # self.report({'INFO'}, f"Created {len(camera_objects)} camera(s)")
         
-        total_frames = self.rows * self.columns * self.num_pages
-        self.report({'INFO'}, f"Created {total_frames} frames on {self.num_pages} page(s)")
+        ## Print infos
+        # total_frames = self.rows * self.columns * self.num_pages
+        # self.report({'INFO'}, f"Created {total_frames} frames on {self.num_pages} page(s)")
         
         return {'FINISHED'}
 
