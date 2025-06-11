@@ -6,9 +6,11 @@ from bpy.types import Operator, Panel
 from mathutils import Vector
 
 # TODO:
-# - Add option to add a frame for the canvas itself
-# - Add option to create an orthographic camera facing the canvas
-# - Optionally : Add place for action notes, dialog notes, scene, panel numbers
+# - option: Reserve a space at the right of each panel zone to let user write action and dialog notes (with little space on top for scene, panel numbers).
+# - option: Add panel_margin value, to add a space between each panel, this is different than the "coverage" value that affect the size within reserved drawing space.
+# - option: create an orthographic camera facing the canvas with the right orthographic scale to fit the page (and set scene resolution to match ratio)
+# - option: add a frame to visualize the canvas itself
+
 # - Out of this operator scope, but find a way to somehow detect the frames for easy rearange, duplicate, add, remove, etc
 
 class STORYTOOLS_OT_create_frame_grid(Operator):
