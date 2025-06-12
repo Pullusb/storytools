@@ -1,9 +1,8 @@
-from . import (workspace_setup,
+from . import (create_static_storyboard, workspace_setup,
                reset_draw_settings,
                viewport_options,
                story_palettes,
                git_update,
-               create_panel_grid,
                ui,
                )
 
@@ -13,7 +12,7 @@ modules = (
     viewport_options,
     story_palettes,
     git_update,
-    create_panel_grid,
+    create_static_storyboard,
     ui,
 )
 

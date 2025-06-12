@@ -62,6 +62,16 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         step=0.1,
         precision=2
     )
+
+    line_radius: FloatProperty(
+        name="Line Thickness",
+        description="Thickness of the lines",
+        default=0.01,
+        min=0.0001,
+        max=0.5,
+        step=0.001,
+        precision=2
+    )
     
     # Grid dimensions
     rows: IntProperty(
@@ -197,10 +207,17 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         default=True
     )
     
-    extended_text_format: BoolProperty(
-        name="Extended Text Format",
-        description="Use extended format with Action and Dialog sections",
-        default=False
+    note_text_format: EnumProperty(
+        name="Text",
+        description="Initial text to add in each panel notes area",
+        items=[
+            ('None', "Nothing", "No title in text area"),
+            ('Notes', "Notes", "Add Note title text in text area"),
+            ('ActionDialog', "Action/Dialog", "Add Action and Dialog titles in text area"),
+            ('ActionDialogLighting', "Action/Dialog/Lighting", "Add Action, Dialog and Lighting titles in text area"),
+            # ('Custom', "Custom", "Custom Text"),
+        ],
+        default='Notes'
     )
     
     # Multiple pages
@@ -232,8 +249,8 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
     
     # Camera setup
     create_camera: BoolProperty(
-        name="Create Camera",
-        description="Create an orthographic camera to frame the storyboard",
+        name="Create Cameras",
+        description="Create orthographic camera(s) to frame the storyboard pages",
         default=True
     )
     
@@ -251,7 +268,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
     add_timeline_markers: BoolProperty(
         name="Add Timeline Markers",
         description="Add timeline markers bound to camera frame numbers",
-        default=False
+        default=True
     )
     
     force_new_object: BoolProperty(
@@ -286,7 +303,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
     
     def draw(self, context):
         layout = self.layout
-        
+
         # Canvas settings
         box = layout.box()
         box.label(text="Canvas Settings", icon='FILE') # MESH_PLANE
@@ -305,26 +322,33 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         # Multiple pages
         box = layout.box()
         box.label(text="Pages", icon='DOCUMENTS')
-        box.prop(self, "num_pages")
-        if self.num_pages > 1:
-            box.prop(self, "page_spacing")
+
+        row = box.row()
+        row.prop(self, "num_pages")
+        subrow = row.row()
+        subrow.enabled = self.num_pages > 1
+        subrow.prop(self, "page_spacing")
         
         # Frame settings  
         box = layout.box()
-        box.label(text="Panel Settings", icon='OUTLINER_DATA_GP_LAYER') # IMAGE_RGB
-        box.prop(self, "ratio_preset")
+        col = box.column()
+        col.label(text="Panel Settings", icon='OUTLINER_DATA_GP_LAYER') # IMAGE_RGB
+        col.prop(self, "ratio_preset")
         if self.ratio_preset == 'CUSTOM':
-            box.prop(self, "use_custom_xy")
+            col.prop(self, "use_custom_xy")
             if self.use_custom_xy:
-                col = box.column(align=True)
-                col.prop(self, "custom_ratio_x")
-                col.prop(self, "custom_ratio_y")
+                ratio_col = col.column(align=True)
+                ratio_col.prop(self, "custom_ratio_x")
+                ratio_col.prop(self, "custom_ratio_y")
                 if self.custom_ratio_y > 0:
                     calculated_ratio = self.custom_ratio_x / self.custom_ratio_y
-                    box.label(text=f"Ratio: {calculated_ratio:.3f}")
+                    col.label(text=f"Ratio: {calculated_ratio:.3f}")
             else:
-                box.prop(self, "frame_ratio")
-        box.prop(self, "coverage")
+                col.prop(self, "frame_ratio")
+        
+        row = col.row()
+        row.prop(self, "coverage")
+        row.prop(self, "line_radius")
         
         # Grid settings
         box = layout.box()
@@ -337,35 +361,42 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         # Notes settings
         box = layout.box()
         box.label(text="Notes Settings", icon='TEXT')
-        box.prop(self, "include_notes")
+        col = box.column()
+        col.prop(self, "include_notes")
         if self.include_notes:
-            box.prop(self, "notes_width_percent")
-            box.prop(self, "notes_header_height")
-            box.prop(self, "show_notes_frames")
-            box.prop(self, "create_text_objects")
-            if self.create_text_objects:
-                box.prop(self, "extended_text_format")
+            col.prop(self, "notes_width_percent")
+            col.prop(self, "notes_header_height")
+            col.prop(self, "show_notes_frames")
+            row = col.row()
+            row.prop(self, "create_text_objects")
+            subrow = row.row(align=False)
+            subrow.enabled = self.create_text_objects
+            subrow.prop(self, "note_text_format")
         
         # Camera settings
         box = layout.box()
-        box.label(text="Camera Settings", icon='CAMERA_DATA')
-        box.prop(self, "create_camera")
+        col = box.column()
+        col.label(text="Camera Settings", icon='CAMERA_DATA')
+        
+        row = col.row()
+        row.prop(self, "create_camera")
         if self.create_camera:
-            box.prop(self, "camera_margin")
-            box.prop(self, "add_timeline_markers")
+            row.prop(self, "add_timeline_markers")
+            col.prop(self, "camera_margin")
         
         # Object settings
         box = layout.box()
-        box.label(text="Object Settings", icon='OUTLINER_OB_GREASEPENCIL')
-        box.prop(self, "force_new_object")
+        col = box.column()
+        col.label(text="Object Settings", icon='OUTLINER_OB_GREASEPENCIL')
+        col.prop(self, "force_new_object")
         
         # Preview info
         layout.separator()
         total_frames = self.rows * self.columns * self.num_pages
         layout.label(text=f"Total Frames: {total_frames} ({self.rows}x{self.columns} x {self.num_pages} pages)", icon='INFO')
         
-        # Calculate and show frame dimensions
-        self._show_frame_dimensions(layout)
+        ## Calculate and show frame dimensions
+        # self._show_frame_dimensions(layout)
 
     def _setup_text(self, obj):
         ## Add black material for text
@@ -394,6 +425,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
 
     def _show_frame_dimensions(self, layout):
         """Calculate and display frame dimensions in the UI"""
+        col = layout.column(align=True)
         effective_canvas_x = self.canvas_x - (2 * self.canvas_margin)
         effective_canvas_y = self.canvas_y - (2 * self.canvas_margin)
         
@@ -433,16 +465,16 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
                     frame_height = available_y
                     frame_width = available_y * current_ratio
                     
-                layout.label(text=f"Frame Size: {frame_width:.2f} x {frame_height:.2f}")
-                layout.label(text=f"Drawing Area: {drawing_width:.2f} x {space_y:.2f}")
+                col.label(text=f"Frame Size: {frame_width:.2f} x {frame_height:.2f}")
+                col.label(text=f"Drawing Area: {drawing_width:.2f} x {space_y:.2f}")
                 if self.include_notes:
-                    layout.label(text=f"Notes Area: {notes_width:.2f} x {space_y:.2f}")
-                    
+                    col.label(text=f"Notes Area: {notes_width:.2f} x {space_y:.2f}")
+
                 # Show coverage effect
                 if self.coverage < 100:
-                    layout.label(text=f"Available Space: {available_x:.2f} x {available_y:.2f}")
+                    col.label(text=f"Available Space: {available_x:.2f} x {available_y:.2f}")
             else:
-                layout.label(text="Error: Panel margins too large!", icon='ERROR')
+                col.label(text="Error: Panel margins too large!", icon='ERROR')
     
     def _get_current_ratio(self):
         """Get the current aspect ratio based on settings"""
@@ -475,7 +507,14 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         
         notes_width = space_x * self.notes_width_percent / 100
         text_width = notes_width * 0.9  # 90% of notes area width
-        
+
+        default_bodys = {
+            'None' : '',
+            'Notes' : 'Notes:\n',
+            'ActionDialog' : 'Action:\n\n\n\nDialog:\n',
+            'ActionDialogLighting' : 'Action:\n\n\n\nDialog:\n\n\n\nLighting:\n',
+            }
+
         panel_count = 0
         for page in range(self.num_pages):
             page_y_offset = -(page * (self.canvas_y + self.page_spacing))
@@ -500,9 +539,9 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
                     # Check if text object already exists
                     text_name = f"panel_{panel_count:04d}"
                     text_obj = bpy.data.objects.get(text_name)
-                    
+
                     is_new_text = False
-                    if text_obj and text_obj.type == 'FONT':
+                    if text_obj and text_obj.type == 'FONT' and text_obj.data.body not in default_bodys.values():
                         # Reuse existing text object
                         reused_count += 1
                     else:
@@ -526,14 +565,11 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
                     
                     # Set text content only for new objects
                     if is_new_text:
-                        if self.extended_text_format:
-                            text_data.body = "Action:\n\n\nDialog:\n"
-                        else:
-                            text_data.body = "Description:\n"
-                    
-                    # Set overflow to NONE
+                        text_data.body = default_bodys.get(self.note_text_format, '')
+
+                    # Set overflow to NONE (default)
                     text_data.overflow = 'NONE'
-                    text_data.size = 0.25
+                    text_data.size = 0.15 # 0.2
                     
                     # Set text box width to 90% of notes area width
                     if not text_data.text_boxes:
@@ -575,7 +611,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         drawing_width = space_x * (100 - self.notes_width_percent) / 100
         
         # Calculate text size based on header height
-        base_text_size = 0.25
+        base_text_size = 0.15
         # Scale down text if header is too small, with minimum of 0.1
         header_text_size = max(0.1, min(base_text_size, self.notes_header_height * 0.6))
         
@@ -625,7 +661,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
                     shot_text_data = shot_text_obj.data
                     
                     if is_new_shot:
-                        shot_text_data.body = "S"
+                        shot_text_data.body = "S "
                     
                     shot_text_data.overflow = 'NONE'
                     shot_text_data.size = header_text_size
@@ -666,9 +702,9 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
                     
                     # Position panel text at right side of header area (with margin)
                     header_right = panel_left + drawing_width
-                    panel_text_obj.location = (header_right - header_margin*4, 0, header_y)
+                    panel_text_obj.location = (header_right - header_margin*5, 0, header_y)
                     panel_text_obj.rotation_euler = (1.5708, 0, 0)  # 90 degrees to face camera
-                    
+
                     header_text_objects.append(panel_text_obj)
         
         return header_text_objects, created_count, reused_count
@@ -787,7 +823,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         
         for i, pt in enumerate(stroke.points):
             pt.position = corners[i]
-            pt.radius = 0.005 # Set a smaller radius
+            pt.radius = 0.002
     
     def _create_panel_frame(self, drawing, panels_mat_index, center_x, center_y, width, height, drawing_area_height=None):
         """Create a frame around the entire panel area with notes separator lines"""
@@ -809,7 +845,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         
         for i, pt in enumerate(stroke.points):
             pt.position = corners[i]
-            pt.radius = 0.015
+            pt.radius = self.line_radius
         
         # Add vertical separator line between drawing and notes area
         notes_width_ratio = self.notes_width_percent / 100
@@ -821,8 +857,8 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         
         stroke.points[0].position = Vector((separator_x, 0, center_y + half_height))
         stroke.points[1].position = Vector((separator_x, 0, center_y - half_height))
-        stroke.points[0].radius = 0.015
-        stroke.points[1].radius = 0.015
+        stroke.points[0].radius = self.line_radius
+        stroke.points[1].radius = self.line_radius
         
         # Add header separator line above the drawing frame area if header height > 0
         if self.notes_header_height > 0:
@@ -846,8 +882,8 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
             # Header separator spans the width of the drawing area only
             stroke.points[0].position = Vector((drawing_left, 0, header_y))
             stroke.points[1].position = Vector((drawing_left + drawing_area_width, 0, header_y))
-            stroke.points[0].radius = 0.015
-            stroke.points[1].radius = 0.015
+            stroke.points[0].radius = self.line_radius
+            stroke.points[1].radius = self.line_radius
     
     def execute(self, context):
         # Update canvas dimensions and ratio from presets
@@ -872,10 +908,9 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
             gp_data = bpy.data.grease_pencils_v3.new("Storyboard Grid")
             obj = bpy.data.objects.new("Storyboard Grid", gp_data)
             context.collection.objects.link(obj)
-            
             context.view_layer.objects.active = obj
             obj.select_set(True)
-            
+            ## TODO: add default storytools layer and material stack
             for other_obj in context.selected_objects:
                 if other_obj != obj:
                     other_obj.select_set(False)
@@ -1021,7 +1056,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
                     
                     for i, pt in enumerate(stroke.points):
                         pt.position = corners[i]
-                        pt.radius = 0.02
+                        pt.radius = self.line_radius
                     
                     # Create notes frame if requested and if show_notes_frames is enabled - using Panels material
                     if self.include_notes and self.show_notes_frames and panels_mat_index is not None:
