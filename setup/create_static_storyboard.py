@@ -1,13 +1,12 @@
 ## Create a grid of panel suitable for static storyboard or quick thumbnails.
-# 1.3
+# 1.4
 
 import bpy
 from bpy.props import FloatProperty, IntProperty, EnumProperty, BoolProperty
 from bpy.types import Operator, Panel
 from mathutils import Vector
 
-# Option 
-# Add option for radius
+from ..constants import FONT_DIR
 
 class STORYTOOLS_OT_create_frame_grid(Operator):
     """Create a grid of frames using grease pencil strokes"""
@@ -206,7 +205,13 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         description="Create text objects in the notes area for each panel",
         default=True
     )
-    
+
+    use_custom_font: BoolProperty(
+        name="Use Custom Font",
+        description="Load a custom font for text objects, packed into the blend file to avoid link issues",
+        default=True
+    )
+
     note_text_format: EnumProperty(
         name="Text",
         description="Initial text to add in each panel notes area",
@@ -408,7 +413,23 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
             text_mat.roughness = 0
         if not text_mat in obj.data.materials[:]:
             obj.data.materials.append(text_mat)
-        ## TODO: Apply Typography
+        
+        ## Apply custom Typography
+        regular = bpy.data.fonts.load(str(FONT_DIR / 'Lato' / "Lato-Regular.ttf"), check_existing=True)
+        bold = bpy.data.fonts.load(str(FONT_DIR / 'Lato' / "Lato-Bold.ttf"), check_existing=True)
+        italic = bpy.data.fonts.load(str(FONT_DIR / 'Lato' / "Lato-Italic.ttf"), check_existing=True)
+        bold_italic = bpy.data.fonts.load(str(FONT_DIR / 'Lato' / "Lato-BoldItalic.ttf"), check_existing=True)
+
+        obj.data.font = regular
+        obj.data.font_bold = bold
+        obj.data.font_italic = italic
+        obj.data.font_bold_italic = bold_italic
+
+        ## Pack the font to avoid link issues
+        regular.pack()
+        bold.pack()
+        italic.pack()
+        bold_italic.pack()
 
     def _get_create_material(self, gp, name, color=(0.0, 0.0, 0.0, 1.0), fill_color=(1.0, 1.0, 1.0, 1.0)):
         if not (mat := gp.materials.get(name)):
@@ -1067,7 +1088,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         # Create text objects if requested
         if self.include_notes and self.create_text_objects:
             text_objects, created_text, reused_text = self._create_text_objects(context)
-            
+
             # Create header text objects if header height > 0
             header_text_objects, created_header, reused_header = self._create_header_text_objects(context)
         
