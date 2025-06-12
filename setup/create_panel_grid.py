@@ -1,5 +1,5 @@
 ## Create a grid of panel suitable for static storyboard or quick thumbnails.
-# 1.1
+# 1.3
 
 import bpy
 from bpy.props import FloatProperty, IntProperty, EnumProperty, BoolProperty
@@ -56,7 +56,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
     canvas_margin: FloatProperty(
         name="Canvas Margin",
         description="Margin from canvas edges",
-        default=0.5,
+        default=0.4,
         min=0.0,
         max=10.0,
         step=0.1,
@@ -67,7 +67,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
     rows: IntProperty(
         name="Rows",
         description="Number of rows in the grid",
-        default=5,
+        default=3,
         min=1,
         max=20
     )
@@ -75,7 +75,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
     columns: IntProperty(
         name="Columns",
         description="Number of columns in the grid", 
-        default=2,
+        default=1,
         min=1,
         max=20
     )
@@ -84,7 +84,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
     panel_margin: FloatProperty(
         name="Panel Margin",
         description="Space between panels in the grid",
-        default=0.2,
+        default=0.3,
         min=0.0,
         max=2.0,
         step=0.1,
@@ -165,9 +165,10 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
     notes_width_percent: FloatProperty(
         name="Notes Width (%)",
         description="Percentage of panel width to reserve for notes",
-        default=30.0,
+        default=45.0,
         min=10.0,
-        max=50.0,
+        max=80.0,
+        soft_max=50.0,
         step=1,
         precision=1
     )
@@ -175,9 +176,10 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
     notes_header_height: FloatProperty(
         name="Notes Header Height",
         description="Height reserved for scene/panel number at top of notes area",
-        default=0.3,
+        default=0.46,
         min=0.0,
-        max=1.0,
+        soft_max=1.0,
+        max=4.0,
         step=0.1,
         precision=2
     )
@@ -186,6 +188,19 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         name="Show Notes Frames",
         description="Show frame lines around the notes area (enclosing whole panel)",
         default=True
+    )
+    
+    # Text objects
+    create_text_objects: BoolProperty(
+        name="Create Text Objects",
+        description="Create text objects in the notes area for each panel",
+        default=True
+    )
+    
+    extended_text_format: BoolProperty(
+        name="Extended Text Format",
+        description="Use extended format with Action and Dialog sections",
+        default=False
     )
     
     # Multiple pages
@@ -201,7 +216,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
     page_spacing: FloatProperty(
         name="Page Spacing",
         description="Vertical spacing between pages",
-        default=1.0,
+        default=0.0,
         min=0.0,
         max=5.0,
         step=0.1,
@@ -327,6 +342,9 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
             box.prop(self, "notes_width_percent")
             box.prop(self, "notes_header_height")
             box.prop(self, "show_notes_frames")
+            box.prop(self, "create_text_objects")
+            if self.create_text_objects:
+                box.prop(self, "extended_text_format")
         
         # Camera settings
         box = layout.box()
@@ -348,7 +366,19 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         
         # Calculate and show frame dimensions
         self._show_frame_dimensions(layout)
-    
+
+    def _setup_text(self, obj):
+        ## Add black material for text
+        if not (text_mat := bpy.data.materials.get('stb_text_color')):
+            text_mat = bpy.data.materials.new('stb_text_color')
+            text_mat.use_nodes = False
+            text_mat.diffuse_color = (0,0,0,1)
+            text_mat.specular_intensity = 0
+            text_mat.roughness = 0
+        if not text_mat in obj.data.materials[:]:
+            obj.data.materials.append(text_mat)
+        ## TODO: Apply Typography
+
     def _get_create_material(self, gp, name, color=(0.0, 0.0, 0.0, 1.0), fill_color=(1.0, 1.0, 1.0, 1.0)):
         if not (mat := gp.materials.get(name)):
             mat = bpy.data.materials.get(name)
@@ -388,6 +418,10 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
                 available_x = drawing_width * self.coverage / 100
                 available_y = space_y * self.coverage / 100
                 
+                # Account for header height when show_notes_frames is enabled
+                if self.show_notes_frames and self.notes_header_height > 0:
+                    available_y -= self.notes_header_height
+                
                 # Get current ratio
                 current_ratio = self._get_current_ratio()
                 
@@ -422,6 +456,222 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
             return self.custom_ratio_x / self.custom_ratio_y
         else:
             return self.frame_ratio
+    
+    def _create_text_objects(self, context):
+        """Create or reuse text objects for each panel notes area"""
+        text_objects = []
+        created_count = 0
+        reused_count = 0
+        
+        # Calculate dimensions first
+        effective_canvas_x = self.canvas_x - (2 * self.canvas_margin)
+        effective_canvas_y = self.canvas_y - (2 * self.canvas_margin)
+        
+        grid_width = effective_canvas_x - (self.columns - 1) * self.panel_margin
+        grid_height = effective_canvas_y - (self.rows - 1) * self.panel_margin
+        
+        space_x = grid_width / self.columns
+        space_y = grid_height / self.rows
+        
+        notes_width = space_x * self.notes_width_percent / 100
+        text_width = notes_width * 0.9  # 90% of notes area width
+        
+        panel_count = 0
+        for page in range(self.num_pages):
+            page_y_offset = -(page * (self.canvas_y + self.page_spacing))
+            start_x = -(effective_canvas_x / 2)
+            start_y = (effective_canvas_y / 2) + page_y_offset
+            
+            for r_idx in range(self.rows):
+                for c_idx in range(self.columns):
+                    panel_count += 1
+                    
+                    # Calculate panel boundaries
+                    panel_left = start_x + c_idx * (space_x + self.panel_margin)
+                    panel_top = start_y - r_idx * (space_y + self.panel_margin)
+                    panel_bottom = panel_top - space_y
+                    panel_center_y = (panel_top + panel_bottom) / 2
+                    
+                    # Calculate notes area position
+                    drawing_width = space_x * (100 - self.notes_width_percent) / 100
+                    notes_left = panel_left + drawing_width
+                    notes_center_x = notes_left + notes_width / 2
+                    
+                    # Check if text object already exists
+                    text_name = f"panel_{panel_count:04d}"
+                    text_obj = bpy.data.objects.get(text_name)
+                    
+                    is_new_text = False
+                    if text_obj and text_obj.type == 'FONT':
+                        # Reuse existing text object
+                        reused_count += 1
+                    else:
+                        # Create new text object
+                        text_data = bpy.data.curves.new(text_name, 'FONT')
+                        text_obj = bpy.data.objects.new(text_name, text_data)
+                        self._setup_text(text_obj)
+                        
+                        # Create or get text collection
+                        if not (text_collection := bpy.data.collections.get("Storyboard Text")):
+                            text_collection = bpy.data.collections.new("Storyboard Text")
+                        if not text_collection in context.scene.collection.children_recursive:
+                            context.scene.collection.children.link(text_collection)
+                        
+                        text_collection.objects.link(text_obj)
+                        created_count += 1
+                        is_new_text = True
+                    
+                    # Configure text object
+                    text_data = text_obj.data
+                    
+                    # Set text content only for new objects
+                    if is_new_text:
+                        if self.extended_text_format:
+                            text_data.body = "Action:\n\n\nDialog:\n"
+                        else:
+                            text_data.body = "Description:\n"
+                    
+                    # Set overflow to NONE
+                    text_data.overflow = 'NONE'
+                    text_data.size = 0.25
+                    
+                    # Set text box width to 90% of notes area width
+                    if not text_data.text_boxes:
+                        text_data.text_boxes.new()
+                    text_data.text_boxes[0].width = text_width
+                    text_data.text_boxes[0].height = 0  # Auto height
+                    
+                    # Position text object in notes area
+                    text_obj.location = (notes_center_x - text_width/2, 0, panel_center_y + space_y/2 - 0.1)
+                    text_obj.rotation_euler = (1.5708, 0, 0)  # 90 degrees to face camera
+                    
+                    # Set alignment
+                    text_data.align_x = 'LEFT'
+                    text_data.align_y = 'TOP'
+                    
+                    text_objects.append(text_obj)
+        
+        return text_objects, created_count, reused_count
+    
+    def _create_header_text_objects(self, context):
+        """Create header text objects for shot and panel numbers"""
+        if self.notes_header_height <= 0:
+            return [], 0, 0
+            
+        header_text_objects = []
+        created_count = 0
+        reused_count = 0
+        
+        # Calculate dimensions first
+        effective_canvas_x = self.canvas_x - (2 * self.canvas_margin)
+        effective_canvas_y = self.canvas_y - (2 * self.canvas_margin)
+        
+        grid_width = effective_canvas_x - (self.columns - 1) * self.panel_margin
+        grid_height = effective_canvas_y - (self.rows - 1) * self.panel_margin
+        
+        space_x = grid_width / self.columns
+        space_y = grid_height / self.rows
+        
+        drawing_width = space_x * (100 - self.notes_width_percent) / 100
+        
+        # Calculate text size based on header height
+        base_text_size = 0.25
+        # Scale down text if header is too small, with minimum of 0.1
+        header_text_size = max(0.1, min(base_text_size, self.notes_header_height * 0.6))
+        
+        panel_count = 0
+        for page in range(self.num_pages):
+            page_y_offset = -(page * (self.canvas_y + self.page_spacing))
+            start_x = -(effective_canvas_x / 2)
+            start_y = (effective_canvas_y / 2) + page_y_offset
+            
+            for r_idx in range(self.rows):
+                for c_idx in range(self.columns):
+                    panel_count += 1
+                    
+                    # Calculate panel boundaries
+                    panel_left = start_x + c_idx * (space_x + self.panel_margin)
+                    panel_top = start_y - r_idx * (space_y + self.panel_margin)
+                    panel_bottom = panel_top - space_y
+                    panel_center_y = (panel_top + panel_bottom) / 2
+                    
+                    # Calculate header area position (above drawing area)
+                    header_y = panel_center_y + (space_y - self.notes_header_height) / 2
+                    header_margin = 0.1  # Small margin from edges
+                    
+                    # Create shot number text (left side)
+                    shot_text_name = f"stb_shot_num_{panel_count:04d}"
+                    shot_text_obj = bpy.data.objects.get(shot_text_name)
+                    
+                    is_new_shot = False
+                    if shot_text_obj and shot_text_obj.type == 'FONT':
+                        reused_count += 1
+                    else:
+                        shot_text_data = bpy.data.curves.new(shot_text_name, 'FONT')
+                        shot_text_obj = bpy.data.objects.new(shot_text_name, shot_text_data)
+                        self._setup_text(shot_text_obj)
+                        
+                        # Create or get header text collection
+                        if not (header_collection := bpy.data.collections.get("Storyboard panel header")):
+                            header_collection = bpy.data.collections.new("Storyboard panel header")
+                        if not header_collection in context.scene.collection.children_recursive:
+                            context.scene.collection.children.link(header_collection)
+                        
+                        header_collection.objects.link(shot_text_obj)
+                        created_count += 1
+                        is_new_shot = True
+                    
+                    # Configure shot text object
+                    shot_text_data = shot_text_obj.data
+                    
+                    if is_new_shot:
+                        shot_text_data.body = "S"
+                    
+                    shot_text_data.overflow = 'NONE'
+                    shot_text_data.size = header_text_size
+                    shot_text_data.align_x = 'LEFT'
+                    shot_text_data.align_y = 'CENTER'
+                    
+                    # Position shot text at left side of header area
+                    shot_text_obj.location = (panel_left + header_margin, 0, header_y)
+                    shot_text_obj.rotation_euler = (1.5708, 0, 0)  # 90 degrees to face camera
+                    
+                    header_text_objects.append(shot_text_obj)
+                    
+                    # Create panel number text (right side)
+                    panel_text_name = f"stb_panel_num_{panel_count:04d}"
+                    panel_text_obj = bpy.data.objects.get(panel_text_name)
+                    
+                    is_new_panel = False
+                    if panel_text_obj and panel_text_obj.type == 'FONT':
+                        reused_count += 1
+                    else:
+                        panel_text_data = bpy.data.curves.new(panel_text_name, 'FONT')
+                        panel_text_obj = bpy.data.objects.new(panel_text_name, panel_text_data)
+                        self._setup_text(panel_text_obj)
+                        header_collection.objects.link(panel_text_obj)
+                        created_count += 1
+                        is_new_panel = True
+                    
+                    # Configure panel text object
+                    panel_text_data = panel_text_obj.data
+                    
+                    if is_new_panel:
+                        panel_text_data.body = "/"
+                    
+                    panel_text_data.overflow = 'NONE'
+                    panel_text_data.size = header_text_size
+                    panel_text_data.align_x = 'RIGHT'
+                    panel_text_data.align_y = 'CENTER'
+                    
+                    # Position panel text at right side of header area (with margin)
+                    header_right = panel_left + drawing_width
+                    panel_text_obj.location = (header_right - header_margin*4, 0, header_y)
+                    panel_text_obj.rotation_euler = (1.5708, 0, 0)  # 90 degrees to face camera
+                    
+                    header_text_objects.append(panel_text_obj)
+        
+        return header_text_objects, created_count, reused_count
     
     def _create_cameras(self, context):
         """Create or reuse orthographic cameras for each page"""
@@ -539,7 +789,7 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
             pt.position = corners[i]
             pt.radius = 0.005 # Set a smaller radius
     
-    def _create_panel_frame(self, drawing, panels_mat_index, center_x, center_y, width, height):
+    def _create_panel_frame(self, drawing, panels_mat_index, center_x, center_y, width, height, drawing_area_height=None):
         """Create a frame around the entire panel area with notes separator lines"""
         half_width = width / 2
         half_height = height / 2
@@ -574,16 +824,28 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         stroke.points[0].radius = 0.015
         stroke.points[1].radius = 0.015
         
-        # Add header separator line in notes area if header height > 0
+        # Add header separator line above the drawing frame area if header height > 0
         if self.notes_header_height > 0:
-            header_y = center_y + half_height - self.notes_header_height
+            # Calculate the drawing area bounds
+            notes_width_ratio = self.notes_width_percent / 100
+            drawing_area_width = width * (1 - notes_width_ratio)
+            drawing_left = center_x - half_width
+            
+            # Position header separator above the drawing area
+            # The drawing area center_y has been shifted down by header_height/2
+            # So the header line should be at the original center + adjusted drawing area height/2
+            if drawing_area_height is not None:
+                header_y = center_y + (drawing_area_height/2 - self.notes_header_height/2)
+            else:
+                header_y = center_y + half_height - self.notes_header_height
             
             drawing.add_strokes([2])
             stroke = drawing.strokes[-1]
             stroke.material_index = panels_mat_index
             
-            stroke.points[0].position = Vector((separator_x, 0, header_y))
-            stroke.points[1].position = Vector((center_x + half_width, 0, header_y))
+            # Header separator spans the width of the drawing area only
+            stroke.points[0].position = Vector((drawing_left, 0, header_y))
+            stroke.points[1].position = Vector((drawing_left + drawing_area_width, 0, header_y))
             stroke.points[0].radius = 0.015
             stroke.points[1].radius = 0.015
     
@@ -679,8 +941,15 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
         if self.include_notes:
             drawing_width = space_x * (100 - self.notes_width_percent) / 100
         
+        # Calculate available space for drawing frames
         available_x = drawing_width * self.coverage / 100
         available_y = space_y * self.coverage / 100
+        
+        # Account for header height when show_notes_frames is enabled
+        drawing_area_height = space_y
+        if self.show_notes_frames and self.notes_header_height > 0:
+            drawing_area_height = space_y - self.notes_header_height
+            available_y = drawing_area_height * self.coverage / 100
         
         # Calculate frame size
         if available_x / self.frame_ratio <= available_y:
@@ -716,6 +985,12 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
                     
                     panel_center_y = (panel_top + panel_bottom) / 2
                     
+                    # Adjust panel center if header is above drawing area
+                    drawing_center_y = panel_center_y
+                    if self.show_notes_frames and self.notes_header_height > 0:
+                        # Shift drawing area down by half the header height
+                        drawing_center_y = panel_center_y - self.notes_header_height / 2
+                    
                     # Calculate drawing area within the panel
                     if self.include_notes:
                         # Drawing area is on the left side of the panel
@@ -728,27 +1003,15 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
                     
                     drawing_center_x = (drawing_left + drawing_right) / 2
                     
-                    # Apply coverage to center the frame within the drawing area
-                    available_drawing_x = drawing_width * self.coverage / 100
-                    available_drawing_y = space_y * self.coverage / 100
-                    
-                    # Calculate final frame size (already calculated above, but recalculate for clarity)
-                    if available_drawing_x / self.frame_ratio <= available_drawing_y:
-                        final_frame_width = available_drawing_x
-                        final_frame_height = available_drawing_x / self.frame_ratio
-                    else:
-                        final_frame_height = available_drawing_y
-                        final_frame_width = available_drawing_y * self.frame_ratio
-                    
                     # Create drawing frame (centered within the drawing area) - using Frames material
-                    half_width = final_frame_width / 2
-                    half_height = final_frame_height / 2
+                    half_width = frame_width / 2
+                    half_height = frame_height / 2
                     
                     corners = [
-                        Vector((drawing_center_x - half_width, 0, panel_center_y + half_height)),  # top-left
-                        Vector((drawing_center_x + half_width, 0, panel_center_y + half_height)),  # top-right
-                        Vector((drawing_center_x + half_width, 0, panel_center_y - half_height)),  # bottom-right
-                        Vector((drawing_center_x - half_width, 0, panel_center_y - half_height)),  # bottom-left
+                        Vector((drawing_center_x - half_width, 0, drawing_center_y + half_height)),  # top-left
+                        Vector((drawing_center_x + half_width, 0, drawing_center_y + half_height)),  # top-right
+                        Vector((drawing_center_x + half_width, 0, drawing_center_y - half_height)),  # bottom-right
+                        Vector((drawing_center_x - half_width, 0, drawing_center_y - half_height)),  # bottom-left
                     ]
                     
                     drawing.add_strokes([4])
@@ -764,7 +1027,14 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
                     if self.include_notes and self.show_notes_frames and panels_mat_index is not None:
                         # Create frame around the entire panel area (not just notes portion)
                         panel_center_x = (panel_left + panel_right) / 2
-                        self._create_panel_frame(drawing, panels_mat_index, panel_center_x, panel_center_y, space_x, space_y)
+                        self._create_panel_frame(drawing, panels_mat_index, panel_center_x, panel_center_y, space_x, space_y, drawing_area_height)
+        
+        # Create text objects if requested
+        if self.include_notes and self.create_text_objects:
+            text_objects, created_text, reused_text = self._create_text_objects(context)
+            
+            # Create header text objects if header height > 0
+            header_text_objects, created_header, reused_header = self._create_header_text_objects(context)
         
         # Create cameras if requested
         camera_objects = []
