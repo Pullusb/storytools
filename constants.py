@@ -4,7 +4,11 @@ LAYERMAT_PREFIX = 'mat--'
 
 MODULE_DIR = Path(__file__).parent
 
-APP_TEMPLATES_DIR = MODULE_DIR / 'templates'
+RESOURCES_DIR = MODULE_DIR / 'resources'
+
+APP_TEMPLATES_DIR = RESOURCES_DIR / 'templates'
+
+FONT_DIR = RESOURCES_DIR / 'fonts'
 
 STORYBOARD_TEMPLATE_BLEND = APP_TEMPLATES_DIR / 'Storyboard' / 'startup.blend'
 
