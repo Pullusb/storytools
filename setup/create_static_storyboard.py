@@ -8,11 +8,10 @@ from mathutils import Vector
 
 from ..constants import FONT_DIR
 
-class STORYTOOLS_OT_create_frame_grid(Operator):
-    """Create a grid of frames using grease pencil strokes"""
-    bl_idname = "storytools.create_frame_grid"
-    bl_label = "Create Frame Grid"
-    bl_description = "Create storyboard grid with cutomizable features"
+class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
+    bl_idname = "storytools.create_static_storyboard_pages"
+    bl_label = "Create Static Storyboard Pages"
+    bl_description = "Generate a modulable storyboard grid as grease pencil object"
     bl_options = {'REGISTER', 'UNDO'}
     
     # Canvas presets
@@ -207,8 +206,10 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
     )
 
     use_custom_font: BoolProperty(
-        name="Use Custom Font",
-        description="Load a custom font for text objects, packed into the blend file to avoid link issues",
+        name="Custom Font",
+        description="Load a custom font for text objects\
+            \nAllow use of Bold, Italic and Bold-Italic styles in notes\
+            \nFont is packed into blend file to avoid linking issues",
         default=True
     )
 
@@ -372,11 +373,11 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
             col.prop(self, "notes_width_percent")
             col.prop(self, "notes_header_height")
             col.prop(self, "show_notes_frames")
+            col.prop(self, "create_text_objects")
             row = col.row()
-            row.prop(self, "create_text_objects")
-            subrow = row.row(align=False)
-            subrow.enabled = self.create_text_objects
-            subrow.prop(self, "note_text_format")
+            row.enabled = self.create_text_objects
+            row.prop(self, "note_text_format")
+            row.prop(self, "use_custom_font")
         
         # Camera settings
         box = layout.box()
@@ -415,21 +416,22 @@ class STORYTOOLS_OT_create_frame_grid(Operator):
             obj.data.materials.append(text_mat)
         
         ## Apply custom Typography
-        regular = bpy.data.fonts.load(str(FONT_DIR / 'Lato' / "Lato-Regular.ttf"), check_existing=True)
-        bold = bpy.data.fonts.load(str(FONT_DIR / 'Lato' / "Lato-Bold.ttf"), check_existing=True)
-        italic = bpy.data.fonts.load(str(FONT_DIR / 'Lato' / "Lato-Italic.ttf"), check_existing=True)
-        bold_italic = bpy.data.fonts.load(str(FONT_DIR / 'Lato' / "Lato-BoldItalic.ttf"), check_existing=True)
+        if self.use_custom_font:
+            regular = bpy.data.fonts.load(str(FONT_DIR / 'Lato' / "Lato-Regular.ttf"), check_existing=True)
+            bold = bpy.data.fonts.load(str(FONT_DIR / 'Lato' / "Lato-Bold.ttf"), check_existing=True)
+            italic = bpy.data.fonts.load(str(FONT_DIR / 'Lato' / "Lato-Italic.ttf"), check_existing=True)
+            bold_italic = bpy.data.fonts.load(str(FONT_DIR / 'Lato' / "Lato-BoldItalic.ttf"), check_existing=True)
 
-        obj.data.font = regular
-        obj.data.font_bold = bold
-        obj.data.font_italic = italic
-        obj.data.font_bold_italic = bold_italic
+            obj.data.font = regular
+            obj.data.font_bold = bold
+            obj.data.font_italic = italic
+            obj.data.font_bold_italic = bold_italic
 
-        ## Pack the font to avoid link issues
-        regular.pack()
-        bold.pack()
-        italic.pack()
-        bold_italic.pack()
+            ## Pack the font to avoid link issues
+            regular.pack()
+            bold.pack()
+            italic.pack()
+            bold_italic.pack()
 
     def _get_create_material(self, gp, name, color=(0.0, 0.0, 0.0, 1.0), fill_color=(1.0, 1.0, 1.0, 1.0)):
         if not (mat := gp.materials.get(name)):
@@ -1118,10 +1120,10 @@ class STORYTOOLS_PT_frame_grid_panel(Panel):
     
     def draw(self, context):
         layout = self.layout
-        layout.operator("storytools.create_frame_grid", icon='GRID')
+        layout.operator("storytools.create_static_storyboard_pages", icon='GRID')
 
 classes = (
-    STORYTOOLS_OT_create_frame_grid,
+    STORYTOOLS_OT_create_static_storyboard_pages,
     # STORYTOOLS_PT_frame_grid_panel,  # Panel for use in standalone mode
 )
 
