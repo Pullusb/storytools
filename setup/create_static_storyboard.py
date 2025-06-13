@@ -564,7 +564,8 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                     text_obj = bpy.data.objects.get(text_name)
 
                     is_new_text = False
-                    if text_obj and text_obj.type == 'FONT' and text_obj.data.body not in default_bodys.values():
+                    if text_obj and text_obj.type == 'FONT':
+                        ## and text_obj.data.body in default_bodys.values() # only if text body has changed ?
                         # Reuse existing text object
                         reused_count += 1
                     else:
