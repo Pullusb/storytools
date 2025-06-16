@@ -1041,32 +1041,20 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
     def _create_timeline_markers(self, context, camera_objects):
         """Create timeline markers for each camera"""
         scene = context.scene
-        created_markers = 0
-        updated_markers = 0
         
         for page, camera_obj in enumerate(camera_objects):
-            marker_name = camera_obj.name  # Use same name as camera
+            marker_name = camera_obj.name # Use same name as camera
             frame_number = page + 1  # Frame 1, 2, 3, etc.
-            
-            # Check if marker already exists
-            existing_marker = None
-            for marker in scene.timeline_markers:
-                if marker.name == marker_name:
-                    existing_marker = marker
-                    break
-            
-            if existing_marker:
+
+            ## Check if marker already exists
+            if marker := scene.timeline_markers.get(marker_name):
                 # Update existing marker
-                existing_marker.frame = frame_number
-                if hasattr(existing_marker, 'camera'):
-                    existing_marker.camera = camera_obj
-                updated_markers += 1
+                marker.frame = frame_number
             else:
                 # Create new marker
                 marker = scene.timeline_markers.new(marker_name, frame=frame_number)
-                # Note: timeline markers don't have a direct camera property in most Blender versions
-                # but we can still create them with the camera name for reference
-                created_markers += 1
+            ## Assign camera
+            marker.camera = camera_obj
     
     def _create_canvas_frame(self, drawing, mat_index, page_y_offset=0):
         """Create a border frame around the canvas"""
