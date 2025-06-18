@@ -879,7 +879,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             if not (header_collection := bpy.data.collections.get("Storyboard Page Headers")):
                 header_collection = bpy.data.collections.new("Storyboard Page Headers")
             if not header_collection in context.scene.collection.children_recursive:
-                context.scene.collection.children.link(header_collection)
+                self.parent_collection.children.link(header_collection)
             
             # Left header text
             if self.enable_page_head_left:
@@ -999,7 +999,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             if not (footer_collection := bpy.data.collections.get("Storyboard Page Footers")):
                 footer_collection = bpy.data.collections.new("Storyboard Page Footers")
             if not footer_collection in context.scene.collection.children_recursive:
-                context.scene.collection.children.link(footer_collection)
+                self.parent_collection.children.link(footer_collection)
             
             # Left footer text
             if self.enable_page_foot_left:
@@ -1146,7 +1146,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                         if not (text_collection := bpy.data.collections.get("Storyboard Text")):
                             text_collection = bpy.data.collections.new("Storyboard Text")
                         if not text_collection in context.scene.collection.children_recursive:
-                            context.scene.collection.children.link(text_collection)
+                            self.parent_collection.children.link(text_collection)
                         
                         text_collection.objects.link(text_obj)
                         created_count += 1
@@ -1229,7 +1229,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                     if not (header_collection := bpy.data.collections.get("Storyboard panel header")):
                         header_collection = bpy.data.collections.new("Storyboard panel header")
                     if not header_collection in context.scene.collection.children_recursive:
-                        context.scene.collection.children.link(header_collection)
+                        self.parent_collection.children.link(header_collection)
                     
                     # Create shot number text (left side) - using custom text
                     shot_text_name = f"stb_shot_num_{panel_count:04d}"
@@ -1327,7 +1327,8 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                 if not (cam_collection := bpy.data.collections.get("Storyboard Cameras")):
                     cam_collection = bpy.data.collections.new("Storyboard Cameras")
                 if not cam_collection in context.scene.collection.children_recursive:
-                    context.scene.collection.children.link(cam_collection)
+                    self.parent_collection.children.link(cam_collection)
+
 
                 cam_collection.objects.link(camera_obj)
                 created_count += 1
@@ -1396,13 +1397,13 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         
         for i, pt in enumerate(stroke.points):
             pt.position = corners[i]
-            pt.radius = 0.002
+            pt.radius = 0.0007
     
     def _create_panel_frame(self, drawing, panels_mat_index, center_x, center_y, width, height, drawing_area_height=None):
         """Create a frame around the entire panel area with notes separator lines"""
         half_width = width / 2
         half_height = height / 2
-        
+
         # Create outer frame around entire panel
         corners = [
             Vector((center_x - half_width, 0, center_y + half_height)),  # top-left
@@ -1460,8 +1461,8 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         # Remove pre-generated elements if requested
         if self.remove_pre_generated:
             removed_count = self._remove_pre_generated_elements(context)
-            self.report({'INFO'}, f"Removed {removed_count['objects']} objects and {removed_count['markers']} timeline markers")
-        
+            # self.report({'INFO'}, f"Removed {removed_count['objects']} objects and {removed_count['markers']} timeline markers")
+
         # Update canvas dimensions and ratio from presets
         self.update_canvas_preset(context)
         
@@ -1480,11 +1481,18 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                           not context.object or 
                           context.object.type != 'GREASEPENCIL')
 
+        ## Get Create a main collection
+        self.parent_collection = bpy.data.collections.get("Storyboard")
+        if not self.parent_collection:
+            self.parent_collection = bpy.data.collections.new("Storyboard")
+        if not self.parent_collection in context.scene.collection.children_recursive:
+            context.scene.collection.children.link(self.parent_collection)
+
         frame_number = context.scene.frame_start
 
         if need_new_object:
-            gp_data = bpy.data.grease_pencils_v3.new("Storyboard Grid")
-            obj = bpy.data.objects.new("Storyboard Grid", gp_data)
+            gp_data = bpy.data.grease_pencils_v3.new("Storyboard")
+            obj = bpy.data.objects.new("Storyboard", gp_data)
             context.collection.objects.link(obj)
             context.view_layer.objects.active = obj
             ## Create default layers and palette
