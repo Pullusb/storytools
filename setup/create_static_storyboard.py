@@ -7,6 +7,7 @@ from bpy.types import Operator, Panel
 from mathutils import Vector
 
 from ..constants import FONT_DIR
+from .. import fn
 
 class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
     bl_idname = "storytools.create_static_storyboard_pages"
@@ -21,10 +22,10 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         items=[
             ('A4_PORTRAIT', "A4 Portrait", "A4 portrait format (10.5 x 14.85)"),
             ('A4_LANDSCAPE', "A4 Landscape", "A4 landscape format (14.85 x 10.5)"),
-            ('16_9_LARGE', "16:9 Large", "Large 16:9 format (20 x 11.25)"),
-            ('16_9_MEDIUM', "16:9 Medium", "Medium 16:9 format (16 x 9)"),
-            ('SQUARE_LARGE', "Square Large", "Large square format (15 x 15)"),
-            ('SQUARE_MEDIUM', "Square Medium", "Medium square format (12 x 12)"),
+            ('16_9_LARGE', "16:9", "16:9 format (20 x 11.25)"),
+            # ('16_9_MEDIUM', "16:9 Medium", "Medium 16:9 format (16 x 9)"),
+            ('SQUARE_LARGE', "Square", "square format (15 x 15)"),
+            # ('SQUARE_MEDIUM', "Square Medium", "Medium square format (12 x 12)"),
             ('CUSTOM', "Custom", "Custom canvas dimensions"),
         ],
         default='A4_PORTRAIT'
@@ -1320,16 +1321,28 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         need_new_object = (self.force_new_object or 
                           not context.object or 
                           context.object.type != 'GREASEPENCIL')
-        
+
+        frame_number = context.scene.frame_start
+
         if need_new_object:
             gp_data = bpy.data.grease_pencils_v3.new("Storyboard Grid")
             obj = bpy.data.objects.new("Storyboard Grid", gp_data)
             context.collection.objects.link(obj)
             context.view_layer.objects.active = obj
-            obj.select_set(True)
-            for other_obj in context.selected_objects:
-                if other_obj != obj:
-                    other_obj.select_set(False)
+            ## Create default layers and palette
+            fn.load_default_palette(obj)
+            fn.create_default_layers(obj, frame=frame_number)
+            target_active = gp_data.layers.get('Sketch')
+            if not target_active and len(gp_data.layers):
+                target_active = gp_data.layers[-1]
+            gp_data.layers.active = target_active
+
+            ## Change selection
+            # obj.select_set(True)
+            # for other_obj in context.selected_objects:
+            #     if other_obj != obj:
+            #         other_obj.select_set(False)
+
         else:
             obj = context.object
         
@@ -1343,12 +1356,12 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         
         frame = next((f for f in layer.frames), None)
         if frame is None:
-            frame = layer.frames.new(context.scene.frame_start)
+            frame = layer.frames.new(frame_number)
         
         drawing = frame.drawing
-        
+
         # Setup Frames material (for drawing frames)
-        frames_material = self._get_create_material(gp, 'Frames')
+        frames_material = self._get_create_material(gp, 'Frames', color=(0.015, 0.015, 0.015, 1.0))
         
         frames_mat_index = next((i for i, mat in enumerate(gp.materials) if mat == frames_material), None)
         if frames_mat_index is None:
@@ -1358,7 +1371,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         # Setup Panels material (for notes/panel frames) - only if notes are enabled
         panels_mat_index = None
         if (self.include_notes and self.show_notes_frames) or self.show_canvas_frame:
-            panels_material = self._get_create_material(gp, 'Panels', color=(0.01, 0.01, 0.01, 1.0))
+            panels_material = self._get_create_material(gp, 'Panels')
             panels_mat_index = next((i for i, mat in enumerate(gp.materials) if mat == panels_material), None)
             if panels_mat_index is None:
                 self.report({'ERROR'}, 'No material index for Panels material')
@@ -1513,7 +1526,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             # Create timeline markers if requested
             if self.add_timeline_markers:
                 self._create_timeline_markers(context, camera_objects)
-        
+
         return {'FINISHED'}
 
 

@@ -641,6 +641,25 @@ def get_gp_draw_plane_matrix(context):
     return draw_plane_mat
 
 
+def create_default_layers(object, frame=None, use_lights=False, set_material_sync=True):
+    gp = object.data
+    if frame is None:
+        frame = bpy.context.scene.frame_current
+    # Create default layers
+    for l_name in ['Color', 'Line', 'Sketch', 'Annotate']:
+        layer = gp.layers.new(l_name)
+        layer.frames.new(frame)
+        layer.use_lights = use_lights
+
+        if set_material_sync:
+            # Set default material association
+            if l_name in ['Line', 'Sketch']:
+                set_material_association(object, layer, 'line')
+            elif l_name == 'Color':
+                set_material_association(object, layer, 'fill_white')
+            elif l_name == 'Annotate':
+                set_material_association(object, layer, 'line_red')
+
 def create_gp_object(
         name="",
         parented=False,
@@ -779,24 +798,13 @@ def create_gp_object(
 
     else:
         # Create default layers
-        for l_name in ['Color', 'Line', 'Sketch', 'Annotate']:
-            layer = gp.layers.new(l_name)
-            layer.frames.new(scn.frame_current)
-            layer.use_lights = prefs.use_lights
-        
-            # Set default material association
-            if l_name in ['Line', 'Sketch']:
-                set_material_association(ob, layer, 'line')
-            elif l_name == 'Color':
-                set_material_association(ob, layer, 'fill_white')
-            elif l_name == 'Annotate':
-                set_material_association(ob, layer, 'line_red')
+        create_default_layers(ob, use_lights=prefs.use_lights)
     
     # Set default active layer (Could also be a preference but may be too much)
-    active = gp.layers.get('Sketch')
-    if not active and len(gp.layers):
-        active = gp.layers[-1]
-    gp.layers.active = active
+    target_active = gp.layers.get('Sketch')
+    if not target_active and len(gp.layers):
+        target_active = gp.layers[-1]
+    gp.layers.active = target_active
 
     # Update UI
     update_ui_prop_index(context)
@@ -958,7 +966,7 @@ def load_palette(filepath, ob=None):
 
 
 def load_default_palette(ob=None):
-    '''Return a tuple for '''
+    '''Return a tuple compatible with Blender operator return values'''
     ob = ob or bpy.context.object
     pfp = Path(__file__).parent / 'palettes'
     
