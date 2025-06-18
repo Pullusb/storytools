@@ -1,5 +1,5 @@
 ## Create a grid of panel suitable for static storyboard or quick thumbnails.
-# 1.4 - Improved
+# 1.5
 
 import bpy
 from bpy.props import FloatProperty, IntProperty, EnumProperty, BoolProperty, StringProperty
@@ -236,6 +236,21 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         default='Notes'
     )
     
+    # Panel header text fields
+    panel_header_left: StringProperty(
+        name="Left Header",
+        description="Text for left side of panel header",
+        default="SC: ", # Or "S "
+        maxlen=64
+    )
+    
+    panel_header_right: StringProperty(
+        name="Right Header",
+        description="Text for right side of panel header",
+        default="/", # Or "Panel: "
+        maxlen=64
+    )
+    
     # Multiple pages
     num_pages: IntProperty(
         name="Number of Pages",
@@ -429,6 +444,12 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         description="Force creation of a new grease pencil object instead of using the active one",
         default=False
     )
+
+    remove_pre_generated: BoolProperty(
+        name="Remove Pre-generated Elements",
+        description="Remove all previously generated text objects, cameras, and timeline markers before creating new ones",
+        default=True
+    )
     
     def update_canvas_preset(self, context):
         """Update canvas dimensions based on preset"""
@@ -451,7 +472,130 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             self.canvas_x = 12.0
             self.canvas_y = 12.0
     
+    def _load_settings_from_object(self, obj):
+        """Load settings from object's custom properties"""
+        if not obj or 'stb_settings' not in obj:
+            return
+        
+        settings = obj['stb_settings']
+        # Apply all pre-existing settings
+        for prop_name, value in settings.items():
+            if hasattr(self, prop_name):
+                try:
+                    setattr(self, prop_name, value)
+                except (TypeError, ValueError):
+                    # Skip properties that can't be set (e.g., different types)
+                    pass
+    
+    def _save_settings_to_object(self, obj):
+        """Save current settings to object's custom properties"""
+        if not obj:
+            return
+
+        ## All prop except Preset
+        saved_prop = [
+        'canvas_x', 'canvas_y',
+        'canvas_margin',
+        'line_radius',
+        'rows', 'columns',
+        'panel_margin_x', 'panel_margin_y',
+        'coverage',
+        'frame_ratio',
+        'custom_ratio_x', 'custom_ratio_y', 'use_custom_xy', 'ratio_preset',
+        'include_notes', 'notes_width_percent', 'notes_header_height', 'show_notes_frames',
+        'create_text_objects','use_custom_font','note_text_format', 'panel_header_left', 'panel_header_right',
+        'num_pages', 'page_spacing',
+        'include_page_header', 'page_header_height',
+        'enable_page_head_left', 'page_head_left', 'page_head_left_linked',
+        'enable_page_head_center', 'page_head_center', 'page_head_center_linked', 'enable_page_head_right',
+        'page_head_right', 'page_head_right_linked',
+        'include_page_footer', 'page_footer_height',
+        'enable_page_foot_left', 'page_foot_left', 'page_foot_left_linked',
+        'enable_page_foot_center', 'page_foot_center', 'page_foot_center_linked',
+        'enable_page_foot_right',
+        'show_canvas_frame',
+        'create_camera', 'camera_margin', 'add_timeline_markers',
+        'force_new_object', 'remove_pre_generated',
+        ]
+        # Get all property names from the operator
+        settings = {}
+        for prop_name in saved_prop:
+            settings[prop_name] = getattr(self, prop_name)
+
+        obj['stb_settings'] = settings
+    
+    def _remove_pre_generated_elements(self, context):
+        """Remove all pre-generated storyboard elements"""
+        removed_count = {'objects': 0, 'markers': 0}
+        
+        # Collections to check for objects
+        collection_prefixes = [
+            "Storyboard Text",
+            "Storyboard panel header", 
+            "Storyboard Page Headers",
+            "Storyboard Page Footers",
+            "Storyboard Cameras"
+        ]
+        
+        # Object name prefixes to remove
+        object_prefixes = [
+            "panel_",
+            "stb_shot_num_",
+            "stb_panel_num_",
+            "stb_page_header_",
+            "stb_page_footer_",
+            "stb_cam_"
+        ]
+        
+        # Remove objects
+        for collection_name in collection_prefixes:
+            collection = bpy.data.collections.get(collection_name)
+            if collection:
+                # Remove all objects in the collection
+                for obj in list(collection.objects):
+                    bpy.data.objects.remove(obj, do_unlink=True)
+                    removed_count['objects'] += 1
+                
+                # Remove the collection itself
+                bpy.data.collections.remove(collection)
+        
+        # Remove objects by name prefix (in case they're not in collections)
+        for obj in list(bpy.data.objects):
+            if any(obj.name.startswith(prefix) for prefix in object_prefixes):
+                bpy.data.objects.remove(obj, do_unlink=True)
+                removed_count['objects'] += 1
+        
+        # Remove timeline markers
+        scene = context.scene
+        markers_to_remove = []
+        for marker in scene.timeline_markers:
+            if marker.name.startswith("stb_cam_"):
+                markers_to_remove.append(marker)
+        
+        for marker in markers_to_remove:
+            scene.timeline_markers.remove(marker)
+            removed_count['markers'] += 1
+        
+        # Remove unused text datablocks
+        text_prefixes = [
+            "panel_",
+            "stb_shot_num_",
+            "stb_panel_num_",
+            "stb_page_header_",
+            "stb_page_footer_"
+        ]
+        
+        for text_data in list(bpy.data.curves):
+            if text_data.users == 0 and any(text_data.name.startswith(prefix) for prefix in text_prefixes):
+                bpy.data.curves.remove(text_data)
+        
+        return removed_count
+    
     def invoke(self, context, event):
+        # Load settings from active object if it has stb_settings
+        if context.object and context.object.type == 'GREASEPENCIL':
+            self._load_settings_from_object(context.object)
+        
         ## Force customization in redo to avoid confusion
         return self.execute(context)
         # return context.window_manager.invoke_props_dialog(self, width=450)
@@ -603,6 +747,14 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             row.enabled = self.create_text_objects
             row.prop(self, "note_text_format")
             row.prop(self, "use_custom_font")
+            
+            # Panel header text fields
+            if self.notes_header_height > 0:
+                header_text_box = col.box()
+                header_text_col = header_text_box.column(align=True)
+                header_text_col.label(text="Panel Header Text:")
+                header_text_col.prop(self, "panel_header_left")
+                header_text_col.prop(self, "panel_header_right")
         
         # Camera settings
         box = layout.box()
@@ -620,6 +772,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         col = box.column()
         col.label(text="Object Settings", icon='OUTLINER_OB_GREASEPENCIL')
         col.prop(self, "force_new_object")
+        col.prop(self, "remove_pre_generated")
         
         # Preview info
         layout.separator()
@@ -1078,7 +1231,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                     if not header_collection in context.scene.collection.children_recursive:
                         context.scene.collection.children.link(header_collection)
                     
-                    # Create shot number text (left side)
+                    # Create shot number text (left side) - using custom text
                     shot_text_name = f"stb_shot_num_{panel_count:04d}"
                     shot_text_obj = bpy.data.objects.get(shot_text_name)
                     
@@ -1097,7 +1250,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                     shot_text_data = shot_text_obj.data
                     
                     if is_new_shot:
-                        shot_text_data.body = "S "
+                        shot_text_data.body = self.panel_header_left  # Use custom text instead of hardcoded "S "
                     
                     shot_text_data.overflow = 'NONE'
                     shot_text_data.size = header_text_size
@@ -1110,7 +1263,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                     
                     header_text_objects.append(shot_text_obj)
                     
-                    # Create panel number text (right side)
+                    # Create panel number text (right side) - using custom text
                     panel_text_name = f"stb_panel_num_{panel_count:04d}"
                     panel_text_obj = bpy.data.objects.get(panel_text_name)
                     
@@ -1129,7 +1282,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                     panel_text_data = panel_text_obj.data
                     
                     if is_new_panel:
-                        panel_text_data.body = "/"
+                        panel_text_data.body = self.panel_header_right  # Use custom text instead of hardcoded "/"
                     
                     panel_text_data.overflow = 'NONE'
                     panel_text_data.size = header_text_size
@@ -1304,6 +1457,11 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             stroke.points[1].radius = self.line_radius
     
     def execute(self, context):
+        # Remove pre-generated elements if requested
+        if self.remove_pre_generated:
+            removed_count = self._remove_pre_generated_elements(context)
+            self.report({'INFO'}, f"Removed {removed_count['objects']} objects and {removed_count['markers']} timeline markers")
+        
         # Update canvas dimensions and ratio from presets
         self.update_canvas_preset(context)
         
@@ -1526,6 +1684,9 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             # Create timeline markers if requested
             if self.add_timeline_markers:
                 self._create_timeline_markers(context, camera_objects)
+
+        # Save current settings to the object
+        self._save_settings_to_object(obj)
 
         return {'FINISHED'}
 
