@@ -451,7 +451,9 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             self.canvas_y = 12.0
     
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=450)
+        ## Force customization in redo to avoid confusion
+        return self.execute(context)
+        # return context.window_manager.invoke_props_dialog(self, width=450)
     
     def draw(self, context):
         layout = self.layout
