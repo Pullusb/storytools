@@ -1,5 +1,5 @@
 ## Create a grid of panel suitable for static storyboard or quick thumbnails.
-# 1.4
+# 1.4 - Improved
 
 import bpy
 from bpy.props import FloatProperty, IntProperty, EnumProperty, BoolProperty, StringProperty
@@ -88,10 +88,20 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         max=20
     )
     
-    # Panel margin
-    panel_margin: FloatProperty(
-        name="Panel Margin",
-        description="Space between panels in the grid",
+    # Panel margins (separate X and Y)
+    panel_margin_x: FloatProperty(
+        name="Panel Margin X",
+        description="Horizontal space between panels in the grid",
+        default=0.3,
+        min=0.0,
+        max=2.0,
+        step=0.1,
+        precision=2
+    )
+    
+    panel_margin_y: FloatProperty(
+        name="Panel Margin Y",
+        description="Vertical space between panels in the grid",
         default=0.3,
         min=0.0,
         max=2.0,
@@ -221,7 +231,6 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             ('Notes', "Notes", "Add Note title text in text area"),
             ('ActionDialog', "Action/Dialog", "Add Action and Dialog titles in text area"),
             ('ActionDialogLighting', "Action/Dialog/Lighting", "Add Action, Dialog and Lighting titles in text area"),
-            # ('Custom', "Custom", "Custom Text"),
         ],
         default='Notes'
     )
@@ -263,18 +272,69 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         precision=2
     )
     
-    project_text: StringProperty(
-        name="Project",
-        description="Project name text (empty will write 'Project: ')",
+    # Header text locations
+    enable_page_head_left: BoolProperty(
+        name="Enable Left",
+        description="Enable left header text",
+        default=True
+    )
+    
+    page_head_left: StringProperty(
+        name="Left Text",
+        description="Left header text",
         default="Project: ",
         maxlen=256
+    )
+    
+    page_head_left_linked: BoolProperty(
+        name="Linked",
+        description="Share text data across all pages",
+        default=True
+    )
+    
+    enable_page_head_center: BoolProperty(
+        name="Enable Center",
+        description="Enable center header text",
+        default=False
+    )
+    
+    page_head_center: StringProperty(
+        name="Center Text",
+        description="Center header text",
+        default="Sequence: ",
+        maxlen=256
+    )
+    
+    page_head_center_linked: BoolProperty(
+        name="Linked",
+        description="Share text data across all pages",
+        default=True
+    )
+    
+    enable_page_head_right: BoolProperty(
+        name="Enable Right",
+        description="Enable right header text",
+        default=True
+    )
+    
+    page_head_right: StringProperty(
+        name="Right Text",
+        description="Right header text",
+        default="Company: ",
+        maxlen=256
+    )
+    
+    page_head_right_linked: BoolProperty(
+        name="Linked",
+        description="Share text data across all pages",
+        default=True
     )
     
     # Page Footer Properties
     include_page_footer: BoolProperty(
         name="Include Page Footer",
         description="Add footer text at the bottom of each page",
-        default=False
+        default=True
     )
     
     page_footer_height: FloatProperty(
@@ -287,18 +347,49 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         precision=2
     )
     
-    artist_text: StringProperty(
-        name="Artist",
-        description="Artist name text",
+    # Footer text locations
+    enable_page_foot_left: BoolProperty(
+        name="Enable Left",
+        description="Enable left footer text",
+        default=True
+    )
+    
+    page_foot_left: StringProperty(
+        name="Left Text",
+        description="Left footer text",
         default="Artist: ",
         maxlen=256
     )
     
-    company_text: StringProperty(
-        name="Company", 
-        description="Company name text",
-        default="Company: ",
+    page_foot_left_linked: BoolProperty(
+        name="Linked",
+        description="Share text data across all pages",
+        default=True
+    )
+    
+    enable_page_foot_center: BoolProperty(
+        name="Enable Center",
+        description="Enable center footer text",
+        default=False
+    )
+    
+    page_foot_center: StringProperty(
+        name="Center Text",
+        description="Center footer text",
+        default="Date: ",
         maxlen=256
+    )
+    
+    page_foot_center_linked: BoolProperty(
+        name="Linked",
+        description="Share text data across all pages",
+        default=True
+    )
+    
+    enable_page_foot_right: BoolProperty(
+        name="Enable Right",
+        description="Enable right footer text (pagination is always enabled)",
+        default=True
     )
     
     # Canvas frame
@@ -367,7 +458,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
 
         # Canvas settings
         box = layout.box()
-        box.label(text="Canvas Settings", icon='FILE') # MESH_PLANE
+        box.label(text="Canvas Settings", icon='FILE')
         
         row = box.row()
         row.prop(self, "canvas_preset")
@@ -396,7 +487,35 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         if self.include_page_header:
             subcol = col.column(align=True)
             subcol.prop(self, "page_header_height")
-            subcol.prop(self, "project_text")
+            
+            # Header locations
+            header_box = subcol.box()
+            header_col = header_box.column(align=True)
+            header_col.label(text="Header Locations:")
+            
+            # Left header
+            row = header_col.row()
+            row.prop(self, "enable_page_head_left", text='Left')
+            subrow = row.row()
+            subrow.enabled = self.enable_page_head_left
+            subrow.prop(self, "page_head_left", text="")
+            subrow.prop(self, "page_head_left_linked", text="", icon='LINKED' if self.page_head_left_linked else 'UNLINKED')
+            
+            # Center header
+            row = header_col.row()
+            row.prop(self, "enable_page_head_center", text='Center')
+            subrow = row.row()
+            subrow.enabled = self.enable_page_head_center
+            subrow.prop(self, "page_head_center", text="")
+            subrow.prop(self, "page_head_center_linked", text="", icon='LINKED' if self.page_head_center_linked else 'UNLINKED')
+            
+            # Right header
+            row = header_col.row()
+            row.prop(self, "enable_page_head_right", text='Right')
+            subrow = row.row()
+            subrow.enabled = self.enable_page_head_right
+            subrow.prop(self, "page_head_right", text="")
+            subrow.prop(self, "page_head_right_linked", text="", icon='LINKED' if self.page_head_right_linked else 'UNLINKED')
         
         # Page Footer
         col = box.column()
@@ -404,13 +523,52 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         if self.include_page_footer:
             subcol = col.column(align=True)
             subcol.prop(self, "page_footer_height")
-            subcol.prop(self, "artist_text")
-            subcol.prop(self, "company_text")
+            
+            # Footer locations
+            footer_box = subcol.box()
+            footer_col = footer_box.column(align=True)
+            footer_col.label(text="Footer Locations:")
+            
+            # Left footer
+            row = footer_col.row()
+            row.prop(self, "enable_page_foot_left", text='Left')
+            subrow = row.row()
+            subrow.enabled = self.enable_page_foot_left
+            subrow.prop(self, "page_foot_left", text="")
+            subrow.prop(self, "page_foot_left_linked", text="", icon='LINKED' if self.page_foot_left_linked else 'UNLINKED')
+            
+            # Center footer
+            row = footer_col.row()
+            row.prop(self, "enable_page_foot_center", text='Center')
+            subrow = row.row()
+            subrow.enabled = self.enable_page_foot_center
+            subrow.prop(self, "page_foot_center", text="")
+            subrow.prop(self, "page_foot_center_linked", text="", icon='LINKED' if self.page_foot_center_linked else 'UNLINKED')
+            
+            # Right footer (pagination - always enabled)
+            row = footer_col.row()
+            row.prop(self, "enable_page_foot_right", text='Right')
+            subrow = row.row()
+            subrow.enabled = self.enable_page_foot_right
+            subrow.label(text="Page: XX (Pagination)")
+
         
+        # Grid settings
+        box = layout.box()
+        box.label(text="Grid Settings", icon='GRID')
+        col = box.column(align=True)
+        col.prop(self, "rows")
+        col.prop(self, "columns")
+        
+        # Separate X and Y panel margins
+        margin_col = box.column(align=True)
+        margin_col.prop(self, "panel_margin_x")
+        margin_col.prop(self, "panel_margin_y")
+
         # Frame settings  
         box = layout.box()
         col = box.column()
-        col.label(text="Panel Settings", icon='OUTLINER_DATA_GP_LAYER') # IMAGE_RGB
+        col.label(text="Panel Settings", icon='OUTLINER_DATA_GP_LAYER')
         col.prop(self, "ratio_preset")
         if self.ratio_preset == 'CUSTOM':
             col.prop(self, "use_custom_xy")
@@ -427,14 +585,6 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         row = col.row()
         row.prop(self, "coverage")
         row.prop(self, "line_radius")
-        
-        # Grid settings
-        box = layout.box()
-        box.label(text="Grid Settings", icon='GRID')
-        col = box.column(align=True)
-        col.prop(self, "rows")
-        col.prop(self, "columns")
-        box.prop(self, "panel_margin")
         
         # Notes settings
         box = layout.box()
@@ -472,9 +622,6 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         layout.separator()
         total_frames = self.rows * self.columns * self.num_pages
         layout.label(text=f"Total Frames: {total_frames} ({self.rows}x{self.columns} x {self.num_pages} pages)", icon='INFO')
-        
-        ## Calculate and show frame dimensions
-        # self._show_frame_dimensions(layout)
 
     def _setup_text(self, obj):
         ## Add black material for text
@@ -518,65 +665,6 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                 gp.materials.append(mat)
         return mat
 
-    def _show_frame_dimensions(self, layout):
-        """Calculate and display frame dimensions in the UI"""
-        col = layout.column(align=True)
-        effective_canvas_x = self.canvas_x - (2 * self.canvas_margin)
-        effective_canvas_y = self.canvas_y - (2 * self.canvas_margin)
-        
-        # Account for header and footer
-        if self.include_page_header:
-            effective_canvas_y -= self.page_header_height
-        if self.include_page_footer:
-            effective_canvas_y -= self.page_footer_height
-        
-        if effective_canvas_x > 0 and effective_canvas_y > 0:
-            # Account for panel margins
-            grid_width = effective_canvas_x - (self.columns - 1) * self.panel_margin
-            grid_height = effective_canvas_y - (self.rows - 1) * self.panel_margin
-            
-            if grid_width > 0 and grid_height > 0:
-                space_x = grid_width / self.columns
-                space_y = grid_height / self.rows
-                
-                # Calculate drawing area within each panel space
-                if self.include_notes:
-                    drawing_width = space_x * (100 - self.notes_width_percent) / 100
-                    notes_width = space_x * self.notes_width_percent / 100
-                else:
-                    drawing_width = space_x
-                    notes_width = 0
-                
-                # Apply coverage to get available drawing space
-                available_x = drawing_width * self.coverage / 100
-                available_y = space_y * self.coverage / 100
-                
-                # Account for header height when show_notes_frames is enabled
-                if self.show_notes_frames and self.notes_header_height > 0:
-                    available_y -= self.notes_header_height
-                
-                # Get current ratio
-                current_ratio = self._get_current_ratio()
-                
-                # Calculate final frame size
-                if available_x / current_ratio <= available_y:
-                    frame_width = available_x
-                    frame_height = available_x / current_ratio
-                else:
-                    frame_height = available_y
-                    frame_width = available_y * current_ratio
-                    
-                col.label(text=f"Frame Size: {frame_width:.2f} x {frame_height:.2f}")
-                col.label(text=f"Drawing Area: {drawing_width:.2f} x {space_y:.2f}")
-                if self.include_notes:
-                    col.label(text=f"Notes Area: {notes_width:.2f} x {space_y:.2f}")
-
-                # Show coverage effect
-                if self.coverage < 100:
-                    col.label(text=f"Available Space: {available_x:.2f} x {available_y:.2f}")
-            else:
-                col.label(text="Error: Panel margins too large!", icon='ERROR')
-    
     def _get_current_ratio(self):
         """Get the current aspect ratio based on settings"""
         if self.ratio_preset != 'CUSTOM':
@@ -603,73 +691,117 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         effective_canvas_x = self.canvas_x - (2 * self.canvas_margin)
         header_text_size = 0.2
         
-        # Get or create shared text datablocks for non-pagination text
-        project_textdata_name = "stb_page_header_project"
-        project_textdata = bpy.data.curves.get(project_textdata_name)
-        if not project_textdata:
-            project_textdata = bpy.data.curves.new(project_textdata_name, 'FONT')
-            project_text = self.project_text if self.project_text.strip() else "Project: "
-            project_textdata.body = project_text
+        # Get or create shared text datablocks for linked text
+        shared_text_data = {}
+        
+        if self.enable_page_head_left and self.page_head_left_linked:
+            textdata_name = "stb_page_header_left"
+            if not (textdata := bpy.data.curves.get(textdata_name)):
+                textdata = bpy.data.curves.new(textdata_name, 'FONT')
+                textdata.body = self.page_head_left
+            shared_text_data['left'] = textdata
+        
+        if self.enable_page_head_center and self.page_head_center_linked:
+            textdata_name = "stb_page_header_center"
+            if not (textdata := bpy.data.curves.get(textdata_name)):
+                textdata = bpy.data.curves.new(textdata_name, 'FONT')
+                textdata.body = self.page_head_center
+            shared_text_data['center'] = textdata
+        
+        if self.enable_page_head_right and self.page_head_right_linked:
+            textdata_name = "stb_page_header_right"
+            if not (textdata := bpy.data.curves.get(textdata_name)):
+                textdata = bpy.data.curves.new(textdata_name, 'FONT')
+                textdata.body = self.page_head_right
+            shared_text_data['right'] = textdata
             
         for page in range(self.num_pages):
             page_y_offset = -(page * (self.canvas_y + self.page_spacing))
-            # header_y = (self.canvas_y / 2) - (self.page_header_height / 2) + page_y_offset
             header_y = (self.canvas_y / 2) - (self.canvas_margin + self.page_header_height) / 2 + page_y_offset
             
-            # Create or get project text object (left side)
-            project_obj_name = f"stb_page_header_project_{page + 1:02d}"
-            project_obj = bpy.data.objects.get(project_obj_name)
+            # Create or get header collection
+            if not (header_collection := bpy.data.collections.get("Storyboard Page Headers")):
+                header_collection = bpy.data.collections.new("Storyboard Page Headers")
+            if not header_collection in context.scene.collection.children_recursive:
+                context.scene.collection.children.link(header_collection)
             
-            if project_obj and project_obj.type == 'FONT':
-                reused_count += 1
-            else:
-                project_obj = bpy.data.objects.new(project_obj_name, project_textdata)
-                self._setup_text(project_obj)
+            # Left header text
+            if self.enable_page_head_left:
+                obj_name = f"stb_page_header_left_{page + 1:02d}"
+                obj = bpy.data.objects.get(obj_name)
                 
-                # Create or get header collection
-                if not (header_collection := bpy.data.collections.get("Storyboard Page Headers")):
-                    header_collection = bpy.data.collections.new("Storyboard Page Headers")
-                if not header_collection in context.scene.collection.children_recursive:
-                    context.scene.collection.children.link(header_collection)
+                if obj and obj.type == 'FONT':
+                    reused_count += 1
+                else:
+                    if self.page_head_left_linked and 'left' in shared_text_data:
+                        text_data = shared_text_data['left']
+                    else:
+                        text_data = bpy.data.curves.new(obj_name, 'FONT')
+                        text_data.body = self.page_head_left
+                    
+                    obj = bpy.data.objects.new(obj_name, text_data)
+                    self._setup_text(obj)
+                    header_collection.objects.link(obj)
+                    created_count += 1
                 
-                header_collection.objects.link(project_obj)
-                created_count += 1
+                obj.data.size = header_text_size
+                obj.data.align_x = 'LEFT'
+                obj.data.align_y = 'CENTER'
+                obj.location = (-(effective_canvas_x / 2), 0, header_y)
+                obj.rotation_euler = (1.5708, 0, 0)
+                header_objects.append(obj)
             
-            # Configure project text
-            project_obj.data.size = header_text_size
-            project_obj.data.align_x = 'LEFT'
-            project_obj.data.align_y = 'CENTER'
-            project_obj.location = (-(effective_canvas_x / 2), 0, header_y)
-            project_obj.rotation_euler = (1.5708, 0, 0)
+            # Center header text
+            if self.enable_page_head_center:
+                obj_name = f"stb_page_header_center_{page + 1:02d}"
+                obj = bpy.data.objects.get(obj_name)
+                
+                if obj and obj.type == 'FONT':
+                    reused_count += 1
+                else:
+                    if self.page_head_center_linked and 'center' in shared_text_data:
+                        text_data = shared_text_data['center']
+                    else:
+                        text_data = bpy.data.curves.new(obj_name, 'FONT')
+                        text_data.body = self.page_head_center
+                    
+                    obj = bpy.data.objects.new(obj_name, text_data)
+                    self._setup_text(obj)
+                    header_collection.objects.link(obj)
+                    created_count += 1
+                
+                obj.data.size = header_text_size
+                obj.data.align_x = 'CENTER'
+                obj.data.align_y = 'CENTER'
+                obj.location = (0, 0, header_y)
+                obj.rotation_euler = (1.5708, 0, 0)
+                header_objects.append(obj)
             
-            header_objects.append(project_obj)
-            
-            # Create page number text object (right side) - unique per page
-            page_obj_name = f"stb_page_header_page_{page + 1:02d}"
-            page_obj = bpy.data.objects.get(page_obj_name)
-            
-            is_new_page = False
-            if page_obj and page_obj.type == 'FONT':
-                reused_count += 1
-            else:
-                page_textdata = bpy.data.curves.new(page_obj_name, 'FONT')
-                page_obj = bpy.data.objects.new(page_obj_name, page_textdata)
-                self._setup_text(page_obj)
-                header_collection.objects.link(page_obj)
-                created_count += 1
-                is_new_page = True
-            
-            # Configure page text (always update as it's page-specific)
-            if is_new_page:
-                page_obj.data.body = f"Page: {page + 1:02d}"
-            
-            page_obj.data.size = header_text_size
-            page_obj.data.align_x = 'RIGHT'
-            page_obj.data.align_y = 'CENTER'
-            page_obj.location = ((effective_canvas_x / 2), 0, header_y)
-            page_obj.rotation_euler = (1.5708, 0, 0)
-            
-            header_objects.append(page_obj)
+            # Right header text
+            if self.enable_page_head_right:
+                obj_name = f"stb_page_header_right_{page + 1:02d}"
+                obj = bpy.data.objects.get(obj_name)
+                
+                if obj and obj.type == 'FONT':
+                    reused_count += 1
+                else:
+                    if self.page_head_right_linked and 'right' in shared_text_data:
+                        text_data = shared_text_data['right']
+                    else:
+                        text_data = bpy.data.curves.new(obj_name, 'FONT')
+                        text_data.body = self.page_head_right
+                    
+                    obj = bpy.data.objects.new(obj_name, text_data)
+                    self._setup_text(obj)
+                    header_collection.objects.link(obj)
+                    created_count += 1
+                
+                obj.data.size = header_text_size
+                obj.data.align_x = 'RIGHT'
+                obj.data.align_y = 'CENTER'
+                obj.location = ((effective_canvas_x / 2), 0, header_y)
+                obj.rotation_euler = (1.5708, 0, 0)
+                header_objects.append(obj)
         
         return header_objects, created_count, reused_count
     
@@ -686,72 +818,111 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         effective_canvas_x = self.canvas_x - (2 * self.canvas_margin)
         footer_text_size = 0.15
         
-        # Get or create shared text datablocks for non-pagination text
-        artist_textdata_name = "stb_page_footer_artist"
-        artist_textdata = bpy.data.curves.get(artist_textdata_name)
-        if not artist_textdata:
-            artist_textdata = bpy.data.curves.new(artist_textdata_name, 'FONT')
-            artist_textdata.body = self.artist_text
+        # Get or create shared text datablocks for linked text
+        shared_text_data = {}
         
-        company_textdata_name = "stb_page_footer_company"
-        company_textdata = bpy.data.curves.get(company_textdata_name)
-        if not company_textdata:
-            company_textdata = bpy.data.curves.new(company_textdata_name, 'FONT')
-            company_textdata.body = self.company_text
+        if self.enable_page_foot_left and self.page_foot_left_linked:
+            textdata_name = "stb_page_footer_left"
+            if not (textdata := bpy.data.curves.get(textdata_name)):
+                textdata = bpy.data.curves.new(textdata_name, 'FONT')
+                textdata.body = self.page_foot_left
+            shared_text_data['left'] = textdata
+        
+        if self.enable_page_foot_center and self.page_foot_center_linked:
+            textdata_name = "stb_page_footer_center"
+            if not (textdata := bpy.data.curves.get(textdata_name)):
+                textdata = bpy.data.curves.new(textdata_name, 'FONT')
+                textdata.body = self.page_foot_center
+            shared_text_data['center'] = textdata
             
         for page in range(self.num_pages):
             page_y_offset = -(page * (self.canvas_y + self.page_spacing))
-            # footer_y = -(self.canvas_y / 2) + (self.page_footer_height / 2) + page_y_offset
             footer_y = -(self.canvas_y / 2) + (self.canvas_margin + self.page_footer_height) / 2 + page_y_offset
             
-            # Create or get artist text object (left side)
-            artist_obj_name = f"stb_page_footer_artist_{page + 1:02d}"
-            artist_obj = bpy.data.objects.get(artist_obj_name)
+            # Create or get footer collection
+            if not (footer_collection := bpy.data.collections.get("Storyboard Page Footers")):
+                footer_collection = bpy.data.collections.new("Storyboard Page Footers")
+            if not footer_collection in context.scene.collection.children_recursive:
+                context.scene.collection.children.link(footer_collection)
             
-            if artist_obj and artist_obj.type == 'FONT':
-                reused_count += 1
-            else:
-                artist_obj = bpy.data.objects.new(artist_obj_name, artist_textdata)
-                self._setup_text(artist_obj)
+            # Left footer text
+            if self.enable_page_foot_left:
+                obj_name = f"stb_page_footer_left_{page + 1:02d}"
+                obj = bpy.data.objects.get(obj_name)
                 
-                # Create or get footer collection
-                if not (footer_collection := bpy.data.collections.get("Storyboard Page Footers")):
-                    footer_collection = bpy.data.collections.new("Storyboard Page Footers")
-                if not footer_collection in context.scene.collection.children_recursive:
-                    context.scene.collection.children.link(footer_collection)
+                if obj and obj.type == 'FONT':
+                    reused_count += 1
+                else:
+                    if self.page_foot_left_linked and 'left' in shared_text_data:
+                        text_data = shared_text_data['left']
+                    else:
+                        text_data = bpy.data.curves.new(obj_name, 'FONT')
+                        text_data.body = self.page_foot_left
+                    
+                    obj = bpy.data.objects.new(obj_name, text_data)
+                    self._setup_text(obj)
+                    footer_collection.objects.link(obj)
+                    created_count += 1
                 
-                footer_collection.objects.link(artist_obj)
-                created_count += 1
+                obj.data.size = footer_text_size
+                obj.data.align_x = 'LEFT'
+                obj.data.align_y = 'CENTER'
+                obj.location = (-(effective_canvas_x / 2), 0, footer_y)
+                obj.rotation_euler = (1.5708, 0, 0)
+                footer_objects.append(obj)
             
-            # Configure artist text
-            artist_obj.data.size = footer_text_size
-            artist_obj.data.align_x = 'LEFT'
-            artist_obj.data.align_y = 'CENTER'
-            artist_obj.location = (-(effective_canvas_x / 2), 0, footer_y)
-            artist_obj.rotation_euler = (1.5708, 0, 0)
+            # Center footer text
+            if self.enable_page_foot_center:
+                obj_name = f"stb_page_footer_center_{page + 1:02d}"
+                obj = bpy.data.objects.get(obj_name)
+                
+                if obj and obj.type == 'FONT':
+                    reused_count += 1
+                else:
+                    if self.page_foot_center_linked and 'center' in shared_text_data:
+                        text_data = shared_text_data['center']
+                    else:
+                        text_data = bpy.data.curves.new(obj_name, 'FONT')
+                        text_data.body = self.page_foot_center
+                    
+                    obj = bpy.data.objects.new(obj_name, text_data)
+                    self._setup_text(obj)
+                    footer_collection.objects.link(obj)
+                    created_count += 1
+                
+                obj.data.size = footer_text_size
+                obj.data.align_x = 'CENTER'
+                obj.data.align_y = 'CENTER'
+                obj.location = (0, 0, footer_y)
+                obj.rotation_euler = (1.5708, 0, 0)
+                footer_objects.append(obj)
             
-            footer_objects.append(artist_obj)
-            
-            # Create or get company text object (right side)
-            company_obj_name = f"stb_page_footer_company_{page + 1:02d}"
-            company_obj = bpy.data.objects.get(company_obj_name)
-            
-            if company_obj and company_obj.type == 'FONT':
-                reused_count += 1
-            else:
-                company_obj = bpy.data.objects.new(company_obj_name, company_textdata)
-                self._setup_text(company_obj)
-                footer_collection.objects.link(company_obj)
-                created_count += 1
-            
-            # Configure company text
-            company_obj.data.size = footer_text_size
-            company_obj.data.align_x = 'RIGHT'
-            company_obj.data.align_y = 'CENTER'
-            company_obj.location = ((effective_canvas_x / 2), 0, footer_y)
-            company_obj.rotation_euler = (1.5708, 0, 0)
-            
-            footer_objects.append(company_obj)
+            # Right footer text (pagination - always enabled if footer is enabled)
+            if self.enable_page_foot_right:
+                obj_name = f"stb_page_footer_pagination_{page + 1:02d}"
+                obj = bpy.data.objects.get(obj_name)
+                
+                is_new_page = False
+                if obj and obj.type == 'FONT':
+                    reused_count += 1
+                else:
+                    text_data = bpy.data.curves.new(obj_name, 'FONT')
+                    obj = bpy.data.objects.new(obj_name, text_data)
+                    self._setup_text(obj)
+                    footer_collection.objects.link(obj)
+                    created_count += 1
+                    is_new_page = True
+                
+                # Always update pagination text as it's page-specific
+                if is_new_page:
+                    obj.data.body = f"Page: {page + 1:02d}"
+                
+                obj.data.size = footer_text_size
+                obj.data.align_x = 'RIGHT'
+                obj.data.align_y = 'CENTER'
+                obj.location = ((effective_canvas_x / 2), 0, footer_y)
+                obj.rotation_euler = (1.5708, 0, 0)
+                footer_objects.append(obj)
         
         return footer_objects, created_count, reused_count
     
@@ -764,8 +935,8 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         # Calculate dimensions first
         effective_canvas_x = self.canvas_x - (2 * self.canvas_margin)
         
-        grid_width = effective_canvas_x - (self.columns - 1) * self.panel_margin
-        grid_height = effective_canvas_y - (self.rows - 1) * self.panel_margin
+        grid_width = effective_canvas_x - (self.columns - 1) * self.panel_margin_x
+        grid_height = effective_canvas_y - (self.rows - 1) * self.panel_margin_y
         
         space_x = grid_width / self.columns
         space_y = grid_height / self.rows
@@ -790,9 +961,9 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                 for c_idx in range(self.columns):
                     panel_count += 1
                     
-                    # Calculate panel boundaries
-                    panel_left = start_x + c_idx * (space_x + self.panel_margin)
-                    panel_top = start_y - r_idx * (space_y + self.panel_margin)
+                    # Calculate panel boundaries using separate X and Y margins
+                    panel_left = start_x + c_idx * (space_x + self.panel_margin_x)
+                    panel_top = start_y - r_idx * (space_y + self.panel_margin_y)
                     panel_bottom = panel_top - space_y
                     panel_center_y = (panel_top + panel_bottom) / 2
                     
@@ -834,7 +1005,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
 
                     # Set overflow to NONE (default)
                     text_data.overflow = 'NONE'
-                    text_data.size = 0.15 # 0.2
+                    text_data.size = 0.15
                     
                     # Set text box width to 90% of notes area width
                     if not text_data.text_boxes:
@@ -866,8 +1037,8 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         # Calculate dimensions first
         effective_canvas_x = self.canvas_x - (2 * self.canvas_margin)
         
-        grid_width = effective_canvas_x - (self.columns - 1) * self.panel_margin
-        grid_height = effective_canvas_y - (self.rows - 1) * self.panel_margin
+        grid_width = effective_canvas_x - (self.columns - 1) * self.panel_margin_x
+        grid_height = effective_canvas_y - (self.rows - 1) * self.panel_margin_y
         
         space_x = grid_width / self.columns
         space_y = grid_height / self.rows
@@ -876,7 +1047,6 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         
         # Calculate text size based on header height
         base_text_size = 0.15
-        # Scale down text if header is too small, with minimum of 0.1
         header_text_size = max(0.1, min(base_text_size, self.notes_header_height * 0.6))
         
         panel_count = 0
@@ -889,15 +1059,21 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                 for c_idx in range(self.columns):
                     panel_count += 1
                     
-                    # Calculate panel boundaries
-                    panel_left = start_x + c_idx * (space_x + self.panel_margin)
-                    panel_top = start_y - r_idx * (space_y + self.panel_margin)
+                    # Calculate panel boundaries using separate X and Y margins
+                    panel_left = start_x + c_idx * (space_x + self.panel_margin_x)
+                    panel_top = start_y - r_idx * (space_y + self.panel_margin_y)
                     panel_bottom = panel_top - space_y
                     panel_center_y = (panel_top + panel_bottom) / 2
                     
                     # Calculate header area position (above drawing area)
                     header_y = panel_center_y + (space_y - self.notes_header_height) / 2
                     header_margin = 0.1  # Small margin from edges
+                    
+                    # Create or get header text collection
+                    if not (header_collection := bpy.data.collections.get("Storyboard panel header")):
+                        header_collection = bpy.data.collections.new("Storyboard panel header")
+                    if not header_collection in context.scene.collection.children_recursive:
+                        context.scene.collection.children.link(header_collection)
                     
                     # Create shot number text (left side)
                     shot_text_name = f"stb_shot_num_{panel_count:04d}"
@@ -910,13 +1086,6 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                         shot_text_data = bpy.data.curves.new(shot_text_name, 'FONT')
                         shot_text_obj = bpy.data.objects.new(shot_text_name, shot_text_data)
                         self._setup_text(shot_text_obj)
-                        
-                        # Create or get header text collection
-                        if not (header_collection := bpy.data.collections.get("Storyboard panel header")):
-                            header_collection = bpy.data.collections.new("Storyboard panel header")
-                        if not header_collection in context.scene.collection.children_recursive:
-                            context.scene.collection.children.link(header_collection)
-                        
                         header_collection.objects.link(shot_text_obj)
                         created_count += 1
                         is_new_shot = True
@@ -998,17 +1167,13 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                 # Create new camera
                 cam_data = bpy.data.cameras.new(camera_name)
                 camera_obj = bpy.data.objects.new(camera_name, cam_data)
-                # TODO: add in dedicated Storyboard camera collections (easy to hide if needed)
+                
                 if not (cam_collection := bpy.data.collections.get("Storyboard Cameras")):
-                    # Create collection if it doesn't exist
                     cam_collection = bpy.data.collections.new("Storyboard Cameras")
                 if not cam_collection in context.scene.collection.children_recursive:
                     context.scene.collection.children.link(cam_collection)
 
-                # bpy.context.scene.collection.objects.link(camera_obj)
-                # if not camera_obj in context.scene.collection.all_objects:
                 cam_collection.objects.link(camera_obj)
-
                 created_count += 1
             
             camera = camera_obj.data
@@ -1120,8 +1285,6 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             drawing_left = center_x - half_width
             
             # Position header separator above the drawing area
-            # The drawing area center_y has been shifted down by header_height/2
-            # So the header line should be at the original center + adjusted drawing area height/2
             if drawing_area_height is not None:
                 header_y = center_y + (drawing_area_height/2 - self.notes_header_height/2)
             else:
@@ -1162,11 +1325,9 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             context.collection.objects.link(obj)
             context.view_layer.objects.active = obj
             obj.select_set(True)
-            ## TODO: add default storytools layer and material stack
             for other_obj in context.selected_objects:
                 if other_obj != obj:
                     other_obj.select_set(False)
-
         else:
             obj = context.object
         
@@ -1218,9 +1379,9 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             self.report({'ERROR'}, 'Canvas margin and header/footer too large for canvas size')
             return {'CANCELLED'}
         
-        # Account for panel margins
-        grid_width = effective_canvas_x - (self.columns - 1) * self.panel_margin
-        grid_height = effective_canvas_y - (self.rows - 1) * self.panel_margin
+        # Account for panel margins (using separate X and Y margins)
+        grid_width = effective_canvas_x - (self.columns - 1) * self.panel_margin_x
+        grid_height = effective_canvas_y - (self.rows - 1) * self.panel_margin_y
         
         if grid_width <= 0 or grid_height <= 0:
             self.report({'ERROR'}, 'Panel margin too large for grid')
@@ -1276,10 +1437,10 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                 for c_idx in range(self.columns):
                     panel_count += 1
                     
-                    # Calculate panel boundaries (including margins)
-                    panel_left = start_x + c_idx * (space_x + self.panel_margin)
+                    # Calculate panel boundaries (using separate X and Y margins)
+                    panel_left = start_x + c_idx * (space_x + self.panel_margin_x)
                     panel_right = panel_left + space_x
-                    panel_top = start_y - r_idx * (space_y + self.panel_margin)
+                    panel_top = start_y - r_idx * (space_y + self.panel_margin_y)
                     panel_bottom = panel_top - space_y
                     
                     panel_center_y = (panel_top + panel_bottom) / 2
@@ -1350,10 +1511,6 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             # Create timeline markers if requested
             if self.add_timeline_markers:
                 self._create_timeline_markers(context, camera_objects)
-        
-        ## Print infos
-        # total_frames = self.rows * self.columns * self.num_pages
-        # self.report({'INFO'}, f"Created {total_frames} frames on {self.num_pages} page(s)")
         
         return {'FINISHED'}
 
