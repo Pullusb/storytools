@@ -735,9 +735,10 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         
         # Notes settings
         box = layout.box()
-        box.label(text="Notes Settings", icon='TEXT')
+        row = box.row(align=True)
+        row.prop(self, "include_notes", text="")
+        row.label(text="Notes Settings", icon='TEXT')
         col = box.column()
-        col.prop(self, "include_notes")
         if self.include_notes:
             col.prop(self, "notes_width_percent")
             col.prop(self, "notes_header_height")
@@ -759,13 +760,13 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         # Camera settings
         box = layout.box()
         col = box.column()
-        col.label(text="Camera Settings", icon='CAMERA_DATA')
-        
+        row = col.row(align=True)
+        row.prop(self, "create_camera", text="")
+        row.label(text="Add Cameras", icon='CAMERA_DATA')
         row = col.row()
-        row.prop(self, "create_camera")
         if self.create_camera:
-            row.prop(self, "add_timeline_markers")
-            col.prop(self, "camera_margin")
+            row.prop(self, "camera_margin", text="Margin")
+            row.prop(self, "add_timeline_markers", text='Bound Markers')
         
         # Object settings
         box = layout.box()
@@ -1133,7 +1134,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                     text_obj = bpy.data.objects.get(text_name)
 
                     is_new_text = False
-                    if text_obj and text_obj.type == 'FONT' and text_obj.data.body not in default_bodys.values():
+                    if text_obj and text_obj.type == 'FONT': # and text_obj.data.body not in default_bodys.values()
                         # Reuse existing text object
                         reused_count += 1
                     else:
