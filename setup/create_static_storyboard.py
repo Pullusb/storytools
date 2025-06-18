@@ -3,11 +3,225 @@
 
 import bpy
 from bpy.props import FloatProperty, IntProperty, EnumProperty, BoolProperty, StringProperty
-from bpy.types import Operator, Panel
+from bpy.types import Operator, Panel, Menu
+# from bpy_extras.io_utils import ExportHelper, ImportHelper
+from bl_operators.presets import AddPresetBase
 from mathutils import Vector
 
 from ..constants import FONT_DIR
 from .. import fn
+
+# Preset system for storyboard settings
+class STORYTOOLS_MT_storyboard_presets(Menu):
+    """Storyboard presets menu"""
+    bl_label = "Storyboard Presets"
+    bl_idname = "STORYTOOLS_MT_storyboard_presets"
+    preset_subdir = "storytools/storyboard"
+    preset_operator = "script.execute_preset"
+    draw = Menu.draw_preset
+
+class STORYTOOLS_OT_add_storyboard_preset(AddPresetBase, Operator):
+    """Add or remove a storyboard preset"""
+    bl_idname = "storytools.add_storyboard_preset"
+    bl_label = "Add Storyboard Preset"
+    bl_description = "Add or remove a storyboard preset"
+    preset_menu = "STORYTOOLS_MT_storyboard_presets"
+    
+    # Variable used for all preset values
+    preset_defines = [
+        "op = bpy.context.active_operator",
+    ]
+    
+    # Properties to store in the preset (excluding canvas_preset and operational properties)
+    preset_values = [
+        "op.canvas_x",
+        "op.canvas_y", 
+        "op.canvas_margin",
+        "op.line_radius",
+        "op.rows",
+        "op.columns",
+        "op.panel_margin_x",
+        "op.panel_margin_y",
+        "op.coverage",
+        "op.frame_ratio",
+        "op.custom_ratio_x",
+        "op.custom_ratio_y", 
+        "op.use_custom_xy",
+        "op.ratio_preset",
+        "op.include_notes",
+        "op.notes_width_percent",
+        "op.notes_header_height",
+        "op.show_notes_frames",
+        "op.create_text_objects",
+        "op.use_custom_font",
+        "op.note_text_format",
+        "op.panel_header_left",
+        "op.panel_header_right",
+        "op.num_pages",
+        "op.page_spacing",
+        "op.include_page_header",
+        "op.page_header_height",
+        "op.enable_page_head_left",
+        "op.page_head_left",
+        "op.page_head_left_linked",
+        "op.enable_page_head_center", 
+        "op.page_head_center",
+        "op.page_head_center_linked",
+        "op.enable_page_head_right",
+        "op.page_head_right",
+        "op.page_head_right_linked",
+        "op.include_page_footer",
+        "op.page_footer_height",
+        "op.enable_page_foot_left",
+        "op.page_foot_left",
+        "op.page_foot_left_linked",
+        "op.enable_page_foot_center",
+        "op.page_foot_center", 
+        "op.page_foot_center_linked",
+        "op.enable_page_foot_right",
+        "op.show_canvas_frame",
+        "op.create_camera",
+        "op.camera_margin",
+        "op.add_timeline_markers",
+    ]
+    
+    preset_subdir = "storytools/storyboard"
+
+'''
+class STORYTOOLS_OT_export_storyboard_preset(Operator, ExportHelper):
+    """Export current storyboard settings as a preset file"""
+    bl_idname = "storytools.export_storyboard_preset"
+    bl_label = "Export Storyboard Preset"
+    bl_description = "Export current storyboard settings to a .py preset file"
+    
+    filename_ext = ".py"
+    filter_glob: StringProperty(default="*.py", options={'HIDDEN'})
+    
+    def execute(self, context):
+        # Get the active operator (should be the storyboard operator)
+        if hasattr(context, 'active_operator') and hasattr(context.active_operator, 'canvas_x'):
+            op = context.active_operator
+        else:
+            self.report({'ERROR'}, "No active storyboard operator found")
+            return {'CANCELLED'}
+        
+        # Create preset content
+        preset_content = [
+            "import bpy",
+            "op = bpy.context.active_operator",
+            "",
+        ]
+        
+        # Add all preset values
+        preset_values = [
+            "op.canvas_x",
+            "op.canvas_y", 
+            "op.canvas_margin",
+            "op.line_radius",
+            "op.rows",
+            "op.columns",
+            "op.panel_margin_x",
+            "op.panel_margin_y",
+            "op.coverage",
+            "op.frame_ratio",
+            "op.custom_ratio_x",
+            "op.custom_ratio_y", 
+            "op.use_custom_xy",
+            "op.ratio_preset",
+            "op.include_notes",
+            "op.notes_width_percent",
+            "op.notes_header_height",
+            "op.show_notes_frames",
+            "op.create_text_objects",
+            "op.use_custom_font",
+            "op.note_text_format",
+            "op.panel_header_left",
+            "op.panel_header_right",
+            "op.num_pages",
+            "op.page_spacing",
+            "op.include_page_header",
+            "op.page_header_height",
+            "op.enable_page_head_left",
+            "op.page_head_left",
+            "op.page_head_left_linked",
+            "op.enable_page_head_center", 
+            "op.page_head_center",
+            "op.page_head_center_linked",
+            "op.enable_page_head_right",
+            "op.page_head_right",
+            "op.page_head_right_linked",
+            "op.include_page_footer",
+            "op.page_footer_height",
+            "op.enable_page_foot_left",
+            "op.page_foot_left",
+            "op.page_foot_left_linked",
+            "op.enable_page_foot_center",
+            "op.page_foot_center", 
+            "op.page_foot_center_linked",
+            "op.enable_page_foot_right",
+            "op.show_canvas_frame",
+            "op.create_camera",
+            "op.camera_margin",
+            "op.add_timeline_markers",
+        ]
+        
+        for prop_path in preset_values:
+            prop_name = prop_path.split('.')[-1]
+            try:
+                value = getattr(op, prop_name)
+                if isinstance(value, str):
+                    preset_content.append(f'{prop_path} = "{value}"')
+                else:
+                    preset_content.append(f'{prop_path} = {repr(value)}')
+            except AttributeError:
+                continue
+        
+        # Write to file
+        try:
+            with open(self.filepath, 'w') as f:
+                f.write('\n'.join(preset_content))
+            self.report({'INFO'}, f"Preset exported to {self.filepath}")
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to export preset: {str(e)}")
+            return {'CANCELLED'}
+
+class STORYTOOLS_OT_import_storyboard_preset(Operator, ImportHelper):
+    """Import storyboard settings from a preset file"""
+    bl_idname = "storytools.import_storyboard_preset"
+    bl_label = "Import Storyboard Preset"
+    bl_description = "Import storyboard settings from a .py preset file"
+    
+    filename_ext = ".py"
+    filter_glob: StringProperty(default="*.py", options={'HIDDEN'})
+    
+    def execute(self, context):
+        # Check if we have an active storyboard operator
+        if not (hasattr(context, 'active_operator') and hasattr(context.active_operator, 'canvas_x')):
+            self.report({'ERROR'}, "No active storyboard operator found")
+            return {'CANCELLED'}
+        
+        try:
+            # Read and execute the preset file
+            with open(self.filepath, 'r') as f:
+                preset_code = f.read()
+            
+            # Create a safe execution environment
+            exec_globals = {
+                'bpy': bpy,
+                '__builtins__': {'True': True, 'False': False}
+            }
+            exec_locals = {}
+            
+            exec(preset_code, exec_globals, exec_locals)
+            
+            self.report({'INFO'}, f"Preset imported from {self.filepath}")
+            return {'FINISHED'}
+            
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to import preset: {str(e)}")
+            return {'CANCELLED'}
+'''
 
 class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
     bl_idname = "storytools.create_static_storyboard_pages"
@@ -602,6 +816,19 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
     
     def draw(self, context):
         layout = self.layout
+
+        # Preset system
+        row = layout.row(align=True)
+        row.menu("STORYTOOLS_MT_storyboard_presets", text=STORYTOOLS_MT_storyboard_presets.bl_label)
+        row.operator("storytools.add_storyboard_preset", text="", icon='ADD')
+        row.operator("storytools.add_storyboard_preset", text="", icon='REMOVE').remove_active = True
+        
+        # Import/Export presets
+        # row = layout.row(align=True)
+        # row.operator("storytools.export_storyboard_preset", text="Export Preset", icon='EXPORT')
+        # row.operator("storytools.import_storyboard_preset", text="Import Preset", icon='IMPORT')
+
+        # layout.separator()
 
         # Canvas settings
         box = layout.box()
@@ -1713,6 +1940,10 @@ class STORYTOOLS_PT_frame_grid_panel(Panel):
         layout.operator("storytools.create_static_storyboard_pages", icon='GRID')
 
 classes = (
+    STORYTOOLS_MT_storyboard_presets,
+    STORYTOOLS_OT_add_storyboard_preset,
+    # STORYTOOLS_OT_export_storyboard_preset, Additional exporter 
+    # STORYTOOLS_OT_import_storyboard_preset, Additional exporter
     STORYTOOLS_OT_create_static_storyboard_pages,
     # STORYTOOLS_PT_frame_grid_panel,  # Panel for use in standalone mode
 )
