@@ -90,6 +90,9 @@ class STORYTOOLS_PT_viewport_setup(bpy.types.Panel):
                 ## point and split is bugged
                 # col.operator('storytools.setup_minimap_on_pointed_editor', text='Pick And Split Editor', icon='SPLIT_HORIZONTAL').split_editor = True
 
+            ## Static storyboard layout generator
+            col.separator()
+            col.operator("storytools.create_static_storyboard_pages", icon='GRID')
 
             # show_storypencil_setup = len(context.window_manager.windows) == 1 and context.preferences.addons.get('storypencil')
             # if show_workspace_switch or show_storypencil_setup:        

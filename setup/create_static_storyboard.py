@@ -2,13 +2,16 @@
 # 1.5
 
 import bpy
+import shutil
+
 from bpy.props import FloatProperty, IntProperty, EnumProperty, BoolProperty, StringProperty
 from bpy.types import Operator, Panel, Menu
 # from bpy_extras.io_utils import ExportHelper, ImportHelper
 from bl_operators.presets import AddPresetBase
 from mathutils import Vector
+from pathlib import Path
 
-from ..constants import FONT_DIR
+from ..constants import FONT_DIR, PRESETS_DIR
 from .. import fn
 
 # Preset system for storyboard settings
@@ -32,10 +35,11 @@ class STORYTOOLS_OT_add_storyboard_preset(AddPresetBase, Operator):
         "op = bpy.context.active_operator",
     ]
     
-    # Properties to store in the preset (excluding canvas_preset and operational properties)
+    # Properties to store in the preset (excluding operational properties)
     preset_values = [
         "op.canvas_x",
         "op.canvas_y", 
+        "op.canvas_preset",
         "op.canvas_margin",
         "op.line_radius",
         "op.rows",
@@ -226,12 +230,14 @@ class STORYTOOLS_OT_import_storyboard_preset(Operator, ImportHelper):
 class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
     bl_idname = "storytools.create_static_storyboard_pages"
     bl_label = "Create Static Storyboard Pages"
-    bl_description = "Generate a modulable storyboard grid as grease pencil object"
+    bl_description = "Generate a modulable storyboard grid\
+        \nAdjust settings in redo panel\
+        \nFor performance, set the number of pages after everything else (leave at 1 during setup)"
     bl_options = {'REGISTER', 'UNDO'}
     
     # Canvas presets
     canvas_preset: EnumProperty(
-        name="Canvas Preset",
+        name="Canvas",
         description="Predefined canvas sizes",
         items=[
             ('A4_PORTRAIT', "A4 Portrait", "A4 portrait format (10.5 x 14.85)"),
@@ -1939,6 +1945,26 @@ class STORYTOOLS_PT_frame_grid_panel(Panel):
         layout = self.layout
         layout.operator("storytools.create_static_storyboard_pages", icon='GRID')
 
+def create_default_presets():
+    source_presets = Path(PRESETS_DIR) / 'storyboard'
+    
+    if not source_presets.exists():
+        return
+    
+    user_stb_presets = Path(bpy.utils.preset_paths("storytools/storyboard")[0])
+    if not user_stb_presets.exists():
+        user_stb_presets.mkdir(parents=True, exist_ok=True)
+
+    for preset_src in source_presets.iterdir():
+        if preset_src.suffix != '.py':
+            continue
+        preset_dest = user_stb_presets / preset_src.name
+        
+        if preset_dest.exists():
+            continue
+
+        shutil.copy(preset_src, preset_dest)
+
 classes = (
     STORYTOOLS_MT_storyboard_presets,
     STORYTOOLS_OT_add_storyboard_preset,
@@ -1951,6 +1977,10 @@ classes = (
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
+
+    ## Copy default presets to users presets directory if they don't exist
+    ## TODO: Maybe add it as a separate operator...
+    create_default_presets()
 
 def unregister():
     for cls in reversed(classes):
