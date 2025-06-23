@@ -1417,7 +1417,8 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
     
     def _create_header_text_objects(self, context, panels_start_y, effective_canvas_y):
         """Create header text objects for shot and panel numbers"""
-        if self.notes_header_height <= 0:
+        # Return early if notes are disabled or header height is 0
+        if not self.include_notes or self.notes_header_height <= 0:
             return [], 0, 0
             
         header_text_objects = []
@@ -1484,7 +1485,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                     shot_text_data = shot_text_obj.data
                     
                     if is_new_shot:
-                        shot_text_data.body = self.panel_header_left  # Use custom text instead of hardcoded "S "
+                        shot_text_data.body = self.panel_header_left
                     
                     shot_text_data.overflow = 'NONE'
                     shot_text_data.size = header_text_size
@@ -1493,7 +1494,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                     
                     # Position shot text at left side of header area
                     shot_text_obj.location = (panel_left + header_margin, 0, header_y)
-                    shot_text_obj.rotation_euler = (1.5708, 0, 0)  # 90 degrees to face camera
+                    shot_text_obj.rotation_euler = (1.5708, 0, 0)
                     
                     header_text_objects.append(shot_text_obj)
                     
@@ -1516,7 +1517,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                     panel_text_data = panel_text_obj.data
                     
                     if is_new_panel:
-                        panel_text_data.body = self.panel_header_right  # Use custom text instead of hardcoded "/"
+                        panel_text_data.body = self.panel_header_right
                     
                     panel_text_data.overflow = 'NONE'
                     panel_text_data.size = header_text_size
@@ -1526,7 +1527,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                     # Position panel text at right side of header area (with margin)
                     header_right = panel_left + drawing_width
                     panel_text_obj.location = (header_right - header_margin*5, 0, header_y)
-                    panel_text_obj.rotation_euler = (1.5708, 0, 0)  # 90 degrees to face camera
+                    panel_text_obj.rotation_euler = (1.5708, 0, 0)
 
                     header_text_objects.append(panel_text_obj)
         
@@ -1667,9 +1668,9 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         stroke.points[1].position = Vector((separator_x, 0, center_y - half_height))
         stroke.points[0].radius = self.line_radius
         stroke.points[1].radius = self.line_radius
-        
+
         # Add header separator line above the drawing frame area if header height > 0
-        if self.notes_header_height > 0:
+        if self.include_notes and self.notes_header_height > 0:
             # Calculate the drawing area bounds
             notes_width_ratio = self.notes_width_percent / 100
             drawing_area_width = width * (1 - notes_width_ratio)
@@ -1816,7 +1817,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         
         # Account for header height when show_notes_frames is enabled
         drawing_area_height = space_y
-        if self.show_notes_frames and self.notes_header_height > 0:
+        if self.include_notes and self.show_notes_frames and self.notes_header_height > 0:
             drawing_area_height = space_y - self.notes_header_height
             available_y = drawing_area_height * self.coverage / 100
         
@@ -1862,7 +1863,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                     
                     # Adjust panel center if header is above drawing area
                     drawing_center_y = panel_center_y
-                    if self.show_notes_frames and self.notes_header_height > 0:
+                    if self.include_notes and self.show_notes_frames and self.notes_header_height > 0:
                         # Shift drawing area down by half the header height
                         drawing_center_y = panel_center_y - self.notes_header_height / 2
                     
