@@ -652,7 +652,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
     footer_logo_height: FloatProperty(
         name="Logo Height (%)",
         description="Height of the logo as percentage of available footer space",
-        default=65.0,
+        default=50.0,
         min=1,
         soft_min=10.0,
         max=200,
