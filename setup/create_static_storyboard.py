@@ -11,7 +11,7 @@ from bl_operators.presets import AddPresetBase
 from mathutils import Vector
 from pathlib import Path
 
-from ..constants import FONT_DIR, PRESETS_DIR
+from ..constants import FONT_DIR, PRESETS_DIR, IMAGES_DIR
 from .. import fn
 
 # Preset system for storyboard settings
@@ -83,6 +83,9 @@ class STORYTOOLS_OT_add_storyboard_preset(AddPresetBase, Operator):
         "op.page_foot_center", 
         "op.page_foot_center_linked",
         "op.enable_page_foot_right",
+        "op.enable_footer_logo",
+        "op.footer_logo_path",
+        "op.footer_logo_height",
         "op.show_canvas_frame",
         "op.create_camera",
         "op.camera_margin",
@@ -163,6 +166,9 @@ class STORYTOOLS_OT_export_storyboard_preset(Operator, ExportHelper):
             "op.page_foot_center", 
             "op.page_foot_center_linked",
             "op.enable_page_foot_right",
+            "op.enable_footer_logo",
+            "op.footer_logo_path",
+            "op.footer_logo_height",
             "op.show_canvas_frame",
             "op.create_camera",
             "op.camera_margin",
@@ -628,6 +634,33 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         default=True
     )
     
+    # Footer Logo Properties
+    enable_footer_logo: BoolProperty(
+        name="Enable Footer Logo",
+        description="Add a logo image to the bottom left of the footer",
+        default=False
+    )
+    
+    footer_logo_path: StringProperty(
+        name="Logo Path",
+        description="Path to the logo image file",
+        default="",
+        maxlen=1024,
+        subtype='FILE_PATH'
+    )
+    
+    footer_logo_height: FloatProperty(
+        name="Logo Height (%)",
+        description="Height of the logo as percentage of available footer space",
+        default=65.0,
+        min=1,
+        soft_min=10.0,
+        max=200,
+        soft_max=95.0,
+        step=5.0,
+        precision=1
+    )
+    
     # Canvas frame
     show_canvas_frame: BoolProperty(
         name="Show Canvas Frame",
@@ -670,6 +703,18 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         description="Remove all previously generated text objects, cameras, and timeline markers before creating new ones",
         default=True
     )
+    
+    def _validate_image_path(self, filepath):
+        """Validate if the path points to a valid image file"""
+        if not filepath:
+            return False
+        
+        path = Path(filepath)
+        if not path.exists():
+            return False
+        
+        valid_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tga', '.tiff', '.tif', '.exr', '.hdr'}
+        return path.suffix.lower() in valid_extensions
     
     def update_canvas_preset(self, context):
         """Update canvas dimensions based on preset"""
@@ -733,6 +778,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         'enable_page_foot_left', 'page_foot_left', 'page_foot_left_linked',
         'enable_page_foot_center', 'page_foot_center', 'page_foot_center_linked',
         'enable_page_foot_right',
+        'enable_footer_logo', 'footer_logo_path', 'footer_logo_height',
         'show_canvas_frame',
         'create_camera', 'camera_margin', 'add_timeline_markers',
         'force_new_object', 'remove_pre_generated',
@@ -754,7 +800,8 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             "Storyboard panel header", 
             "Storyboard Page Headers",
             "Storyboard Page Footers",
-            "Storyboard Cameras"
+            "Storyboard Cameras",
+            "Storyboard Logos"
         ]
         
         # Object name prefixes to remove
@@ -764,7 +811,8 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             "stb_panel_num_",
             "stb_page_header_",
             "stb_page_footer_",
-            "stb_cam_"
+            "stb_cam_",
+            "stb_logo_"
         ]
         
         # Remove objects
@@ -816,9 +864,12 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         if context.object and context.object.type == 'GREASEPENCIL':
             self._load_settings_from_object(context.object)
         
+        if not self.footer_logo_path:
+            # Set default logo path to Blender Logo or StoryTools logo
+            self.footer_logo_path = str(Path(IMAGES_DIR) / "blender_logo_no_socket_black.png")
+
         ## Force customization in redo to avoid confusion
         return self.execute(context)
-        # return context.window_manager.invoke_props_dialog(self, width=450)
     
     def draw(self, context):
         layout = self.layout
@@ -931,8 +982,23 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             subrow = row.row()
             subrow.enabled = self.enable_page_foot_right
             subrow.label(text="Page: XX (Pagination)")
+            
+            # Footer Logo
+            logo_box = footer_col.box()
+            logo_col = logo_box.column()
+            logo_col.prop(self, "enable_footer_logo")
+            if self.enable_footer_logo:
+                logo_col.prop(self, "footer_logo_path")
+                logo_col.prop(self, "footer_logo_height")
+                
+                # Show validation status
+                if self.footer_logo_path:
+                    if self._validate_image_path(self.footer_logo_path):
+                        logo_col.label(text="✓ Valid image path", icon='FILE_TICK')
+                    else:
+                        logo_col.label(text="✗ Invalid image path", icon='ERROR')
 
-        
+
         # Grid settings
         box = layout.box()
         box.label(text="Grid Settings", icon='GRID')
@@ -1067,6 +1133,140 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             return self.custom_ratio_x / self.custom_ratio_y
         else:
             return self.frame_ratio
+    
+    def _create_footer_logo(self, context):
+        """Create footer logo objects for each page"""
+        if not self.enable_footer_logo or not self._validate_image_path(self.footer_logo_path):
+            return [], 0, 0
+            
+        logo_objects = []
+        created_count = 0
+        reused_count = 0
+        
+        # Calculate actual logo height as percentage of full footer space
+        actual_logo_height = (self.page_footer_height + self.canvas_margin) * (self.footer_logo_height / 100.0)
+        
+        # Position logo so its LEFT EDGE respects the canvas margin
+        logo_x_start = -(self.canvas_x / 2) + self.canvas_margin
+        
+        master_logo = None
+        actual_logo_width = 0
+        
+        for page in range(self.num_pages):
+            page_y_offset = -(page * (self.canvas_y + self.page_spacing))
+            footer_y = -(self.canvas_y / 2) + (self.canvas_margin + self.page_footer_height) / 2 + page_y_offset
+            
+            # Create or get logo collection
+            if not (logo_collection := bpy.data.collections.get("Storyboard Logos")):
+                logo_collection = bpy.data.collections.new("Storyboard Logos")
+            if not logo_collection in context.scene.collection.children_recursive:
+                self.parent_collection.children.link(logo_collection)
+            
+            # Create logo object
+            logo_name = f"stb_logo_{page + 1:02d}"
+            
+            # Check if logo already exists
+            logo_obj = bpy.data.objects.get(logo_name)
+            
+            if logo_obj and logo_obj.type == 'MESH':
+                reused_count += 1
+                logo_objects.append(logo_obj)
+                # Get actual dimensions after scaling
+                if logo_obj.data.vertices:
+                    bounds = [v.co for v in logo_obj.data.vertices]
+                    min_x = min(bound.x for bound in bounds)
+                    max_x = max(bound.x for bound in bounds)
+                    # Calculate width including current scale
+                    actual_logo_width = (max_x - min_x) * logo_obj.scale.x
+                
+                # Position logo with its left edge at the margin
+                logo_center_x = logo_x_start + (actual_logo_width / 2)
+                logo_obj.location = (logo_center_x, 0, footer_y)
+                
+                # Set master logo for subsequent pages
+                if page == 0:
+                    master_logo = logo_obj
+            else:
+                # Import new logo as mesh plane (only for first page, then duplicate)
+                if page == 0:
+                    try:
+                        # Store current selection
+                        selected_objects = context.selected_objects[:]
+                        active_object = context.active_object
+                        
+                        # Clear selection
+                        bpy.ops.object.select_all(action='DESELECT')
+                        
+                        # Use pathlib for file operations
+                        logo_path = Path(self.footer_logo_path)
+                        
+                        # Import image as mesh plane
+                        bpy.ops.image.import_as_mesh_planes(
+                            use_auto_refresh=False,
+                            relative=False,
+                            shader='SHADELESS',
+                            render_method='BLENDED',
+                            filepath=str(logo_path),
+                            files=[{"name": logo_path.name}],
+                            directory=str(logo_path.parent),
+                            force_reload=True,
+                            offset=True,
+                            align_axis='-Y',
+                            size_mode='ABSOLUTE',
+                            height=actual_logo_height
+                        )
+                        
+                        # Get the imported object
+                        logo_obj = context.active_object
+                        if logo_obj:
+                            # Rename the object
+                            logo_obj.name = logo_name
+                            
+                            # Move to logo collection
+                            if logo_obj.name in context.collection.objects:
+                                context.collection.objects.unlink(logo_obj)
+                            logo_collection.objects.link(logo_obj)
+                            
+                            # Get actual dimensions of the imported logo
+                            if logo_obj.data.vertices:
+                                bounds = [v.co for v in logo_obj.data.vertices]
+                                min_x = min(bound.x for bound in bounds)
+                                max_x = max(bound.x for bound in bounds)
+                                actual_logo_width = max_x - min_x
+                            
+                            # Position logo with its left edge at the margin
+                            logo_center_x = logo_x_start + (actual_logo_width / 2)
+                            logo_obj.location = (logo_center_x, 0, footer_y)
+                            
+                            logo_objects.append(logo_obj)
+                            created_count += 1
+                            master_logo = logo_obj
+                        
+                        # Restore selection
+                        bpy.ops.object.select_all(action='DESELECT')
+                        for obj in selected_objects:
+                            obj.select_set(True)
+                        if active_object:
+                            context.view_layer.objects.active = active_object
+                            
+                    except Exception as e:
+                        print(f"Failed to import logo: {e}")
+                        self.report({'WARNING'}, f"Failed to import logo: {e}")
+                else:
+                    # Create linked duplicate for subsequent pages
+                    if master_logo and actual_logo_width > 0:
+                        logo_copy = master_logo.copy()
+                        logo_copy.name = logo_name
+                        logo_center_x = logo_x_start + (actual_logo_width / 2)
+                        logo_copy.location = (logo_center_x, 0, footer_y)
+                        logo_collection.objects.link(logo_copy)
+                        logo_objects.append(logo_copy)
+                        created_count += 1
+        
+        # Store the actual logo width for text offset calculation
+        self._logo_width = actual_logo_width
+        
+        return logo_objects, created_count, reused_count
     
     def _create_page_header_text_objects(self, context):
         """Create header text objects for each page"""
@@ -1208,6 +1408,17 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         effective_canvas_x = self.canvas_x - (2 * self.canvas_margin)
         footer_text_size = 0.15
         
+        # Calculate logo offset for left text positioning
+        logo_offset = 0
+        if self.enable_footer_logo and self._validate_image_path(self.footer_logo_path):
+            # Use actual logo width if available, otherwise estimate
+            if hasattr(self, '_logo_width'):
+                logo_offset = self._logo_width + 0.05  # Add some spacing
+            else:
+                # Fallback: estimate based on height (for first run before logo is created)
+                actual_logo_height = self.page_footer_height * (self.footer_logo_height / 100.0)
+                logo_offset = actual_logo_height + 0.05
+        
         # Get or create shared text datablocks for linked text
         shared_text_data = {}
         
@@ -1235,7 +1446,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             if not footer_collection in context.scene.collection.children_recursive:
                 self.parent_collection.children.link(footer_collection)
             
-            # Left footer text
+            # Left footer text (adjusted for logo if present)
             if self.enable_page_foot_left:
                 obj_name = f"stb_page_footer_left_{page + 1:02d}"
                 obj = bpy.data.objects.get(obj_name)
@@ -1257,7 +1468,9 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                 obj.data.size = footer_text_size
                 obj.data.align_x = 'LEFT'
                 obj.data.align_y = 'CENTER'
-                obj.location = (-(effective_canvas_x / 2), 0, footer_y)
+                # Position text accounting for logo space
+                left_x_position = -(self.canvas_x / 2) + self.canvas_margin + logo_offset
+                obj.location = (left_x_position, 0, footer_y)
                 obj.rotation_euler = (1.5708, 0, 0)
                 footer_objects.append(obj)
             
@@ -1588,11 +1801,11 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                     scene.render.resolution_y = 1920
                     scene.render.resolution_x = int(1920 * cam_width / cam_height)
                 
-                # Set first camera as active scene camera
+                ## Set first camera as active scene camera
                 scene.camera = camera_obj
             
             camera_objects.append(camera_obj)
-        
+
         return camera_objects
     
     def _create_timeline_markers(self, context, camera_objects):
@@ -1693,6 +1906,9 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             stroke.points[1].radius = self.line_radius
     
     def execute(self, context):
+        # Initialize logo width tracking
+        self._logo_width = 0
+        
         # Remove pre-generated elements if requested
         if self.remove_pre_generated:
             removed_count = self._remove_pre_generated_elements(context)
@@ -1909,6 +2125,10 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         if self.include_page_header:
             header_objects, created_header, reused_header = self._create_page_header_text_objects(context)
         
+        # Create footer logo first (so we know its width for text positioning)
+        if self.enable_footer_logo and self._validate_image_path(self.footer_logo_path):
+            logo_objects, created_logo, reused_logo = self._create_footer_logo(context)
+        
         if self.include_page_footer:
             footer_objects, created_footer, reused_footer = self._create_page_footer_text_objects(context)
         
@@ -1927,6 +2147,9 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             # Create timeline markers if requested
             if self.add_timeline_markers:
                 self._create_timeline_markers(context, camera_objects)
+
+            ## Set first cam active in view
+            context.region_data.view_perspective = 'CAMERA'
 
         # Save current settings to the object
         self._save_settings_to_object(obj)

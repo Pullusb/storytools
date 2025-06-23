@@ -12,6 +12,8 @@ FONT_DIR = RESOURCES_DIR / 'fonts'
 
 PRESETS_DIR = RESOURCES_DIR / 'presets'
 
+IMAGES_DIR = RESOURCES_DIR / 'images'
+
 STORYBOARD_TEMPLATE_BLEND = APP_TEMPLATES_DIR / 'Storyboard' / 'startup.blend'
 
 DUAL_STORYBOARD_TEMPLATE_BLEND = APP_TEMPLATES_DIR / 'Storyboard_Dual_Window' / 'startup.blend'
