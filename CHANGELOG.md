@@ -2,10 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-2.22.2
+2.22.3
 
 - added: static storyboard logo for bottom left. Default to Black blender logo.
 - added: static storyboard set camera active (better for redo change inspection)
+- changed: do not force preset installation on register (add button in interface if presets missing)
 
 2.21.0
 
