@@ -1,5 +1,4 @@
-## Create a grid of panel suitable for static storyboard or quick thumbnails.
-# 1.5
+## Create pages of panel grid, suitable for static storyboard or quick thumbnails
 
 import bpy
 import shutil
@@ -712,9 +711,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         path = Path(filepath)
         if not path.exists():
             return False
-        
-        valid_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tga', '.tiff', '.tif', '.exr', '.hdr'}
-        return path.suffix.lower() in valid_extensions
+        return path.suffix.lower() in bpy.path.extensions_image
     
     def update_canvas_preset(self, context):
         """Update canvas dimensions based on preset"""
@@ -993,10 +990,10 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                 
                 # Show validation status
                 if self.footer_logo_path:
-                    if self._validate_image_path(self.footer_logo_path):
-                        logo_col.label(text="✓ Valid image path", icon='FILE_TICK')
-                    else:
-                        logo_col.label(text="✗ Invalid image path", icon='ERROR')
+                    if not self._validate_image_path(self.footer_logo_path):
+                        logo_col.label(text="Invalid image path", icon='ERROR')
+                    # else:
+                    #     logo_col.label(text="Valid image path", icon='FILE_TICK')
 
 
         # Grid settings
@@ -1143,7 +1140,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         created_count = 0
         reused_count = 0
         
-        # Calculate actual logo height as percentage of full footer space
+        # Calculate actual logo height as percentage of full footer + margin space
         actual_logo_height = (self.page_footer_height + self.canvas_margin) * (self.footer_logo_height / 100.0)
         
         # Position logo so its LEFT EDGE respects the canvas margin
@@ -1190,10 +1187,14 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                 # Import new logo as mesh plane (only for first page, then duplicate)
                 if page == 0:
                     try:
+                        if context.mode != 'OBJECT':
+                            # Ensure object mode to get right ops context
+                            bpy.ops.object.mode_set(mode='OBJECT')
+
                         # Store current selection
                         selected_objects = context.selected_objects[:]
                         active_object = context.active_object
-                        
+
                         # Clear selection
                         bpy.ops.object.select_all(action='DESELECT')
                         
@@ -2126,7 +2127,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             header_objects, created_header, reused_header = self._create_page_header_text_objects(context)
         
         # Create footer logo first (so we know its width for text positioning)
-        if self.enable_footer_logo and self._validate_image_path(self.footer_logo_path):
+        if self.include_page_footer and self.enable_footer_logo and self._validate_image_path(self.footer_logo_path):
             logo_objects, created_logo, reused_logo = self._create_footer_logo(context)
         
         if self.include_page_footer:
