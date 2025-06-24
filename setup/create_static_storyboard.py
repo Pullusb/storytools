@@ -2175,7 +2175,12 @@ def create_default_presets():
     if not source_presets.exists():
         return
     
-    user_stb_presets = Path(bpy.utils.preset_paths("storytools/storyboard")[0])
+    if user_stb_presets := bpy.utils.preset_paths("storytools/storyboard"):
+        ## Since 4.4, it returns the path
+        user_stb_presets = Path(user_stb_presets[0])
+    else:
+        user_stb_presets = Path(bpy.utils.script_path_user()) / 'presets' / 'storytools' / 'storyboard'
+
     if not user_stb_presets.exists():
         user_stb_presets.mkdir(parents=True, exist_ok=True)
 
