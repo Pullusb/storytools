@@ -1,10 +1,13 @@
-from . import (create_static_storyboard, workspace_setup,
-               reset_draw_settings,
-               viewport_options,
-               story_palettes,
-               git_update,
-               ui,
-               )
+from . import (
+    workspace_setup,
+    reset_draw_settings,
+    viewport_options,
+    story_palettes,
+    git_update,
+    create_static_storyboard,
+    render_to_pdf,
+    ui,
+)
 
 modules = (
     workspace_setup,
@@ -13,6 +16,7 @@ modules = (
     story_palettes,
     git_update,
     create_static_storyboard,
+    render_to_pdf,
     ui,
 )
 

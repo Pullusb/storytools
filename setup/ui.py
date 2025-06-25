@@ -92,7 +92,11 @@ class STORYTOOLS_PT_viewport_setup(bpy.types.Panel):
 
             ## Static storyboard layout generator
             col.separator()
+            col.label(text='Static Storyboard:')
+            col = col.column(align=True)
             col.operator("storytools.create_static_storyboard_pages", icon='GRID')
+            col.operator("storytools.render_storyboard_images", text='Render StoryBoard', icon='RESTRICT_RENDER_OFF')
+            col.menu("STORYTOOLS_MT_export_storyboard_to_pdf", icon='DOCUMENTS', text='Create PDF')
 
             # show_storypencil_setup = len(context.window_manager.windows) == 1 and context.preferences.addons.get('storypencil')
             # if show_workspace_switch or show_storypencil_setup:        

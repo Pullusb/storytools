@@ -255,7 +255,7 @@ class STORYTOOLS_OT_add_default_storyboard_presets(Operator):
 
 ## Menu for management
 class STORYTOOLS_MT_storyboard_presets_management(Menu):
-    """Storyboard presets Maangement menu"""
+    """Storyboard presets Management menu"""
     bl_label = "Storyboard Presets Management"
     bl_idname = "STORYTOOLS_MT_storyboard_presets_management"
     # preset_subdir = "storytools/storyboard"
@@ -2209,9 +2209,11 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         if self.create_camera:
             camera_objects = self._create_cameras(context)
             
-            # Create timeline markers if requested
+            # Create timeline markers
             if self.add_timeline_markers:
                 self._create_timeline_markers(context, camera_objects)
+                context.scene.frame_start = 1
+                context.scene.frame_end = self.num_pages
 
             ## Set first cam active in view
             context.region_data.view_perspective = 'CAMERA'

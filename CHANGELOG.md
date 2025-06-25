@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.23.0
+
+- added: Quick storyboard export solution in setup panel
+- added: PDF creation from rendered images after rendering
+
 2.22.3
 
 - added: static storyboard logo for bottom left. Default to Black blender logo.
