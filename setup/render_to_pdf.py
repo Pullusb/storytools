@@ -80,9 +80,24 @@ def get_image_files(directory):
 class RENDER_OT_install_img2pdf(Operator):
     """Install img2pdf module using pip"""
     bl_idname = "render.install_img2pdf"
-    bl_label = "Install img2pdf"
+    bl_label = "Install img2pdf module"
     bl_description = "Install the img2pdf module required for PDF creation"
     bl_options = {'REGISTER'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=330, confirm_text='Install')
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        col.label(text='This will install the "img2pdf" python module, using pip', icon='INFO')
+        col.operator("wm.url_open", text="Learn more about img2pdf here", icon='URL').url = "https://pypi.org/project/img2pdf/"
+        # if sys.platform.startswith('win'):
+        #     col.label(text='You may want to open console first to follow advancement', icon='CONSOLE')
+        #     ## Add operator to open console ?
+        
+        col.label(text="This may take a moment")
+        col.label(text="Continue ?")
 
     def execute(self, context):
         try:
@@ -103,14 +118,6 @@ class RENDER_OT_install_img2pdf(Operator):
         except Exception as e:
             self.report({'ERROR'}, f"Unexpected error during installation: {e}")
             return {'CANCELLED'}
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_confirm(self, event)
-
-    def draw(self, context):
-        layout = self.layout
-        layout.label(text="This will install the img2pdf module")
-        layout.label(text="using pip. Continue?")
 
 
 class RENDER_OT_images_to_pdf_all(Operator):
