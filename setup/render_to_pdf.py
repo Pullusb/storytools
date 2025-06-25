@@ -315,9 +315,12 @@ class WORLD_OT_create_white_world(Operator):
             # Set background color to white
             world.color = (1.0, 1.0, 1.0)
 
+        if world == context.scene.world:
+            self.report({'INFO'}, 'World background already set')
+            return {'CANCELLED'}
         ## Assign
         context.scene.world = world
-        self.report({'INFO'}, "World background replace with a full white")
+        self.report({'INFO'}, 'World background replaced with "storyworld"')
         return {'FINISHED'}
 
 class STORYTOOLS_OT_render_storyboard_images(Operator):
@@ -353,9 +356,14 @@ class STORYTOOLS_OT_render_storyboard_images(Operator):
     def draw(self, context):
         scn = context.scene
         layout = self.layout
-        # layout.label(text="These option might be of interest:")
-        # layout.separator()
 
+        ## Export path
+        layout.label(text="Export Path:")
+        layout.prop(self, "filepath", text="")
+        
+        # layout.label(text="Some options to consider")
+
+        layout.separator()
         ## Film transparent
         layout.label(text="Background transparency:", icon='IMAGE_ALPHA')
         layout.label(text="For pdf creation, transparency is not an issue (Appear on white)", icon='INFO')
@@ -366,7 +374,7 @@ class STORYTOOLS_OT_render_storyboard_images(Operator):
             layout.label(text="World:", icon='WORLD')
             if not scn.world:
                 layout.label(text="No world set, background will appear black", icon='ERROR')
-            layout.label(text="Without transparent, you may want to set a white world", icon='BLANK1')
+            layout.label(text="With transparency off, you may want to set a white background", icon='BLANK1')
             layout.operator("world.create_white_world", text="Set White World", icon='WORLD')
 
         layout.separator()
@@ -379,9 +387,9 @@ class STORYTOOLS_OT_render_storyboard_images(Operator):
             op = row.operator("storytools.info_note", text="", icon="QUESTION")
             op.title = "Color Management"
             op.text = """Most View transforms, like Agx or Filmic deliver more desaturated color.
-That's best for photorealistic rendering,
+Thoses are best for photorealistic rendering,
 but may not be suitable for storyboards.
-If you want the "direct" colors, set it to 'Standard'"""
+If you want "direct" colors, set it to 'Standard'"""
 
         layout.separator()
         ## Range check
