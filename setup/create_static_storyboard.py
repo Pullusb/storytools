@@ -255,11 +255,8 @@ class STORYTOOLS_OT_add_default_storyboard_presets(Operator):
 
 ## Menu for management
 class STORYTOOLS_MT_storyboard_presets_management(Menu):
-    """Storyboard presets Management menu"""
     bl_label = "Storyboard Presets Management"
     bl_idname = "STORYTOOLS_MT_storyboard_presets_management"
-    # preset_subdir = "storytools/storyboard"
-    # preset_operator = "script.execute_preset"
 
     def draw(self, context):
         layout = self.layout
@@ -283,6 +280,9 @@ class STORYTOOLS_MT_storyboard_presets_management(Menu):
             layout.operator("storytools.add_default_storyboard_presets", text="Add Default Presets", icon='IMPORT')
         else:
             layout.label(text="Default Presets Ok", icon='CHECKMARK')
+
+        # TODO: Add option to setup scene (world, transparency, or anyone else)
+        # Convert to animatic option here ?
 
 class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
     bl_idname = "storytools.create_static_storyboard_pages"
@@ -1305,6 +1305,9 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                             logo_objects.append(logo_obj)
                             created_count += 1
                             master_logo = logo_obj
+
+                            ## Pack the logo image in file to avoid link issues when sharing the file
+                            fn.pack_images_in_object(logo_obj)
                         
                         # Restore selection
                         bpy.ops.object.select_all(action='DESELECT')
@@ -1858,14 +1861,16 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             
             # Set scene resolution to match canvas ratio (only for the first camera)
             if page == 0:
+                ## Set resolution, longer side should be at least 2400px
+                base_resolution = 3508  # A4 size in pixels at 300 DPI
                 scene = context.scene
                 if cam_width > cam_height:
-                    scene.render.resolution_x = 1920
-                    scene.render.resolution_y = int(1920 * cam_height / cam_width)
+                    scene.render.resolution_x = base_resolution
+                    scene.render.resolution_y = int(base_resolution * cam_height / cam_width)
                 else:
-                    scene.render.resolution_y = 1920
-                    scene.render.resolution_x = int(1920 * cam_width / cam_height)
-                
+                    scene.render.resolution_y = base_resolution
+                    scene.render.resolution_x = int(base_resolution * cam_width / cam_height)
+
                 ## Set first camera as active scene camera
                 scene.camera = camera_obj
             

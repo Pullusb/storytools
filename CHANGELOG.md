@@ -2,6 +2,12 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.23.1
+
+- changed: static storyboard pages resolution defaults to 3508px on longer side (300dpi on A4 format for print)
+- added: button to manage static storyboard template presets exposed in setup panel
+- fixed: When creating static storyboard, pack used logo image into blend
+
 2.23.0
 
 - added: Quick storyboard export solution in setup panel

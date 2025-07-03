@@ -94,7 +94,10 @@ class STORYTOOLS_PT_viewport_setup(bpy.types.Panel):
             col.separator()
             col.label(text='Static Storyboard:')
             col = col.column(align=True)
-            col.operator("storytools.create_static_storyboard_pages", icon='GRID')
+            row = col.row(align=True)
+            row.operator("storytools.create_static_storyboard_pages", text='Create Storyboard Pages', icon='GRID')
+            row.menu("STORYTOOLS_MT_storyboard_presets_management", text="", icon='TOOL_SETTINGS')
+
             col.operator("storytools.render_storyboard_images", text='Render StoryBoard', icon='RESTRICT_RENDER_OFF')
             col.menu("STORYTOOLS_MT_export_storyboard_to_pdf", icon='DOCUMENTS', text='Create PDF')
 

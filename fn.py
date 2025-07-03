@@ -541,6 +541,23 @@ def empty_at(pos, name='Empty', type='PLAIN_AXES', size=1.0, show_name=False, li
     mire.show_name = show_name
     return mire
 
+def pack_images_in_object(obj, verbose=False):
+    '''Pack all image textures used by object into the blend file.
+    obj (Object): object containing materials with image textures.
+    '''
+    # Ensure the object has materials
+    if not obj.data.materials:
+        return
+
+    # print(f"Packing images for object: {obj.name}")
+    for mat in obj.data.materials:
+        if mat and mat.use_nodes:
+            for node in mat.node_tree.nodes:
+                if node.type == 'TEX_IMAGE' and node.image:
+                    node.image.pack()
+                    if verbose:
+                        print(f"Packed image: {node.image.name}")
+
 ### -- GP --
 
 def get_gp_draw_plane(context):
