@@ -6,6 +6,7 @@ from . import (
     git_update,
     create_static_storyboard,
     render_to_pdf,
+    # generate_marker_animatic,
     ui,
 )
 
@@ -17,6 +18,7 @@ modules = (
     git_update,
     create_static_storyboard,
     render_to_pdf,
+    # generate_marker_animatic,
     ui,
 )
 
