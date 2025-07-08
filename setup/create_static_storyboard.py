@@ -245,8 +245,9 @@ class STORYTOOLS_OT_add_default_storyboard_presets(Operator):
     bl_idname = "storytools.add_default_storyboard_presets"
     bl_label = "Load Default Storyboard Presets"
     bl_description = "Load default storyboard presets into user presets\
-        \nneeded only one time per Blender version to load presets shipped with the addon)"
-    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+        \nNeeded only one time per Blender version to load presets shipped with the addon\
+        \nThis will not overwrite any existing presets"
+    bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):
         create_default_presets()
@@ -1842,6 +1843,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                 
                 if not (cam_collection := bpy.data.collections.get("Storyboard Cameras")):
                     cam_collection = bpy.data.collections.new("Storyboard Cameras")
+                    cam_collection.color_tag = 'COLOR_04'
                 if not cam_collection in context.scene.collection.children_recursive:
                     self.parent_collection.children.link(cam_collection)
 
@@ -2006,6 +2008,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         self.parent_collection = bpy.data.collections.get("Storyboard")
         if not self.parent_collection:
             self.parent_collection = bpy.data.collections.new("Storyboard")
+            self.parent_collection.color_tag = 'COLOR_02' # Orange | 5 for Blue
         if not self.parent_collection in context.scene.collection.children_recursive:
             context.scene.collection.children.link(self.parent_collection)
 
