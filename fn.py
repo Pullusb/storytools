@@ -517,6 +517,49 @@ def get_viewport_frustum(area, region, rv3d, space):
                             far_clip_point, rv3d.view_perspective)
 
 
+### -- Collection management --
+
+def get_view_layer_collection(col, vl_col=None, view_layer=None):
+    '''return viewlayer collection from collection
+    col: the collection to get viewlayer collection from
+    view_layer (viewlayer, optional) : viewlayer to search in, if not passed, use active viewlayer
+    
+    '''
+    if vl_col is None:
+        if view_layer:
+            vl_col = view_layer.layer_collection
+        else:
+            vl_col = bpy.context.view_layer.layer_collection
+    for sub in vl_col.children:
+        if sub.collection == col:
+            return sub
+        if len(sub.children):
+            c = get_view_layer_collection(col, sub)
+            if c is not None:
+                return c
+
+def get_parents_cols(col, root=None, scene=None, cols=None):
+    '''Return a list of parents collections of passed col
+    root : Pass a collection to search in (recursive)
+        Else search in master collection
+    scene: scene to search in (active scene if not passed)
+    cols: used internally by the function to collect results
+    '''
+    if cols is None:
+        cols = []
+        
+    if root == None:
+        scn = scene or bpy.context.scene
+        root=scn.collection
+
+    for sub in root.children:
+        if sub == col:
+            cols.append(root)
+
+        if len(sub.children):
+            cols = get_parents_cols(col, root=sub, cols=cols)
+    return cols
+
 ### -- Object --
 
 def empty_at(pos, name='Empty', type='PLAIN_AXES', size=1.0, show_name=False, link=True):

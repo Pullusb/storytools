@@ -2,7 +2,7 @@ import bpy
 
 import numpy as np
 
-from bpy.types import Operator
+from bpy.types import Operator, PropertyGroup
 from mathutils import Vector, Matrix
 from bpy.props import FloatProperty, IntProperty, EnumProperty, BoolProperty, StringProperty
 
@@ -80,7 +80,7 @@ class STORYTOOLS_OT_create_animatic_from_board(Operator):
     )
 
     fps : IntProperty(
-        name="Frames Per Second",
+        name="Frame Rate",
         description="Frames per second for the animatic scene",
         default=24,
         min=1,
@@ -145,16 +145,23 @@ class STORYTOOLS_OT_create_animatic_from_board(Operator):
         layout = self.layout
         layout.use_property_split = True
         layout.prop(self, "read_direction")
-        layout.prop(self, "frame_offset")
-        layout.prop(self, "resolution_x")
-        layout.label(text=f"Animatic Resolution Y: {round(self.resolution_x * self.aspect_ratio)}")
-        
-        layout.prop(self, "fps")
-        layout.label(text=f"Time per panel: {self.frame_offset * (1 / self.fps):.2f} seconds")
+        layout.prop(self, "fps", text="Frame Rate")
 
-                     
-        layout.label(text=f"Detected Aspect Ratio: {self.aspect_ratio:.2f}")
-        layout.label(text=f"Number of frames: {self.number_of_frames}")
+        layout.separator()
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.prop(self, "frame_offset", text="Shot Duration")
+        row.label(text=" Frames")
+        col.label(text=f"Time Per Panel: {self.frame_offset * (1 / self.fps):.2f} seconds")
+
+        layout.separator()
+        row = layout.row(align=True)
+        row.prop(self, "resolution_x", text="Resolution")
+        row.label(text=f" x {round(self.resolution_x * self.aspect_ratio)}")
+
+        layout.separator()
+        layout.label(text=f"Number of panel frames: {self.number_of_frames}")
+        # layout.label(text=f"Detected Aspect Ratio: {self.aspect_ratio:.2f}")
     
     def execute(self, context):
         ## Create new scene and link the whole storyboard object and collection
@@ -218,18 +225,40 @@ class STORYTOOLS_OT_create_animatic_from_board(Operator):
         scn.render.resolution_x = self.resolution_x
         scn.render.resolution_y = round(self.resolution_x * self.aspect_ratio)
 
-        scn.collection.objects.link(board_obj)  # Link the storyboard object to the new scene
 
-        
+        stb_collection = source_scene.collection.children.get('Storyboard')
+        if not board_obj.name in stb_collection.all_objects:
+            # Link the storyboard object to the new scene only if not already in Storyboard collection
+            scn.collection.objects.link(board_obj)
+
+        ## Link Storyboard collection and Hide initial camera collection
+        scn.collection.children.link(stb_collection)
+        ## Hide the initial camera collection in animatic scene
+
+        # stb_vlcol = scn.view_layer[0].layer_collection.children.get('Storyboard')
+        # if stb_vlcol:
+        #     camera_vlcol = stb_vlcol.children.get('Storyboard Cameras')
+        #     if camera_vlcol:
+        #         camera_vlcol.exclude = True
+
+        ## More robust : get the "Storyboard Cameras" collection by name
+        page_cam_col = next((col for col in scn.collection.children_recursive if col.name == 'Storyboard Cameras'), None)
+        if page_cam_col:
+            if vl_page_cam := fn.get_view_layer_collection(page_cam_col, view_layer=scn.view_layers[0]):
+                vl_page_cam.exclude = True
+
+
         ## Create collection for cameras
         animatic_collection = bpy.data.collections.get('Animatic') # Later
         if not animatic_collection:
             animatic_collection = bpy.data.collections.new('Animatic')
+        ## Link if not there
+        if animatic_collection not in scn.collection.children_recursive:
             scn.collection.children.link(animatic_collection)
-
 
         y_loc = -5
         frame_count = 1
+        scn.frame_start = 1
         for page_count, page in enumerate(page_list):
             for frame_coords in page:
                 ## frame_coords is a tuple of vectors (min_corner, max_corner, center)
@@ -255,27 +284,188 @@ class STORYTOOLS_OT_create_animatic_from_board(Operator):
                 ## TODO: add margin multiplier on ortho scale
                 cam_data.ortho_scale = ref_size
 
-                frame_count += 1
 
                 ## Create a marker for the camera
                 panel_name = f"panel_{frame_count}" #:03d
-                marker = scn.timeline_markers.new(name=panel_name, frame=frame_count * self.frame_offset)
+                marker = scn.timeline_markers.new(name=panel_name, frame=(frame_count * self.frame_offset) - self.frame_offset)
                 marker.camera = cam_obj
 
+                frame_count += 1
                 ## Bonus (long): find a good method to get related text and use it as pseudo-subtitles text (fitted into drawing)
 
+            ## continuously push ending frame            
+            scn.frame_end = (frame_count * self.frame_offset) - self.frame_offset
+
+        ## make animatic scene active
         bpy.context.window.scene = scn        
         return {'FINISHED'}
         
 
+class STORYTOOLS_OT_push_markers(Operator):
+    bl_idname = "storytools.push_markers"
+    bl_label = "Push Markers"
+    bl_description = "Push all markers to the right of the current frame by 1 (10 with Shift pressed)"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    direction: EnumProperty(
+        name="Direction",
+        description="Direction to push the markers",
+        items=(
+            ('LEFT', "Left", "Push markers to the left"),
+            ('RIGHT', "Right", "Push markers to the right"),
+        ),
+        default='RIGHT'
+    )
+
+    def invoke(self, context, event):
+        self.step = 10 if event.shift else 1
+        return self.execute(context)
+
+    def execute(self, context):
+        current_frame = context.scene.frame_current
+        step = self.step if self.direction == 'RIGHT' else -self.step
+
+        moved = False
+        for marker in context.scene.timeline_markers:
+            marker.select = marker.frame > current_frame
+            if marker.frame > current_frame:
+                marker.frame += step
+                moved = True
+        
+        if not moved:
+            self.report({'WARNING'}, "No markers subsequent markers to move")
+            return {'FINISHED'}
+
+        ## Show 
+        fps = context.scene.render.fps
+
+        ordered_markers = sorted([m for m in context.scene.timeline_markers], key=lambda m: m.frame)
+
+        current_marker = max((m for m in ordered_markers if m.frame <= current_frame), key=lambda m: m.frame, default=None)
+        next_marker = min((m for m in ordered_markers if m.frame > current_frame), key=lambda m: m.frame, default=None)
+        if not current_marker or not next_marker:
+            return {'FINISHED'}
+
+        ## Use last marker as reference for frame padding
+        padding = len(str(next_marker.frame)) # could be ordered_markers[-1] frame ? more logic ?
+        frame_count = next_marker.frame - current_marker.frame
+        marker_time = frame_count / fps
+        self.report({'INFO'}, f"Current shot: {frame_count:0{padding}d} frames. Time: {marker_time:.2f}s")
+        return {'FINISHED'}
+
+
+class STORYTOOLS_OT_time_compression(Operator):
+    bl_idname = "storytools.time_compression"
+    bl_label = "Time Compression"
+    bl_description = "Compress or dilate the timeline by adding or removing one frame between all existing markers"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    direction: EnumProperty(
+        name="Operation",
+        description="Choose whether to compress or dilate the timeline",
+        items=(
+            ('COMPRESS', "Compress", "Remove one frame between all markers"),
+            ('DILATE', "Dilate", "Add one frame between all markers"),
+        ),
+        default='COMPRESS'
+    )
+
+    def invoke(self, context, event):
+        self.force_compress = event.ctrl
+        return self.execute(context)
+
+    def report_average_time(self, context, markers):
+        # Calculate average time between frames
+        total_time = 0
+        frame_differences = []
+
+        for i in range(1, len(markers)):
+            frame_diff = markers[i].frame - markers[i - 1].frame
+            frame_differences.append(frame_diff)
+            total_time += frame_diff
+
+        if frame_differences:
+            avg_time = total_time / len(frame_differences)
+            avg_time_seconds = avg_time / context.scene.render.fps
+            self.report({'INFO'}, f"Average time between frames: {avg_time:.2f} frames ({avg_time_seconds:.2f} seconds)")
+
+    def execute(self, context):
+        ## Sort markers by frame number
+        markers = sorted(context.scene.timeline_markers, key=lambda m: m.frame)
+        if len(markers) < 2:
+            self.report({'WARNING'}, "Not enough markers to perform time compression or dilation")
+            return {'CANCELLED'}
+
+        step = -1 if self.direction == 'COMPRESS' else 1
+
+        if self.direction == 'DILATE':
+            for i in range(1, len(markers)):
+                markers[i].frame += i * step
+            
+            self.report_average_time(context, markers)
+            return {'FINISHED'}
+
+        if not self.force_compress:
+            ## Avoid first using 0
+            for i in range(len(markers) - 1, 0, -1):
+                if markers[i].frame - markers[i - 1].frame <= 1:
+                    print('Marker too close:', markers[i].name, markers[i].frame)
+                    self.report({'WARNING'}, "Some markers are too close to compress (Ctrl + Click to bypass and still compress other)")
+                    return {'CANCELLED'}
+        
+        # Avoid first using 1
+        for i in range(1, len(markers)):
+            frame_numbers = [m.frame for m in markers]
+            for j in range(1, len(markers)):
+                if j < i:
+                    ## Don't touch already compressed markers
+                    continue
+
+                if frame_numbers[j - 1] >= frame_numbers[j] - 1:
+                    break
+
+                markers[j].frame -= 1
+        
+        self.report_average_time(context, markers)
+
+        # self.report({'INFO'}, f"Timeline {'compressed' if step == -1 else 'dilated'} successfully")
+        return {'FINISHED'}
+
+## --- Marker management in Timeline
+
+class STORYTOOLS_PG_board_animatic(PropertyGroup):
+    show_marker_management: BoolProperty(
+        name="Show Marker Management",
+        description="Show the marker management UI in timeline headers",
+        default=False,
+    )
+
+def marker_management_ui(self, context):
+    """Add a panel to the marker management UI"""
+    layout = self.layout
+    layout.label(text="Markers:")
+    row = layout.row(align=True)
+    row.operator("storytools.push_markers", text="", icon="TRIA_LEFT").direction = 'LEFT'
+    row.operator("storytools.push_markers", text="", icon="TRIA_RIGHT").direction = 'RIGHT'
+
+    row = layout.row(align=True)
+    row.operator("storytools.time_compression", text="", icon="TRIA_LEFT").direction = 'COMPRESS'
+    row.operator("storytools.time_compression", text="", icon="TRIA_RIGHT").direction = 'DILATE'
+
 classes = (
     STORYTOOLS_OT_create_animatic_from_board,
+    STORYTOOLS_OT_push_markers,
+    STORYTOOLS_OT_time_compression,
 )
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
+    
+    bpy.types.DOPESHEET_HT_header.append(marker_management_ui)
 
 def unregister():
+    bpy.types.DOPESHEET_HT_header.remove(marker_management_ui)
+
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
