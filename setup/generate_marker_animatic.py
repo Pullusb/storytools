@@ -208,11 +208,11 @@ class STORYTOOLS_OT_create_animatic_from_board(Operator):
         for frames_list in page_list:
             ## sort frames by their center position
             if self.read_direction == 'RIGHT':
-                # sort by X then Z
-                frames_list.sort(key=lambda vecs: (vecs[2].x, -vecs[2].z))
-            else:
                 # sort by Z then X
                 frames_list.sort(key=lambda vecs: (-vecs[2].z, vecs[2].x))
+            else:
+                # sort by X then Z
+                frames_list.sort(key=lambda vecs: (vecs[2].x, -vecs[2].z))
 
         ## Concatenate all groups ? (not needed for now)
 
@@ -462,10 +462,10 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
     
-    bpy.types.DOPESHEET_HT_header.append(marker_management_ui)
+    # bpy.types.DOPESHEET_HT_header.append(marker_management_ui)
 
 def unregister():
-    bpy.types.DOPESHEET_HT_header.remove(marker_management_ui)
+    # bpy.types.DOPESHEET_HT_header.remove(marker_management_ui)
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

@@ -5,8 +5,9 @@ from . import (
     story_palettes,
     git_update,
     create_static_storyboard,
+    storyboard_panel_management,
+    generate_marker_animatic,
     render_to_pdf,
-    # generate_marker_animatic,
     ui,
 )
 
@@ -17,8 +18,9 @@ modules = (
     story_palettes,
     git_update,
     create_static_storyboard,
+    storyboard_panel_management,
+    generate_marker_animatic,
     render_to_pdf,
-    # generate_marker_animatic,
     ui,
 )
 
