@@ -13,6 +13,14 @@ from pathlib import Path
 from ..constants import FONT_DIR, PRESETS_DIR, IMAGES_DIR
 from .. import fn
 
+notes_default_bodys = {
+    'None' : '',
+    'Notes' : 'Notes:\n',
+    'Description' : 'Description:\n',
+    'ActionDialog' : 'Action:\n\n\n\nDialog:\n',
+    'ActionDialogLighting' : 'Action:\n\n\n\nDialog:\n\n\n\nLighting:\n',
+    }
+
 # Preset system for storyboard settings
 class STORYTOOLS_MT_storyboard_presets(Menu):
     """Storyboard presets menu"""
@@ -1615,14 +1623,6 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         notes_width = space_x * self.notes_width_percent / 100
         text_width = notes_width * 0.9  # 90% of notes area width
 
-        default_bodys = {
-            'None' : '',
-            'Notes' : 'Notes:\n',
-            'Description' : 'Description:\n',
-            'ActionDialog' : 'Action:\n\n\n\nDialog:\n',
-            'ActionDialogLighting' : 'Action:\n\n\n\nDialog:\n\n\n\nLighting:\n',
-            }
-
         panel_count = 0
         for page in range(self.num_pages):
             page_y_offset = -(page * (self.canvas_y + self.page_spacing))
@@ -1649,7 +1649,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                     text_obj = bpy.data.objects.get(text_name)
 
                     is_new_text = False
-                    if text_obj and text_obj.type == 'FONT': # and text_obj.data.body not in default_bodys.values()
+                    if text_obj and text_obj.type == 'FONT': # and text_obj.data.body not in notes_default_bodys.values()
                         # Reuse existing text object
                         reused_count += 1
                     else:
@@ -1673,7 +1673,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
                     
                     # Set text content only for new objects
                     if is_new_text:
-                        text_data.body = default_bodys.get(self.note_text_format, '')
+                        text_data.body = notes_default_bodys.get(self.note_text_format, '')
 
                     # Set overflow to NONE (default)
                     text_data.overflow = 'NONE'

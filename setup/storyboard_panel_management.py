@@ -7,6 +7,7 @@ from mathutils import Vector, Matrix
 from bpy.props import FloatProperty, IntProperty, EnumProperty, BoolProperty, StringProperty
 
 from .. import fn
+from . create_static_storyboard import notes_default_bodys
 
 def get_min_max_corner(positions, margin=0):
     ## Sort in place (modify list !!)
@@ -48,13 +49,23 @@ def any_point_in_box(coords, min_corner, max_corner):
     '''
     return any(min_corner.x <= co.x <= max_corner.x and min_corner.z <= co.z <= max_corner.z for co in coords)
 
-## TODO: need a function to add pages (as a separate operator, but used in this case when need to offset last panel)
+## TODO: need a function to add/remove pages (as a separate operator, but used in this case when need to offset last panel or remove pages)
 
 class STORYTOOLS_OT_storyboard_offset_panel(Operator):
     bl_idname = "storytools.storyboard_offset_panel"
     bl_label = "Storyboard Offset Panels"
-    bl_description = "Add a new panel, applying offset to all subsequent panels"
+    bl_description = "Add or remove a panel, applying offset to all subsequent panels"
     bl_options = {'REGISTER', 'UNDO'}
+    
+    offset_direction : EnumProperty(
+        name="Offset Direction",
+        description="Direction to offset panels",
+        items=(
+            ('FORWARD', "Forward (Add Panel)", "Offset panels forward to make room for a new panel"),
+            ('BACKWARD', "Backward (Remove Panel)", "Offset panels backward to fill the gap of a removed panel"),
+        ),
+        default='FORWARD'
+    )
     
     read_direction : EnumProperty(
         name="Read Direction",
@@ -67,8 +78,8 @@ class STORYTOOLS_OT_storyboard_offset_panel(Operator):
     )
 
     insert_index : IntProperty(
-        name="Panel Number To Insert",
-        description="Number of panel to insert a new one",
+        name="Panel Number",
+        description="Panel number to insert (forward) or remove (backward)",
         default=1,
         min=1,
     )
@@ -133,10 +144,9 @@ class STORYTOOLS_OT_storyboard_offset_panel(Operator):
         # width = corner_max.x - corner_min.x
         # height = corner_max.z - corner_min.z
 
-        # TODO: if row/column is 1x1, just hide read direction option
+        # TODO: If row/column is 1x1, just hide read direction option entirely ?
         if gen_settings := board_obj.get('stb_settings', None):
             column_num = gen_settings.get('columns', None)
-            print('column_num: ', column_num)
             if column_num == 1:
                 self.read_direction = 'DOWN'
 
@@ -146,8 +156,15 @@ class STORYTOOLS_OT_storyboard_offset_panel(Operator):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
+        layout.prop(self, "offset_direction")
         layout.prop(self, "read_direction")
-        layout.prop(self, "insert_index")
+        
+        # Update label based on direction
+        if self.offset_direction == 'FORWARD':
+            layout.prop(self, "insert_index", text="Panel Number To Insert")
+        else:
+            layout.prop(self, "insert_index", text="Panel Number To Remove")
+            
         layout.label(text=f"Total Panels: {self.number_of_panels}")
         layout.separator()
         layout.prop(self, "stop_index")
@@ -157,17 +174,39 @@ class STORYTOOLS_OT_storyboard_offset_panel(Operator):
         # if self.stop_index > self.number_of_panels:
         #     self.stop_index = self.number_of_panels - 1 
 
-        if self.insert_index >= self.number_of_panels:
-            layout.label(text="Warning: Inserting panel beyond current total panels is not possible")
+        if self.offset_direction == 'FORWARD':
+            if self.insert_index >= self.number_of_panels:
+                layout.label(text="Warning: Inserting panel beyond current total panels is not possible")
+        else:
+            if self.insert_index > self.number_of_panels:
+                layout.label(text="Warning: Cannot remove a panel that doesn't exist")
+                
         if self.stop_index >= self.number_of_panels:
             layout.label(text="Warning: Stopping offset at or beyond current total panels is not possible")
 
-    
+    def get_page_and_index(self, index, page_list):
+        """From global index, return index of page and index of panel in that page"""
+        ct = 0
+        for page_index, panels in enumerate(page_list):
+            for i in range(len(panels)):
+                if ct + i == index:
+                    return page_index, i
+            ct += len(panels)
+        return None, None
+
     def execute(self, context):
         ## Create new scene and link the whole storyboard object and collection
 
-        if self.insert_index >= self.number_of_panels or self.stop_index >= self.number_of_panels:
-            self.report({'ERROR'}, 'Cannot insert or stop offset at (or beyond current total panels')
+        if self.offset_direction == 'FORWARD' and self.insert_index >= self.number_of_panels:
+            self.report({'ERROR'}, 'Cannot insert panel at or beyond current total panels')
+            return {'CANCELLED'}
+        
+        if self.offset_direction == 'BACKWARD' and self.insert_index > self.number_of_panels:
+            self.report({'ERROR'}, 'Cannot remove a panel that doesn\'t exist')
+            return {'CANCELLED'}
+            
+        if self.stop_index >= self.number_of_panels:
+            self.report({'ERROR'}, 'Cannot stop offset at or beyond current total panels')
             return {'CANCELLED'}
 
         ## detect all position, maybe it'
@@ -232,59 +271,78 @@ class STORYTOOLS_OT_storyboard_offset_panel(Operator):
             return {'CANCELLED'}
         
         ## Find insertion point (1-based index from user input)
-        insert_index = min(self.insert_index - 1, len(panels))
+        insert_index = min(self.insert_index - 1, len(panels) - 1)
+        end_index = min(self.stop_index - 1, len(panels) - 1)
         
-        ## Process panels in reverse order from insertion point to avoid moving already moved content
-        ## - 2 to avoid moving the last panel (which should be empty)
-        # end_index = len(panels) - 2
-        end_index = self.stop_index - 1
-        for i in range(end_index, insert_index - 1, -1):
-            current_panel = panels[i]
-            current_min, current_max, current_center = current_panel
-            
-            # Calculate target position for this panel (move to next panel position)
-            target_panel_index = i + 1
-            # if target_panel_index >= len(panels):
-            #     # If target is beyond existing panels, extrapolate based on last panel spacing
-            #     if len(panels) >= 2:
-            #         last_spacing = panels[-1][2] - panels[-2][2]
-            #         target_center = panels[-1][2] + last_spacing
-            #     else:
-            #         # Only one panel, use default spacing
-            #         panel_width = current_max.x - current_min.x
-            #         target_center = current_panel[2] + Vector((panel_width * 1.2, 0, 0))
-            # else:
-            #     ## Use existing panel position as target
-            #     target_center = panels[target_panel_index][2]
 
-            target_center = panels[target_panel_index][2]
+        moved_text_objects = {}
+        to_remove_text_objects = []
+        ## Precalculate iteration parameters based on direction
+        if self.offset_direction == 'FORWARD':
+            # Forward: iterate backward from end to start
+            start_idx = end_index
+            stop_idx = insert_index - 1
+            step = -1
+            # For forward offset: source is current panel (i), target is next panel (i+1)
+            get_source_idx = lambda i: i
+            get_target_idx = lambda i: i + 1
+            direction_text = "forward"
+            panel_duplication_index = insert_index
+            panel_to_remove_index = self.stop_index
+        else:  # BACKWARD
+            # Backward: iterate forward from start to end
+            start_idx = insert_index
+            stop_idx = end_index + 1
+            # if start_idx == stop_idx:
+            #     stop_idx = end_index + 1 
+
+            step = 1
+            # For backward offset: source is next panel (i+1), target is current panel (i)
+            get_source_idx = lambda i: i + 1
+            get_target_idx = lambda i: i
+            direction_text = "backward"
+            panel_duplication_index = self.stop_index
+            panel_to_remove_index = insert_index
+
+        ## Store text in panel that will be stripped
+        print('panel_duplication_index: ', panel_duplication_index)
+        print('panel_to_remove_index: ', panel_to_remove_index)
+        if panel_duplication_index == panel_to_remove_index:
+            self.report({'ERROR'}, 'Cannot duplicate and remove the same panel at the same time')
+            return {'CANCELLED'}
+
+        for ob in all_objects:
+            if ob.type == 'FONT':
+                loc = ob.matrix_world.translation
+                if any_point_in_box([loc], 
+                        panels[panel_duplication_index][0], panels[panel_duplication_index][1]):
+                    # Store text objects to move later
+                    moved_text_objects[ob] = ob.location.copy()
+    
+                if any_point_in_box([loc], 
+                        panels[panel_to_remove_index][0], panels[panel_to_remove_index][1]):
+                    # Store text objects to move later
+                    to_remove_text_objects.append(ob)
+    
+        ## Single loop for both directions
+        for i in range(start_idx, stop_idx, step):
+            source_idx = get_source_idx(i)
+            target_idx = get_target_idx(i)
             
-            # Calculate offset vector for this specific panel
-            offset_vector = target_center - current_center
-            
-            ## Check if we should stop on empty panels (going reverse...)
-            # if self.stop_offset_on_empty_panels:
-            #     panel_has_content = False
-            #     for layer in board_obj.data.layers:
-            #         if layer.name == 'Frames':
-            #             # panel layout should not move (??)
-            #             continue
-            #         frame = layer.current_frame()
-            #         if frame is None:
-            #             continue
-            #         drawing = frame.drawing
-            #         for stroke in drawing.strokes:
-            #             if any(current_min.x <= p.position.x <= current_max.x and 
-            #                    current_min.z <= p.position.z <= current_max.z for p in stroke.points):
-            #                 panel_has_content = True
-            #                 break
-            #         if panel_has_content:
-            #             break
+            # Skip if source panel doesn't exist
+            if source_idx >= len(panels):
+                continue
                 
-            #     if not panel_has_content:
-            #         continue
+            source_panel = panels[source_idx]
+            target_panel = panels[target_idx]
             
-            # Find grease pencil strokes to move within current panel
+            source_min, source_max, source_center = source_panel
+            target_min, target_max, target_center = target_panel
+            
+            # Calculate offset vector (from source to target)
+            offset_vector = target_center - source_center
+            
+            # Find grease pencil strokes to move from source panel
             strokes_to_move = []
             for layer in board_obj.data.layers:
                 if layer.name == 'Frames':
@@ -294,45 +352,76 @@ class STORYTOOLS_OT_storyboard_offset_panel(Operator):
                     continue
                 drawing = frame.drawing
                 for stroke in drawing.strokes:
-                    if any(current_min.x <= p.position.x <= current_max.x and 
-                           current_min.z <= p.position.z <= current_max.z for p in stroke.points):
+                    if any(source_min.x <= p.position.x <= source_max.x and 
+                           source_min.z <= p.position.z <= source_max.z for p in stroke.points):
                         strokes_to_move.append(stroke)
             
-            if strokes_to_move:
-                print(f'Panel {i + 1}: {len(strokes_to_move)} strokes to move')
+            # if strokes_to_move:
+            #     print(f'Panel {i + 1}: {len(strokes_to_move)} strokes to move {direction_text}')
             
             # Apply offset to grease pencil strokes
             for stroke in strokes_to_move:
                 for point in stroke.points:
                     point.position += offset_vector
             
-            # Move 3D objects in stb_collection that have origin within panel
+            # Move 3D objects from source panel
             if all_objects:
                 objects_to_move = []
                 
+                # Iterate backward through objects to safely remove during iteration
                 for ob_idx in range(len(all_objects)-1, -1, -1):
                     obj = all_objects[ob_idx]
                     
-                    # Check if object origin is within current panel bounds
-                    # world_pos = obj.matrix_world.translation
-                    
+                    # Check if object origin is within source panel bounds
                     world_pos = obj.location
-                    # if any_point_in_box([world_pos], current_min, current_max):
-                    if (current_min.x <= world_pos.x <= current_max.x and 
-                        current_min.z <= world_pos.z <= current_max.z):
+                    if (source_min.x <= world_pos.x <= source_max.x and 
+                        source_min.z <= world_pos.z <= source_max.z):
                         objects_to_move.append(all_objects.pop(ob_idx))
                 
-                if objects_to_move:
-                    print(f'Panel {i + 1}: {len(objects_to_move)} objects to move')
+                # if objects_to_move:
+                #     print(f'Panel {i + 1}: {len(objects_to_move)} objects to move {direction_text}')
                 
                 # Apply panel offset to 3D objects
                 for obj in objects_to_move:
                     obj.location += offset_vector
-        
-        ## TODO reproduce initial texts in source panel
-        
 
+        ## Add / remove text where needed
+        ## swap instead of delete when moving backward ?
+        
+        stb_settings = board_obj.get('stb_settings')
+        for obj, loc in moved_text_objects.items():
+            new_obj = obj.copy()
+            new_obj.data = obj.data.copy()
+            ## Link in same collection
+            obj.users_collection[0].objects.link(new_obj)
+            ## Adjust object name to a more coherent thing
+            # new_obj.name 
 
+            ## replace (currently have the location of copy-source)
+            new_obj.location = loc # replace at original location
+
+            # Reset to initial text
+            if stb_settings:
+                content = None
+                if new_obj.name.startswith("stb_shot_num"):
+                    content = stb_settings.get("panel_header_left")
+                
+                elif new_obj.name.startswith("stb_panel_num"):
+                    content = stb_settings.get("panel_header_right")
+                
+                elif new_obj.name.startswith("panel_"):
+                    content = notes_default_bodys.get(stb_settings.get("note_text_format",''))
+                
+                if content is not None:
+                    new_obj.data.body = content
+
+        ## remove text in destination panel after offset to avoid duplication
+        for obj in reversed(to_remove_text_objects):
+            page_id, page_panel_id = self.get_page_and_index(panel_to_remove_index, page_list)
+            if page_id and page_panel_id:
+                ## For the sake of user, start count at 1 (not page 0 or panel 0)
+                # print(f'Remove text {obj.name} at page {page_id + 1}, panel {page_panel_id + 1}. (global index: {panel_to_remove_index + 1})')
+            bpy.data.objects.remove(obj, do_unlink=True)
         return {'FINISHED'}
 
 
