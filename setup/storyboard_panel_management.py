@@ -66,7 +66,7 @@ class STORYTOOLS_OT_storyboard_offset_panel(Operator):
         default='RIGHT'
     )
 
-    number_to_insert : IntProperty(
+    insert_index : IntProperty(
         name="Panel Number To Insert",
         description="Number of panel to insert a new one",
         default=1,
@@ -80,18 +80,18 @@ class STORYTOOLS_OT_storyboard_offset_panel(Operator):
         min=1,
     )
 
-    stop_offset_number : IntProperty(
+    stop_index : IntProperty(
         name="Panel number to stop offset",
         description="Panel number to stop offset (cannot be greater than total panel number)",
         default=1,
         min=1,
     )
 
-    stop_offset_on_empty_panels : BoolProperty(
-        name="Stop Offset Empty Panels",
-        description="Stop offsetting on next empty panel",
-        default=False,
-    )
+    # stop_offset_on_empty_panels : BoolProperty(
+    #     name="Stop Offset Empty Panels",
+    #     description="Stop offsetting on next empty panel",
+    #     default=False,
+    # )
 
     # ignore_empty_frames : BoolProperty(
     #     name="Ignore Empty Frames",
@@ -126,7 +126,7 @@ class STORYTOOLS_OT_storyboard_offset_panel(Operator):
             return {'CANCELLED'}
         
         self.number_of_panels = len(panel_strokes)
-        self.stop_offset_number = self.number_of_panels -1 
+        self.stop_index = self.number_of_panels -1 
 
         ## IDEA: On launch scan all to get every index containing empty panel (considering strokes)
         # corner_min, corner_max = get_min_max_corner([p.position for p in panel_strokes[0].points])
@@ -147,26 +147,26 @@ class STORYTOOLS_OT_storyboard_offset_panel(Operator):
         layout = self.layout
         layout.use_property_split = True
         layout.prop(self, "read_direction")
-        layout.prop(self, "number_to_insert")
+        layout.prop(self, "insert_index")
         layout.label(text=f"Total Panels: {self.number_of_panels}")
         layout.separator()
-        layout.prop(self, "stop_offset_number")
+        layout.prop(self, "stop_index")
+        layout.label(text="(Stop panel is included)")
         # layout.prop(self, "stop_offset_on_empty_panels", text="Automatic stop on first empty panel")
 
+        # if self.stop_index > self.number_of_panels:
+        #     self.stop_index = self.number_of_panels - 1 
 
-        # if self.stop_offset_number > self.number_of_panels:
-        #     self.stop_offset_number = self.number_of_panels - 1 
-
-        if self.number_to_insert >= self.number_of_panels:
+        if self.insert_index >= self.number_of_panels:
             layout.label(text="Warning: Inserting panel beyond current total panels is not possible")
-        if self.stop_offset_number >= self.number_of_panels:
+        if self.stop_index >= self.number_of_panels:
             layout.label(text="Warning: Stopping offset at or beyond current total panels is not possible")
 
     
     def execute(self, context):
         ## Create new scene and link the whole storyboard object and collection
 
-        if self.number_to_insert >= self.number_of_panels or self.stop_offset_number >= self.number_of_panels:
+        if self.insert_index >= self.number_of_panels or self.stop_index >= self.number_of_panels:
             self.report({'ERROR'}, 'Cannot insert or stop offset at (or beyond current total panels')
             return {'CANCELLED'}
 
@@ -230,16 +230,14 @@ class STORYTOOLS_OT_storyboard_offset_panel(Operator):
         if not panels:
             self.report({'ERROR'}, 'No panels found to offset')
             return {'CANCELLED'}
-
-        ## TODO: offset panel content and all objects in stb_collection that have origin point within panel coordinates
         
         ## Find insertion point (1-based index from user input)
-        insert_index = min(self.number_to_insert - 1, len(panels))
+        insert_index = min(self.insert_index - 1, len(panels))
         
         ## Process panels in reverse order from insertion point to avoid moving already moved content
         ## - 2 to avoid moving the last panel (which should be empty)
         # end_index = len(panels) - 2
-        end_index = self.stop_offset_number - 1
+        end_index = self.stop_index - 1
         for i in range(end_index, insert_index - 1, -1):
             current_panel = panels[i]
             current_min, current_max, current_center = current_panel
@@ -331,7 +329,9 @@ class STORYTOOLS_OT_storyboard_offset_panel(Operator):
                 for obj in objects_to_move:
                     obj.location += offset_vector
         
-        ## TODO reproduce initial texts in new panel
+        ## TODO reproduce initial texts in source panel
+        
+
 
         return {'FINISHED'}
 
