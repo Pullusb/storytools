@@ -420,7 +420,7 @@ class STORYTOOLS_OT_storyboard_offset_panel(Operator):
             page_id, page_panel_id = self.get_page_and_index(panel_to_remove_index, page_list)
             if page_id and page_panel_id:
                 ## For the sake of user, start count at 1 (not page 0 or panel 0)
-                # print(f'Remove text {obj.name} at page {page_id + 1}, panel {page_panel_id + 1}. (global index: {panel_to_remove_index + 1})')
+                print(f'Remove text {obj.name} at page {page_id + 1}, panel {page_panel_id + 1}. (global index: {panel_to_remove_index + 1})')
             bpy.data.objects.remove(obj, do_unlink=True)
         return {'FINISHED'}
 
