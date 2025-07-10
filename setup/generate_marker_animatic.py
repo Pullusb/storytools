@@ -298,6 +298,8 @@ class STORYTOOLS_OT_create_animatic_from_board(Operator):
 
         ## make animatic scene active
         bpy.context.window.scene = scn        
+        ## Activate marker management in new scene
+        scn.animatic_settings.show_marker_management = True
         return {'FINISHED'}
         
 
@@ -433,24 +435,32 @@ class STORYTOOLS_OT_time_compression(Operator):
 
 ## --- Marker management in Timeline
 
-class STORYTOOLS_PG_board_animatic(PropertyGroup):
-    show_marker_management: BoolProperty(
-        name="Show Marker Management",
-        description="Show the marker management UI in timeline headers",
-        default=False,
-    )
+class STORYTOOLS_MT_marker_management(bpy.types.Menu):
+    bl_label = "Storyboard Marker Management"
+    bl_idname = "STORYTOOLS_MT_storyboard_presets_management"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Scale markers")
+        row = layout.row(align=True)
+        row.operator("storytools.time_compression", text="", icon="TRIA_LEFT").direction = 'COMPRESS'
+        row.operator("storytools.time_compression", text="", icon="TRIA_RIGHT").direction = 'DILATE'
 
 def marker_management_ui(self, context):
     """Add a panel to the marker management UI"""
+
+    animatic_settings = context.scene.get("storytools_animatic")
+    if not animatic_settings:
+        return
+    if not animatic_settings.show_marker_management:
+        return
+
     layout = self.layout
     layout.label(text="Markers:")
     row = layout.row(align=True)
     row.operator("storytools.push_markers", text="", icon="TRIA_LEFT").direction = 'LEFT'
     row.operator("storytools.push_markers", text="", icon="TRIA_RIGHT").direction = 'RIGHT'
-
-    row = layout.row(align=True)
-    row.operator("storytools.time_compression", text="", icon="TRIA_LEFT").direction = 'COMPRESS'
-    row.operator("storytools.time_compression", text="", icon="TRIA_RIGHT").direction = 'DILATE'
+    layout.menu("STORYTOOLS_MT_marker_management", text="", icon='DOWNARROW_HLT')
 
 classes = (
     STORYTOOLS_OT_create_animatic_from_board,
@@ -462,10 +472,10 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
     
-    # bpy.types.DOPESHEET_HT_header.append(marker_management_ui)
+    bpy.types.DOPESHEET_HT_header.append(marker_management_ui)
 
 def unregister():
-    # bpy.types.DOPESHEET_HT_header.remove(marker_management_ui)
+    bpy.types.DOPESHEET_HT_header.remove(marker_management_ui)
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

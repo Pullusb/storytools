@@ -270,10 +270,18 @@ class STORYTOOLS_PGT_main_settings(PropertyGroup):
     ## Add the presets... collection property or individual settings ?
     ## Collection is much cleaner, But incompatible with selective pref load...
 
+class STORYTOOLS_PGT_board_animatic(PropertyGroup):
+    show_marker_management: BoolProperty(
+        name="Show Marker Management",
+        description="Show the marker management UI in timeline headers",
+        default=False,
+    )
+
 
 classes=(
 STORYTOOLS_PGT_main_settings,
 STORYTOOLS_PGT_gp_settings,
+STORYTOOLS_PGT_board_animatic,
 # STORYTOOLS_PGT_km_preset, # old
 # STORYTOOLS_PGT_keymap_presets, # old
 )
@@ -284,6 +292,7 @@ def register():
 
     bpy.types.Scene.storytools_settings = bpy.props.PointerProperty(type = STORYTOOLS_PGT_main_settings)
     bpy.types.Scene.storytools_gp_settings = bpy.props.PointerProperty(type = STORYTOOLS_PGT_gp_settings)
+    bpy.types.Scene.storytools_animatic = bpy.props.PointerProperty(type=STORYTOOLS_PGT_board_animatic)
     
 
 def unregister():
@@ -292,3 +301,4 @@ def unregister():
 
     del bpy.types.Scene.storytools_settings
     del bpy.types.Scene.storytools_gp_settings
+    del bpy.types.Scene.storytools_animatic
