@@ -98,7 +98,12 @@ class STORYTOOLS_PT_viewport_setup(bpy.types.Panel):
             row.operator("storytools.create_static_storyboard_pages", text='Create Storyboard Pages', icon='GRID')
             # row.menu("STORYTOOLS_MT_storyboard_presets_management", text="", icon='TOOL_SETTINGS') # menu for presets management
             row.menu("STORYTOOLS_MT_static_storyboard_options", text="", icon='TOOL_SETTINGS') # menu for presets management and animatic creation
-
+            if context.object and context.object.type == 'GREASEPENCIL' and context.object.get('stb_settings'):
+                subcol = col.column(align=True)
+                subcol.label(text='Panel Management:')
+                subcol.operator("storytools.storyboard_offset_panel_modal", text='Insert A Panel', icon='ADD').mode = 'INSERT'
+                subcol.operator("storytools.storyboard_offset_panel_modal", text='Remove A Panel', icon='REMOVE').mode = 'DELETE'
+                col.separator()
             col.operator("storytools.render_storyboard_images", text='Render StoryBoard', icon='RESTRICT_RENDER_OFF')
             col.menu("STORYTOOLS_MT_export_storyboard_to_pdf", icon='DOCUMENTS', text='Create PDF')
 
