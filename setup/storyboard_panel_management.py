@@ -670,12 +670,13 @@ class STORYTOOLS_OT_storyboard_offset_panel_modal(Operator):
         """Draw 2D UI text in screen space"""
         # Draw instruction text
         font_id = 0
-        blf.position(font_id, int(context.region.width * 0.1), context.region.height - int(context.region.height * 0.1), 0)
+        start_x = int(context.region.width * 0.12)
+        start_y = context.region.height - int(context.region.height * 0.12)
         blf.size(font_id, 20)
         
         if self.mode == 'INSERT':
             blf.color(font_id, 0.2, 0.8, 1.0, 1.0)
-            text = "Click panel to insert before"
+            text = "Click panel to insert new (insert before selection)"
         elif self.mode == 'DELETE':
             blf.color(font_id, 1.0, 0.3, 0.3, 1.0)
             text = "Click panel to remove"
@@ -685,13 +686,27 @@ class STORYTOOLS_OT_storyboard_offset_panel_modal(Operator):
             
         if self.selected_start is not None:
             if self.mode == 'INSERT':
-                text = "Click second panel to define range, click same panel again to offset until last panel"
+                text = "Click second panel to define push offset limit"
+                second_line = "Click same panel again to offset forward until last panel"
             elif self.mode == 'DELETE':
-                text = "Click second panel to define range, click same panel again to offset back until last panel"
+                text = "Click second panel to define back offset limit"
+                second_line = "Click same panel again to offset back all subsequent panels"
             else:  # SWAP
                 text = "Click second panel to swap with"
-                
+                second_line = None
+        else:
+            second_line = None
+
+        # Draw first line
+        blf.position(font_id, start_x, start_y, 0)
         blf.draw(font_id, text)
+        
+        # Draw second line if it exists
+        if second_line:
+            # Get dimensions of first line to position second line below it
+            width, height = blf.dimensions(font_id, text)
+            blf.position(font_id, start_x, start_y - height - 7, 0)  # 5 pixels spacing
+            blf.draw(font_id, second_line)
     
     def get_page_and_index(self, index, page_list):
         """From global index, return index of page and index of panel in that page"""

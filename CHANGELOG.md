@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.25.0
+
+- added: Static storyboard option to interactively insert/remove/swap panels
+
 2.24.0
 
 - added: quick animatic creation (marker based in a new scene) in static storyboard options menu
