@@ -541,8 +541,10 @@ class STORYTOOLS_OT_storyboard_offset_panel_modal(Operator):
                     self.execute_offset(context)
                     return self.finish_modal(context)
                 elif clicked_panel == self.selected_start:
-                    # Cancel start selection
-                    self.selected_start = None
+                    # Clicking same panel again - execute with last panel as range
+                    self.selected_end = len(self.panel_coords) - 1  # Last panel
+                    self.execute_offset(context)
+                    return self.finish_modal(context)
                 elif clicked_panel == self.selected_end:
                     # Cancel end selection
                     self.selected_end = None
@@ -661,9 +663,9 @@ class STORYTOOLS_OT_storyboard_offset_panel_modal(Operator):
             
         if self.selected_start is not None:
             if self.mode == 'INSERT':
-                text = "Click second panel to define range or press Enter to use last panel"
+                text = "Click second panel to define range, click same panel again to offset until last panel"
             else:
-                text = "Click second panel to define range or press Enter to use last panel"
+                text = "Click second panel to define range, click same panel again to offset back until last panel"
                 
         blf.draw(font_id, text)
     
@@ -689,7 +691,7 @@ class STORYTOOLS_OT_storyboard_offset_panel_modal(Operator):
         
         # Convert to 1-based indices for the offset logic
         insert_index = start_idx + 1
-        stop_index = end_idx + 1
+        stop_index = end_idx#  + 1
         offset_direction = 'FORWARD' if self.mode == 'INSERT' else 'BACKWARD'
         
         # Validation
@@ -792,10 +794,33 @@ class STORYTOOLS_OT_storyboard_offset_panel_modal(Operator):
                         panels[panel_to_remove_index][0], panels[panel_to_remove_index][1]):
                     to_remove_text_objects.append(ob)
     
+        # In delete mode, remove content from the panel to be deleted before offsetting
+        if self.mode == 'DELETE':
+            panel_to_clear = panels[panel_to_remove_index]
+            clear_min, clear_max, clear_center = panel_to_clear
+            
+            for layer in board_obj.data.layers:
+                if layer.name == 'Frames':
+                    continue
+                frame = layer.current_frame()
+                if frame is None:
+                    continue
+                drawing = frame.drawing
+                strokes_to_remove = []
+                
+                for sid, stroke in enumerate(drawing.strokes):
+                    if any(clear_min.x <= p.position.x <= clear_max.x and 
+                           clear_min.z <= p.position.z <= clear_max.z for p in stroke.points):
+                        strokes_to_remove.append(sid)
+
+                if strokes_to_remove:
+                    drawing.remove_strokes(indices=strokes_to_remove)
+    
         # Single loop for both directions
         for i in range(start_idx, stop_idx, step):
             source_idx = get_source_idx(i)
             target_idx = get_target_idx(i)
+            print('idx: ', source_idx, target_idx, panel_to_remove_index)
             
             # Skip if source panel doesn't exist
             if source_idx >= len(panels):
@@ -823,7 +848,7 @@ class STORYTOOLS_OT_storyboard_offset_panel_modal(Operator):
                     if any(source_min.x <= p.position.x <= source_max.x and 
                            source_min.z <= p.position.z <= source_max.z for p in stroke.points):
                         strokes_to_move.append(stroke)
-            
+
             # Apply offset to grease pencil strokes
             for stroke in strokes_to_move:
                 for point in stroke.points:
