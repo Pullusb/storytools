@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.24.0
+
+- added: quick animatic creation (marker based in a new scene) in static storyboard options menu
+- added: timeline-Marker frame management in timelines header (enabled in animatic scene) to adjust shot timing
+
 2.23.1
 
 - changed: static storyboard pages resolution defaults to 3508px on longer side (300dpi on A4 format for print)

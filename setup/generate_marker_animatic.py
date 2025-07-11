@@ -177,10 +177,23 @@ class STORYTOOLS_OT_create_animatic_from_board(Operator):
         grid = board_obj.data.layers.get('Frames')
         dr = grid.current_frame().drawing
         stroke_frames = [s for s in dr.strokes if s.material_index == self.material_index]
-        frame_corners = [get_min_max_corner([p.position for p in s.points]) for s in stroke_frames]
         
+        ## Get the each frame corners and center in list (min, max, center)
+        ## Exact corner position
+        # frame_corners = [get_min_max_corner([p.position for p in s.points]) for s in stroke_frames]
         ## Add center as a third element in list
-        frames_coords = [(f[0], f[1], ((f[0] + f[1]) / 2)) for f in frame_corners]
+        # frames_coords = [(f[0], f[1], ((f[0] + f[1]) / 2)) for f in frame_corners]
+        
+        ## contract by radius to fit inside the frame and add center in same loop.
+        frames_coords = []
+        for s in stroke_frames:
+            min_corner, max_corner = get_min_max_corner([p.position for p in s.points])
+            radius = s.points[0].radius
+            frames_coords.append((
+                min_corner + Vector((radius, 0, radius)),
+                max_corner + Vector((-radius, 0, -radius)),
+                (min_corner + max_corner) / 2
+            ))
 
         ## group by pages (camera boundaries)
         ## Create a list of lists pages = [[page1 frames...], [page2 frames...]]
@@ -299,7 +312,7 @@ class STORYTOOLS_OT_create_animatic_from_board(Operator):
         ## make animatic scene active
         bpy.context.window.scene = scn        
         ## Activate marker management in new scene
-        scn.animatic_settings.show_marker_management = True
+        scn.storytools_settings.show_marker_management = True
         return {'FINISHED'}
         
 
@@ -433,34 +446,6 @@ class STORYTOOLS_OT_time_compression(Operator):
         # self.report({'INFO'}, f"Timeline {'compressed' if step == -1 else 'dilated'} successfully")
         return {'FINISHED'}
 
-## --- Marker management in Timeline
-
-class STORYTOOLS_MT_marker_management(bpy.types.Menu):
-    bl_label = "Storyboard Marker Management"
-    bl_idname = "STORYTOOLS_MT_storyboard_presets_management"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.label(text="Scale markers")
-        row = layout.row(align=True)
-        row.operator("storytools.time_compression", text="", icon="TRIA_LEFT").direction = 'COMPRESS'
-        row.operator("storytools.time_compression", text="", icon="TRIA_RIGHT").direction = 'DILATE'
-
-def marker_management_ui(self, context):
-    """Add a panel to the marker management UI"""
-
-    animatic_settings = context.scene.get("storytools_animatic")
-    if not animatic_settings:
-        return
-    if not animatic_settings.show_marker_management:
-        return
-
-    layout = self.layout
-    layout.label(text="Markers:")
-    row = layout.row(align=True)
-    row.operator("storytools.push_markers", text="", icon="TRIA_LEFT").direction = 'LEFT'
-    row.operator("storytools.push_markers", text="", icon="TRIA_RIGHT").direction = 'RIGHT'
-    layout.menu("STORYTOOLS_MT_marker_management", text="", icon='DOWNARROW_HLT')
 
 classes = (
     STORYTOOLS_OT_create_animatic_from_board,
@@ -472,10 +457,8 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
     
-    bpy.types.DOPESHEET_HT_header.append(marker_management_ui)
 
 def unregister():
-    bpy.types.DOPESHEET_HT_header.remove(marker_management_ui)
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
