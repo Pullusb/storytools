@@ -54,8 +54,10 @@ def any_point_in_box(coords, min_corner, max_corner):
     '''
     return any(min_corner.x <= co.x <= max_corner.x and min_corner.z <= co.z <= max_corner.z for co in coords)
 
-## TODO: need a function to add/remove pages (as a separate operator, but used in this case when need to offset last panel or remove pages)
 
+## TODO: operator to add PAGES (and eventually remove, but less important)
+
+## unused operator with popup and manual number input, replaced by modal operator
 class STORYTOOLS_OT_storyboard_offset_panel(Operator):
     bl_idname = "storytools.storyboard_offset_panel"
     bl_label = "Storyboard Offset Panels"
@@ -442,6 +444,7 @@ class STORYTOOLS_OT_storyboard_offset_panel_modal(Operator):
         items=(
             ('INSERT', "Insert", "Insert new panel"),
             ('DELETE', "Delete", "Delete panel"),
+            ('SWAP', "Swap", "Swap two panels"),
         ),
         default='INSERT'
     )
@@ -538,20 +541,28 @@ class STORYTOOLS_OT_storyboard_offset_panel_modal(Operator):
                 elif self.selected_end is None and clicked_panel != self.selected_start:
                     self.selected_end = clicked_panel
                     # Execute the operation
-                    self.execute_offset(context)
+                    if self.mode == 'SWAP':
+                        self.execute_swap(context)
+                    else:
+                        self.execute_offset(context)
                     return self.finish_modal(context)
                 elif clicked_panel == self.selected_start:
-                    # Clicking same panel again - execute with last panel as range
-                    self.selected_end = len(self.panel_coords) - 1  # Last panel
-                    self.execute_offset(context)
-                    return self.finish_modal(context)
+                    # Clicking same panel again
+                    if self.mode == 'SWAP':
+                        # In swap mode, clicking same panel does nothing
+                        pass
+                    else:
+                        # In insert/delete mode, execute with last panel as range
+                        self.selected_end = len(self.panel_coords) - 1  # Last panel
+                        self.execute_offset(context)
+                        return self.finish_modal(context)
                 elif clicked_panel == self.selected_end:
                     # Cancel end selection
                     self.selected_end = None
                     
         elif event.type == 'RET' and event.value == 'PRESS':
             # Enter key pressed - execute with last panel as range if one panel selected
-            if self.selected_start is not None and self.selected_end is None:
+            if self.selected_start is not None and self.selected_end is None and self.mode != 'SWAP':
                 self.selected_end = len(self.panel_coords) - 1  # Last panel
                 self.execute_offset(context)
                 return self.finish_modal(context)
@@ -603,6 +614,8 @@ class STORYTOOLS_OT_storyboard_offset_panel_modal(Operator):
         blue_light = (0.2, 0.8, 1.0, 0.6)
         red = (1.0, 0.3, 0.3, 0.8)
         red_light = (1.0, 0.3, 0.3, 0.6)
+        orange = (1.0, 0.6, 0.2, 0.8)
+        orange_light = (1.0, 0.6, 0.2, 0.6)
 
         for i, panel in enumerate(self.panel_coords):
             coords = panel['world_coords']
@@ -615,18 +628,24 @@ class STORYTOOLS_OT_storyboard_offset_panel_modal(Operator):
                 if i == self.selected_start:
                     if self.mode == 'INSERT':
                         color = blue
-                    else:
+                    elif self.mode == 'DELETE':
                         color = red
+                    else:  # SWAP
+                        color = orange
                 elif i == self.selected_end:
                     if self.mode == 'INSERT':
                         color = blue
-                    else:
+                    elif self.mode == 'DELETE':
                         color = red
+                    else:  # SWAP
+                        color = orange
                 else:
                     if self.mode == 'INSERT':
                         color = blue_light
-                    else:
+                    elif self.mode == 'DELETE':
                         color = red_light
+                    else:  # SWAP
+                        color = orange_light
                 
                 # Draw filled rectangle for selected panels
                 if i == self.selected_start or i == self.selected_end:
@@ -657,15 +676,20 @@ class STORYTOOLS_OT_storyboard_offset_panel_modal(Operator):
         if self.mode == 'INSERT':
             blf.color(font_id, 0.2, 0.8, 1.0, 1.0)
             text = "Click panel to insert before"
-        else:
+        elif self.mode == 'DELETE':
             blf.color(font_id, 1.0, 0.3, 0.3, 1.0)
             text = "Click panel to remove"
+        else:  # SWAP
+            blf.color(font_id, 1.0, 0.6, 0.2, 1.0)
+            text = "Click first panel to swap"
             
         if self.selected_start is not None:
             if self.mode == 'INSERT':
                 text = "Click second panel to define range, click same panel again to offset until last panel"
-            else:
+            elif self.mode == 'DELETE':
                 text = "Click second panel to define range, click same panel again to offset back until last panel"
+            else:  # SWAP
+                text = "Click second panel to swap with"
                 
         blf.draw(font_id, text)
     
@@ -906,6 +930,87 @@ class STORYTOOLS_OT_storyboard_offset_panel_modal(Operator):
         else:
             self.report({'INFO'}, f"Removed panel at position {start_idx + 1}")
     
+    def execute_swap(self, context):
+        """Swap content between two selected panels"""
+        if self.selected_start is None or self.selected_end is None:
+            return
+            
+        board_obj = context.object
+        
+        # Get panel coordinates
+        panel_a = self.panel_coords[self.selected_start]
+        panel_b = self.panel_coords[self.selected_end]
+        
+        # Get panel bounds
+        min_a, max_a = panel_a['min_corner'], panel_a['max_corner']
+        min_b, max_b = panel_b['min_corner'], panel_b['max_corner']
+        center_a, center_b = panel_a['center'], panel_b['center']
+        
+        # Calculate offset vectors
+        offset_a_to_b = center_b - center_a
+        offset_b_to_a = center_a - center_b
+        
+        # Collect strokes from both panels
+        strokes_a = []
+        strokes_b = []
+        
+        for layer in board_obj.data.layers:
+            if layer.name == 'Frames':
+                continue
+            frame = layer.current_frame()
+            if frame is None:
+                continue
+            drawing = frame.drawing
+            
+            for stroke in drawing.strokes:
+                # Check if stroke is in panel A
+                if any(min_a.x <= p.position.x <= max_a.x and 
+                       min_a.z <= p.position.z <= max_a.z for p in stroke.points):
+                    strokes_a.append(stroke)
+                # Check if stroke is in panel B
+                elif any(min_b.x <= p.position.x <= max_b.x and 
+                         min_b.z <= p.position.z <= max_b.z for p in stroke.points):
+                    strokes_b.append(stroke)
+        
+        # Apply swaps
+        for stroke in strokes_a:
+            for point in stroke.points:
+                point.position += offset_a_to_b
+        
+        for stroke in strokes_b:
+            for point in stroke.points:
+                point.position += offset_b_to_a
+        
+        # Swap 3D objects
+        scn = context.scene
+        stb_collection = scn.collection.children.get('Storyboard')
+        if stb_collection:
+            all_objects = [o for o in stb_collection.all_objects if o.type != 'CAMERA' and o != board_obj]
+            
+            objects_a = []
+            objects_b = []
+            
+            for obj in all_objects:
+                world_pos = obj.location
+                # Check if object is in panel A
+                if (min_a.x <= world_pos.x <= max_a.x and 
+                    min_a.z <= world_pos.z <= max_a.z):
+                    objects_a.append(obj)
+                # Check if object is in panel B
+                elif (min_b.x <= world_pos.x <= max_b.x and 
+                      min_b.z <= world_pos.z <= max_b.z):
+                    objects_b.append(obj)
+            
+            # Apply swaps to objects
+            for obj in objects_a:
+                obj.location += offset_a_to_b
+            
+            for obj in objects_b:
+                obj.location += offset_b_to_a
+        
+        # Success message
+        self.report({'INFO'}, f"Swapped panels {self.selected_start + 1} and {self.selected_end + 1}")
+    
     def finish_modal(self, context):
         if hasattr(self, 'draw_handle_3d') and self.draw_handle_3d:
             bpy.types.SpaceView3D.draw_handler_remove(self.draw_handle_3d, 'WINDOW')
@@ -918,7 +1023,6 @@ class STORYTOOLS_OT_storyboard_offset_panel_modal(Operator):
 
 
 classes = (
-    # STORYTOOLS_OT_storyboard_offset_panel,
     STORYTOOLS_OT_storyboard_offset_panel_modal,
 )
 

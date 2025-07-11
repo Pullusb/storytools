@@ -103,6 +103,7 @@ class STORYTOOLS_PT_viewport_setup(bpy.types.Panel):
                 subcol.label(text='Panel Management:')
                 subcol.operator("storytools.storyboard_offset_panel_modal", text='Insert A Panel', icon='ADD').mode = 'INSERT'
                 subcol.operator("storytools.storyboard_offset_panel_modal", text='Remove A Panel', icon='REMOVE').mode = 'DELETE'
+                subcol.operator("storytools.storyboard_offset_panel_modal", text='Swap two Panels', icon='AREA_SWAP').mode = 'SWAP'
                 col.separator()
             col.operator("storytools.render_storyboard_images", text='Render StoryBoard', icon='RESTRICT_RENDER_OFF')
             col.menu("STORYTOOLS_MT_export_storyboard_to_pdf", icon='DOCUMENTS', text='Create PDF')
