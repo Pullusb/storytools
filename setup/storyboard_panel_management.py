@@ -566,6 +566,10 @@ class STORYTOOLS_OT_storyboard_offset_panel_modal(Operator):
                 self.selected_end = len(self.panel_coords) - 1  # Last panel
                 self.execute_offset(context)
                 return self.finish_modal(context)
+                
+        elif event.type == 'R' and event.value == 'PRESS':
+            # Toggle read direction
+            self.read_direction = 'DOWN' if self.read_direction == 'RIGHT' else 'RIGHT'
             
         elif event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE'} or event.type.startswith('NUMPAD'):
             # Pass through navigation
@@ -674,39 +678,63 @@ class STORYTOOLS_OT_storyboard_offset_panel_modal(Operator):
         start_y = context.region.height - int(context.region.height * 0.12)
         blf.size(font_id, 20)
         
+        # Set color based on mode
         if self.mode == 'INSERT':
             blf.color(font_id, 0.2, 0.8, 1.0, 1.0)
-            text = "Click panel to insert new (insert before selection)"
         elif self.mode == 'DELETE':
             blf.color(font_id, 1.0, 0.3, 0.3, 1.0)
-            text = "Click panel to remove"
         else:  # SWAP
             blf.color(font_id, 1.0, 0.6, 0.2, 1.0)
-            text = "Click first panel to swap"
+        
+        # First line: Read direction info (only for INSERT/DELETE modes)
+        if self.mode != 'SWAP':
+            read_dir_text = "Left to Right" if self.read_direction == 'RIGHT' else "Top to Bottom"
+            first_line = f"Read Direction: {read_dir_text} (Press R to toggle)"
+            show_read_direction = True
+        else:
+            first_line = None
+            show_read_direction = False
+        
+        # Second line: Main instruction
+        if self.mode == 'INSERT':
+            second_line = "Click panel to insert new (insert before selection)"
+        elif self.mode == 'DELETE':
+            second_line = "Click panel to remove"
+        else:  # SWAP
+            second_line = "Click first panel to swap"
             
+        # Third line: Additional instruction (when panel is selected)
+        third_line = None
         if self.selected_start is not None:
             if self.mode == 'INSERT':
-                text = "Click second panel to define push offset limit"
-                second_line = "Click same panel again to offset forward until last panel"
+                second_line = "Click second panel to set how far to push"
+                third_line = "Click same panel again to push until last panel"
             elif self.mode == 'DELETE':
-                text = "Click second panel to define back offset limit"
-                second_line = "Click same panel again to offset back all subsequent panels"
+                second_line = "Click second panel to set how far to pull back"
+                third_line = "Click same panel again to pull back all subsequent panels"
             else:  # SWAP
-                text = "Click second panel to swap with"
-                second_line = None
-        else:
-            second_line = None
+                second_line = "Click second panel to swap with"
 
-        # Draw first line
-        blf.position(font_id, start_x, start_y, 0)
-        blf.draw(font_id, text)
+        # Draw lines based on mode
+        current_y = start_y
         
-        # Draw second line if it exists
-        if second_line:
-            # Get dimensions of first line to position second line below it
-            width, height = blf.dimensions(font_id, text)
-            blf.position(font_id, start_x, start_y - height - 7, 0)  # 5 pixels spacing
-            blf.draw(font_id, second_line)
+        # Draw first line (read direction) if needed
+        if show_read_direction:
+            blf.position(font_id, start_x, current_y, 0)
+            blf.draw(font_id, first_line)
+            width, height = blf.dimensions(font_id, first_line)
+            current_y -= height + 7
+        
+        # Draw second line (main instruction)
+        blf.position(font_id, start_x, current_y, 0)
+        blf.draw(font_id, second_line)
+        
+        # Draw third line if it exists
+        if third_line:
+            width, height = blf.dimensions(font_id, second_line)
+            current_y -= height + 7
+            blf.position(font_id, start_x, current_y, 0)
+            blf.draw(font_id, third_line)
     
     def get_page_and_index(self, index, page_list):
         """From global index, return index of page and index of panel in that page"""
