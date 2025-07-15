@@ -100,10 +100,12 @@ class STORYTOOLS_PT_viewport_setup(bpy.types.Panel):
             row.menu("STORYTOOLS_MT_static_storyboard_options", text="", icon='TOOL_SETTINGS') # menu for presets management and animatic creation
             if context.object and context.object.type == 'GREASEPENCIL' and context.object.get('stb_settings'):
                 subcol = col.column(align=True)
-                subcol.label(text='Panel Management:')
+                subcol.label(text='Storyboard Management:')
+                subcol.operator("storytools.storyboard_add_pages", text='Add Pages', icon='ADD')
+                subcol.separator()
                 subcol.operator("storytools.storyboard_offset_panel_modal", text='Insert A Panel', icon='ADD').mode = 'INSERT'
                 subcol.operator("storytools.storyboard_offset_panel_modal", text='Remove A Panel', icon='REMOVE').mode = 'DELETE'
-                subcol.operator("storytools.storyboard_offset_panel_modal", text='Swap two Panels', icon='AREA_SWAP').mode = 'SWAP'
+                subcol.operator("storytools.storyboard_offset_panel_modal", text='Swap Two Panels', icon='AREA_SWAP').mode = 'SWAP'
                 col.separator()
             col.operator("storytools.render_storyboard_images", text='Render StoryBoard', icon='RESTRICT_RENDER_OFF')
             col.menu("STORYTOOLS_MT_export_storyboard_to_pdf", icon='DOCUMENTS', text='Create PDF')

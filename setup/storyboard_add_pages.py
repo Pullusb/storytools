@@ -9,6 +9,7 @@ import re
 from .. import fn
 from .create_static_storyboard import notes_default_bodys
 
+# TODO: fix bad duplications names (name_number.00...number)
 
 class STORYTOOLS_OT_storyboard_add_pages(Operator):
     """Add new pages to an existing storyboard"""
@@ -28,10 +29,11 @@ class STORYTOOLS_OT_storyboard_add_pages(Operator):
     
     source_page: IntProperty(
         name="Source Page Number",
-        description="Page number to use as template for new pages",
+        description="Number of the page to use as template model for new pages",
         default=1,
         min=1
     )
+
 
     def invoke(self, context, event):
         # Check if we have a storyboard grease pencil object
@@ -48,7 +50,8 @@ class STORYTOOLS_OT_storyboard_add_pages(Operator):
         
         # Set the maximum source page number
         self.source_page = min(self.source_page, len(page_markers))
-        
+        # self.num_pages = 1  # Default to adding one page only
+
         # Show dialog
         return context.window_manager.invoke_props_dialog(self, width=350)
     
@@ -61,8 +64,8 @@ class STORYTOOLS_OT_storyboard_add_pages(Operator):
         page_markers = [m for m in scene.timeline_markers if m.camera and m.name.startswith('stb_')]
         num_existing_pages = len(page_markers)
         
-        layout.prop(self, "num_pages")
-        layout.prop(self, "source_page")
+        layout.prop(self, "num_pages", text="Pages To Add")
+        layout.prop(self, "source_page", text="Template Page")
         
         # Validation warnings
         if self.source_page > num_existing_pages:
@@ -70,8 +73,8 @@ class STORYTOOLS_OT_storyboard_add_pages(Operator):
             layout.label(text=f"Maximum page number is {num_existing_pages}")
         
         layout.separator()
-        layout.label(text=f"Current pages: {num_existing_pages}")
-        layout.label(text=f"Pages after adding: {num_existing_pages + self.num_pages}")
+        layout.label(text=f"Current pages count: {num_existing_pages}")
+        # layout.label(text=f"Pages after adding: {num_existing_pages + self.num_pages}")
     
     def execute(self, context):
         scene = context.scene
@@ -89,7 +92,6 @@ class STORYTOOLS_OT_storyboard_add_pages(Operator):
         # Get source page marker and camera
         source_marker = page_markers[self.source_page - 1]
         source_camera = source_marker.camera
-        print('source_camera: ', source_camera.name)
         
         # Get storyboard settings
         stb_settings = board_obj.get('stb_settings', {})
@@ -143,6 +145,8 @@ class STORYTOOLS_OT_storyboard_add_pages(Operator):
                     vertex_color_np_array = np.zeros(point_count * 4, dtype=np.float32)
                     vertex_color_attr.data.foreach_set('color', vertex_color_np_array)
 
+        self.current_objects = [obj for obj in stb_collection.all_objects]
+
         # Create new pages
         for i in range(self.num_pages):
             new_page_num = len(page_markers) + i + 1
@@ -189,7 +193,6 @@ class STORYTOOLS_OT_storyboard_add_pages(Operator):
                 if any(source_min.x <= p.position.x <= source_max.x and 
                        source_min.z <= p.position.z <= source_max.z for p in stroke.points):
                     strokes_to_duplicate.append(stroke)
-            
 
             drawing.add_strokes([len(s.points) for s in strokes_to_duplicate])
 
@@ -216,8 +219,14 @@ class STORYTOOLS_OT_storyboard_add_pages(Operator):
         
         # Find text objects within source page bounds
         for obj in collection.all_objects:
-            if obj.type == 'GREASEPENCIL':
+            if obj.type in ('GREASEPENCIL'): # , 'CAMERA'
+                ## we do not want to duplicate the cameras
                 continue
+
+            if obj not in self.current_objects:
+                ## important:Do not duplicate and already duplicated object (loop duplicate !)
+                continue
+
             world_pos = obj.matrix_world.translation
             if (source_min.x <= world_pos.x <= source_max.x and 
                 source_min.z <= world_pos.z <= source_max.z):
@@ -243,21 +252,16 @@ class STORYTOOLS_OT_storyboard_add_pages(Operator):
                 continue
 
             ## if not linked, update text content based on object type
+            ## Or maybe we want to keep original texts ?... could be an option
             if new_obj.name.startswith("stb_shot_num"):
                 # Update shot number if it contains page reference
                 content = stb_settings.get("panel_header_left", "")
-                if "{page}" in content:
-                    new_obj.data.body = content.format(page=new_page_num)
-                else:
-                    new_obj.data.body = content
+                new_obj.data.body = content
             
             elif new_obj.name.startswith("stb_panel_num"):
                 # Update panel number
                 content = stb_settings.get("panel_header_right", "")
-                if "{page}" in content:
-                    new_obj.data.body = content.format(page=new_page_num)
-                else:
-                    new_obj.data.body = content
+                new_obj.data.body = content
             
             elif new_obj.name.startswith("panel_"):
                 # Reset notes content

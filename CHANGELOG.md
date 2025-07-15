@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.26.0
+
+- added: Operator to add pages on pre-existing storyboard
+
 2.25.0
 
 - added: Static storyboard option to interactively insert/remove/swap panels
