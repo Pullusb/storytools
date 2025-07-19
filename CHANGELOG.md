@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.26.1
+
+- fixed: when choosing object in drawing panel, previous active get's deselected, even if it's not a GP object
+
 2.26.0
 
 - added: Operator to add pages on pre-existing storyboard

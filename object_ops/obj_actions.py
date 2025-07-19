@@ -418,7 +418,6 @@ class STORYTOOLS_OT_object_draw(Operator):
 
 def update_object_change(self, context):
     ob = context.scene.objects[self.index]
-    # print('Switch to object', ob.name)
     if ob.type != 'GREASEPENCIL' or context.object is ob:
         return
 
@@ -430,6 +429,7 @@ def update_object_change(self, context):
     if prev_mode not in possible_gp_mods:
         prev_mode = None
 
+    prev_active = context.object
     mode_swap = False
 
     ## Full skip if object is not visible
@@ -454,7 +454,7 @@ def update_object_change(self, context):
             bpy.ops.object.mode_set(mode=prev_mode)
 
         context.scene.tool_settings.lock_object_mode = True
-            
+
     else:
         ## Keep same mode accross objects
         context.view_layer.objects.active = ob
@@ -462,11 +462,14 @@ def update_object_change(self, context):
             prev_mode = 'EDIT' if prev_mode == 'EDIT_GREASE_PENCIL' else prev_mode
             bpy.ops.object.mode_set(mode=prev_mode)
 
+    ## Deselect other objects (should deselect all ?)
     for o in [o for o in context.scene.objects if o.type == 'GREASEPENCIL']:
         o.select_set(o == ob) # select only active (when not in object mode)
     
-    # if not ob.visible_get():
-    #     print('Object is hidden!')
+    if prev_active and prev_active != ob:
+        ## Deselect previous active object
+        prev_active.select_set(False)
+
 
 
 class STORYTOOLS_object_collection(PropertyGroup):
