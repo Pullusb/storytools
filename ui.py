@@ -9,6 +9,7 @@ from .fn import get_addon_prefs
 from . import fn
 from .constants import STORYBOARD_TEMPLATE_BLEND, DUAL_STORYBOARD_TEMPLATE_BLEND
 
+## Main UI panel
 class STORYTOOLS_PT_storytools_ui(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -17,6 +18,50 @@ class STORYTOOLS_PT_storytools_ui(Panel):
 
     def draw(self, context):
         return
+
+# region Camera UI
+
+def camera_layout(layout, context):
+    col = layout
+    scn = context.scene    
+    #col.label(text='Camera:')
+
+    row = col.row()
+    row.template_list("STORYTOOLS_UL_camera_list", "",
+        scn, "objects", scn.st_camera_props, "index", rows=3)
+
+    col_lateral = row.column(align=True)
+    # col_lateral.operator('storytools.create_camera', icon='ADD', text='') # 'PLUS'
+    
+    col_lateral.operator('storytools.create_camera', icon='ADD', text='')
+    ## Using native operator (need to be in object mode)
+    # addcam = col_lateral.operator('object.add', icon='ADD', text='')
+    # addcam.type='CAMERA'
+    # addcam.align='VIEW'
+    # addcam.location = context.space_data.region_3d.view_matrix.inverted().translation
+
+    ## Lens options
+    col_lateral.popover('STORYTOOLS_PT_camera_settings', text='', icon='DOWNARROW_HLT')
+    
+    ## ! can't call lens panel, (call context.camera in property)
+    # col_lateral.operator('wm.call_panel', text='', icon='TOOL_SETTINGS').name = 'DATA_PT_lens'
+
+    if hasattr(bpy.types, 'GP_OT_draw_cam_switch'):
+        if context.scene.camera and context.scene.camera.name == 'draw_cam':
+            col_lateral.operator('gp.draw_cam_switch', text='', icon='LOOP_BACK')
+            col_lateral.operator('gp.reset_cam_rot', text='', icon='DRIVER_ROTATIONAL_DIFFERENCE')
+        elif context.scene.camera:
+            col_lateral.operator('gp.draw_cam_switch', text='', icon='CON_CAMERASOLVER').cam_mode = 'draw'
+
+    ## Parent toggle
+    # if context.object:
+    #     if context.object.parent:
+    #         col_lateral.operator('storytools.attach_toggle', text='', icon='UNLINKED') # Detach From Camera
+    #     else:
+    #         col_lateral.operator('storytools.attach_toggle', text='', icon='LINKED') # Attach To Camera
+    # else:
+    #     col_lateral.operator('storytools.attach_toggle', text='', icon='LINKED') # Attach To Camera
+
 
 class STORYTOOLS_PT_camera_ui(Panel):
     bl_space_type = "VIEW_3D"
@@ -42,150 +87,6 @@ class STORYTOOLS_PT_camera_ui(Panel):
     def draw(self, context):
         col = self.layout.column()
         camera_layout(col, context)
-
-class STORYTOOLS_PT_drawings_ui(Panel):
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "Storytools" # Gpencil
-    bl_label = "Drawings"
-    bl_parent_id = "STORYTOOLS_PT_storytools_ui" # as_subpanel
-
-    def draw_header_preset(self, context):
-        layout = self.layout
-        ## Add object warning when scale is non-uniform or not-applied.
-        ## TODO: replace it by a more universal viewport warning
-        ## (note: in 4.4 there is a native warning at bottom left)
-    
-        if fn.get_addon_prefs().use_warnings and (obj := context.object) and obj.scale != Vector((1.0, 1.0, 1.0)):
-            op = layout.operator('storytools.info_note', text='', icon='ERROR', emboss=False)
-            op.title = 'Scale Not Applied' # 'Unapplied Scale'
-            op.text = 'Object scale is not applied.\
-                    \nYou may want to apply the scale to avoid issues later.\
-                    \nIn Object mode: Ctrl+A > Apply Scale.\
-                    \ne.g., scale affects Grease Pencil radius and modifiers output.'
-
-            ## Equality check evaluate to False when not 1.0 on all axis, would need to round values
-            # if not (obj.scale[0] == obj.scale[1] == obj.scale[2]):
-            #     op.text = "Object has non-uniform scale\
-            #         \nYou may want to apply scale to avoid issues"
-            # if any(x < 0 for x in obj.scale):
-            #     op.text = 'Object scale has negative values\
-            #         \nYou may want to apply scale to avoid issues'
-            # else:
-            #     op.text = 'Object scale is not applied\
-            #         \nYou may want to apply scale to avoid issues'
-
-        layout.prop(context.space_data.overlay, "use_gpencil_grid", text='', icon='MESH_GRID')
-
-    def draw(self, context):
-        col = self.layout.column()
-        object_layout(col, context)
-
-class STORYTOOLS_PT_layers_ui(Panel):
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "Storytools" # Gpencil
-    bl_label = "Layers"
-    bl_parent_id = "STORYTOOLS_PT_storytools_ui" # as_subpanel
-
-    @classmethod
-    def poll(cls, context):
-        return context.object and context.object.type == 'GREASEPENCIL'
-
-    ## Add autolock value
-    # def draw_header_preset(self, context):
-    #     layout = self.layout
-    #     icon = 'LOCKED' if context.object.data.use_autolock_layers else 'DECORATE_UNLOCKED'
-    #     layout.prop(context.object.data, 'use_autolock_layers', text='', icon=icon)
-    #     # layout.prop(context.object.data, 'use_autolock_layers')
-
-    def draw(self, context):
-        layers_layout(self.layout, context.grease_pencil)
-
-class STORYTOOLS_PT_materials_ui(Panel):
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "Storytools" # Gpencil
-    bl_label = "Materials"
-    bl_parent_id = "STORYTOOLS_PT_storytools_ui" # as_subpanel
-
-    @classmethod
-    def poll(cls, context):
-        return context.object and context.object.type == 'GREASEPENCIL'
-
-    def draw(self, context):
-        col = self.layout.column()
-        materials_layout(col, context)
-
-class STORYTOOLS_PT_tool_ui(Panel):
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "Storytools" # Gpencil
-    bl_label = "Tool"
-    bl_parent_id = "STORYTOOLS_PT_storytools_ui" # as_subpanel
-
-    # def draw_header_preset(self, context):
-    #     layout = self.layout
-    #     layout.operator("storytools.open_addon_prefs", text='', icon='PREFERENCES')
-
-    # @classmethod
-    # def poll(cls, context):
-    #     return context.object and context.object.type == 'GREASEPENCIL'
-
-    def draw(self, context):
-        col = self.layout.column()
-        tool_layout(self, col, context)
-
-
-class STORYTOOLS_PT_gp_objects_list_options(bpy.types.Panel):
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI' # 'HEADER'
-    bl_category = "View"
-    bl_label = "Options"
-    bl_options = {'INSTANCED'}
-    # bl_ui_units_x = 12
-
-    def draw(self, context):
-        layout = self.layout
-        settings = context.scene.storytools_settings
-        # layout.prop(settings, 'show_scale_figure', text='Scale Helper') # Added in overlay
-        row = layout.row()
-        row.label(text='Drawing List Display Toggles')
-        info = row.operator('storytools.info_note', text='', icon='QUESTION', emboss=False)
-        info.title = 'Display Toggles Informations'
-        info.text = 'Show/hide: Define what infos you want to see in list\
-                \nAutomatic: icons appear only if there is enough sidebar space'
-
-        col = layout.column(align=True)
-
-        col.label(text='Visibility State')
-        row=col.row(align=True)
-        row.prop(settings, 'show_gp_visibility', text='Show GP Visibility', expand=True)
-
-        col.separator()
-
-        col.label(text='In Front State')
-        row=col.row(align=True)
-        row.prop(settings, 'show_gp_in_front', text='Show In Front State', expand=True)
-        
-        col.separator()
-
-        col.label(text='Parent State')
-        row=col.row(align=True)
-        row.prop(settings, 'show_gp_parent', text='Show Parent State', expand=True)
-
-        col.separator()
-
-        col.label(text='Multiple Users State')
-        row=col.row(align=True)
-        row.prop(settings, 'show_gp_users', text='Show GP users', expand=True)
-
-        ## Show a delete icon in submenu (only relevent if the minus icon is removed from side list)
-        # if context.object and context.object.type == 'GREASEPENCIL':
-        #     col.separator()
-        #     row = col.row()
-        #     row.alert = True
-        #     row.operator("storytools.delete_gp_object", text="Delete Active GP Object", icon='TRASH')
 
 
 """ 
@@ -289,47 +190,82 @@ class STORYTOOLS_PT_camera_settings(Panel):
         row.prop(context.scene.storytools_settings, "show_cam_settings", text='Show Settings In List', expand=True)
 
 
-def camera_layout(layout, context):
-    col = layout
-    scn = context.scene    
-    #col.label(text='Camera:')
+## Sub-panel for camera exclusion settings in camera menu, operators in "cam_exclude_filter.py"
+class STORYTOOLS_PT_camera_exclusion_settings(Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Storytools"
+    bl_label = "Camera Exclusions"
+    bl_parent_id = "STORYTOOLS_PT_camera_settings"
+    bl_options = {'DEFAULT_CLOSED'}
 
-    row = col.row()
-    row.template_list("STORYTOOLS_UL_camera_list", "",
-        scn, "objects", scn.st_camera_props, "index", rows=3)
+    @classmethod
+    def poll(cls, context):
+        return context.scene.camera
 
-    col_lateral = row.column(align=True)
-    # col_lateral.operator('storytools.create_camera', icon='ADD', text='') # 'PLUS'
-    
-    col_lateral.operator('storytools.create_camera', icon='ADD', text='')
-    ## Using native operator (need to be in object mode)
-    # addcam = col_lateral.operator('object.add', icon='ADD', text='')
-    # addcam.type='CAMERA'
-    # addcam.align='VIEW'
-    # addcam.location = context.space_data.region_3d.view_matrix.inverted().translation
+    def draw_header(self, context):
+        cam = context.scene.camera
+        layout = self.layout
+        if cam and hasattr(cam, 'exclude_props') and cam.exclude_props:
+            layout.prop(cam.exclude_props, "enabled", text="")
 
-    ## Lens options
-    col_lateral.popover('STORYTOOLS_PT_camera_settings', text='', icon='DOWNARROW_HLT')
-    
-    ## ! can't call lens panel, (call context.camera in property)
-    # col_lateral.operator('wm.call_panel', text='', icon='TOOL_SETTINGS').name = 'DATA_PT_lens'
+    ## Do not appear in popover menu
+    # def draw_header_preset(self, context):
+    #     layout = self.layout
+    #     info = layout.operator('storytools.info_note', text='', icon='QUESTION', emboss=False)
+    #     info.title = 'Visibility exclusions from camera'
+    #     info.text = 'List object or collection you want to hide from this camera view\
+    #         \nVisibility will be restored when going into another camera that does not exclude it'
 
-    if hasattr(bpy.types, 'GP_OT_draw_cam_switch'):
-        if context.scene.camera and context.scene.camera.name == 'draw_cam':
-            col_lateral.operator('gp.draw_cam_switch', text='', icon='LOOP_BACK')
-            col_lateral.operator('gp.reset_cam_rot', text='', icon='DRIVER_ROTATIONAL_DIFFERENCE')
-        elif context.scene.camera:
-            col_lateral.operator('gp.draw_cam_switch', text='', icon='CON_CAMERASOLVER').cam_mode = 'draw'
+    def draw(self, context):
+        layout = self.layout
+        cam = context.scene.camera
 
-    ## Parent toggle
-    # if context.object:
-    #     if context.object.parent:
-    #         col_lateral.operator('storytools.attach_toggle', text='', icon='UNLINKED') # Detach From Camera
-    #     else:
-    #         col_lateral.operator('storytools.attach_toggle', text='', icon='LINKED') # Attach To Camera
-    # else:
-    #     col_lateral.operator('storytools.attach_toggle', text='', icon='LINKED') # Attach To Camera
+        ## Make sure the camera has the property group
+        if not hasattr(cam, 'exclude_props') or not cam.exclude_props:
+            layout.label(text="Missing exclusion properties", icon='ERROR')
+            return
+        
+        ## Hide lists when disabled
+        # if not cam.exclude_props.enabled:
+        #     return
 
+        # Objects section
+        main_col = layout.column()
+        main_col.label(text="Excluded Objects:")
+        
+        row = main_col.row()
+        row.template_list("STORYTOOLS_UL_excluded_objects", "", 
+                         cam.exclude_props, "excluded_objects", 
+                         cam.exclude_props, "active_object_index", 
+                         rows=3)
+        
+        col = row.column(align=True)
+        col.operator("storytools.add_excluded_object_from_selection", text="", icon='ADD')
+        col.operator("storytools.search_add_excluded_object", text="", icon='VIEW_ZOOM')
+        op = col.operator("storytools.remove_excluded_object", text="", icon='REMOVE')
+        op.index = cam.exclude_props.active_object_index
+        
+        # Collections section
+        # main_col = layout.column()
+        main_col.label(text="Excluded Collections:")
+        
+        row = main_col.row()
+        row.template_list("STORYTOOLS_UL_excluded_collections", "", 
+                         cam.exclude_props, "excluded_collections", 
+                         cam.exclude_props, "active_collection_index", 
+                         rows=3)
+        
+        col = row.column(align=True)
+        col.operator("storytools.search_add_excluded_collection", text="", icon='VIEW_ZOOM')
+        op = col.operator("storytools.remove_excluded_collection", text="", icon='REMOVE')
+        op.index = cam.exclude_props.active_collection_index
+
+        main_col.active = cam.exclude_props.enabled
+
+# endregion
+
+# region Object UI
 
 def object_layout(layout, context):
     col = layout
@@ -363,6 +299,48 @@ def object_layout(layout, context):
     col_lateral.popover(panel="STORYTOOLS_PT_gp_objects_list_options", text="", icon='DOWNARROW_HLT')
 
 
+class STORYTOOLS_PT_drawings_ui(Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Storytools" # Gpencil
+    bl_label = "Drawings"
+    bl_parent_id = "STORYTOOLS_PT_storytools_ui" # as_subpanel
+
+    def draw_header_preset(self, context):
+        layout = self.layout
+        ## Add object warning when scale is non-uniform or not-applied.
+        ## TODO: replace it by a more universal viewport warning
+        ## (note: in 4.4 there is a native warning at bottom left)
+    
+        if fn.get_addon_prefs().use_warnings and (obj := context.object) and obj.scale != Vector((1.0, 1.0, 1.0)):
+            op = layout.operator('storytools.info_note', text='', icon='ERROR', emboss=False)
+            op.title = 'Scale Not Applied' # 'Unapplied Scale'
+            op.text = 'Object scale is not applied.\
+                    \nYou may want to apply the scale to avoid issues later.\
+                    \nIn Object mode: Ctrl+A > Apply Scale.\
+                    \ne.g., scale affects Grease Pencil radius and modifiers output.'
+
+            ## Equality check evaluate to False when not 1.0 on all axis, would need to round values
+            # if not (obj.scale[0] == obj.scale[1] == obj.scale[2]):
+            #     op.text = "Object has non-uniform scale\
+            #         \nYou may want to apply scale to avoid issues"
+            # if any(x < 0 for x in obj.scale):
+            #     op.text = 'Object scale has negative values\
+            #         \nYou may want to apply scale to avoid issues'
+            # else:
+            #     op.text = 'Object scale is not applied\
+            #         \nYou may want to apply scale to avoid issues'
+
+        layout.prop(context.space_data.overlay, "use_gpencil_grid", text='', icon='MESH_GRID')
+
+    def draw(self, context):
+        col = self.layout.column()
+        object_layout(col, context)
+
+# endregion
+
+# region Layers UI
+
 def layers_layout(layout, grease_pencil):
     layer = grease_pencil.layers.active
     is_layer_active = layer is not None
@@ -392,6 +370,31 @@ def layers_layout(layout, grease_pencil):
     sub = col.column(align=True)
     sub.operator("grease_pencil.layer_move", icon='TRIA_UP', text="").direction = 'UP'
     sub.operator("grease_pencil.layer_move", icon='TRIA_DOWN', text="").direction = 'DOWN'
+
+class STORYTOOLS_PT_layers_ui(Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Storytools" # Gpencil
+    bl_label = "Layers"
+    bl_parent_id = "STORYTOOLS_PT_storytools_ui" # as_subpanel
+
+    @classmethod
+    def poll(cls, context):
+        return context.object and context.object.type == 'GREASEPENCIL'
+
+    ## Add autolock value
+    # def draw_header_preset(self, context):
+    #     layout = self.layout
+    #     icon = 'LOCKED' if context.object.data.use_autolock_layers else 'DECORATE_UNLOCKED'
+    #     layout.prop(context.object.data, 'use_autolock_layers', text='', icon=icon)
+    #     # layout.prop(context.object.data, 'use_autolock_layers')
+
+    def draw(self, context):
+        layers_layout(self.layout, context.grease_pencil)
+
+# endregion
+
+# region Materials UI
 
 def materials_layout(layout, context):
     layout = layout
@@ -440,6 +443,97 @@ def materials_layout(layout, context):
     col = layout.column()
     col.prop(bpy.context.scene.storytools_settings, 'material_sync', text='')
 
+
+class STORYTOOLS_PT_materials_ui(Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Storytools" # Gpencil
+    bl_label = "Materials"
+    bl_parent_id = "STORYTOOLS_PT_storytools_ui" # as_subpanel
+
+    @classmethod
+    def poll(cls, context):
+        return context.object and context.object.type == 'GREASEPENCIL'
+
+    def draw(self, context):
+        col = self.layout.column()
+        materials_layout(col, context)
+
+
+class STORYTOOLS_MT_material_context_menu(bpy.types.Menu):
+    # bl_idname = "STORYTOOLS_MT_material_context_menu"
+    bl_label = "Storyboard Material Menu"
+
+    def draw(self, context):
+        layout = self.layout
+        col=layout.column()
+        col.operator('storytools.load_default_palette', text='Load Base Palette')
+        # col.operator('storytools.load_materials_from_object', text='Load Materials From Object')
+        col.operator('storytools.add_existing_materials', text='Add An Existing Material')
+        col.operator('storytools.load_materials_from_object', text='Load Materials From Other Object')
+
+        ## Cleanup material slots (from gp_toolbox if active)
+        ## Weird to repeat it there. it's already added in dropdown menu...
+        # if hasattr(bpy.types, 'GP_OT_clean_material_stack'):
+        #     col.operator('gp.clean_material_stack', text='Clean Material Stack')
+
+
+class STORYTOOLS_PT_create_material_ui(Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Storytools" # Gpencil
+    bl_label = "Create Material From Vertex Color"
+    bl_parent_id = "STORYTOOLS_PT_colors_ui" # as_subpanel
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.object and context.object.type == 'GREASEPENCIL'
+
+    def draw(self, context):
+        layout = self.layout
+        settings = context.scene.tool_settings.gpencil_paint
+        
+        
+        col = layout.column(align=True)
+        # col.label(text='Create Material From Vertex Color:')
+        try:
+            # if settings.color_mode == 'MATERIAL':
+            col.prop(settings.brush, 'color', text='')
+
+            row = col.row(align=True)
+            row.operator('storytools.create_material_from_color', text='Stroke').mode = 'STROKE'
+            row.operator('storytools.create_material_from_color', text='Fill').mode = 'FILL'
+            row.operator('storytools.create_material_from_color', text='Both').mode = 'BOTH'
+        
+        except Exception:
+            col.label(text='Need to enter draw mode once', icon='ERROR')
+
+        ### Mix color and palette show greyed cause of the poll !
+        ## Mix color
+        # if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_v3_brush_mixcolor"):
+        #     return
+        
+        # mixcolor_cls = bpy.types.VIEW3D_PT_tools_grease_pencil_v3_brush_mixcolor
+        # if not hasattr(mixcolor_cls, "poll") or mixcolor_cls.poll(context):
+        #     mixcolor_cls.draw(self, context)
+        # else:
+        #     layout.label(text="Can't display this panel here!", icon="ERROR")
+
+        ## Palette
+        # if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_brush_mix_palette"):
+        #     return
+        # palette_cls = bpy.types.VIEW3D_PT_tools_grease_pencil_brush_mix_palette
+        # if not hasattr(palette_cls, "poll") or palette_cls.poll(context):
+        #     palette_cls.draw(self, context)
+            
+        # else:
+        #     layout.label(text="Can't display this panel here!", icon="ERROR")
+
+# endregion
+
+# region sidebar Tool UI
+
 def tool_layout(self, layout, context):
     row = layout.row(align=True)
     row.operator('storytools.align_view_to_object', text='Align View To Object')
@@ -467,22 +561,83 @@ def tool_layout(self, layout, context):
             layout.label(text='Tools:')
             bpy.types.GP_PT_sidebarPanel.draw(self, context) # (Use 'self.layout', Show at the end only)
 
-class STORYTOOLS_MT_material_context_menu(bpy.types.Menu):
-    # bl_idname = "STORYTOOLS_MT_material_context_menu"
-    bl_label = "Storyboard Material Menu"
+class STORYTOOLS_PT_tool_ui(Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Storytools" # Gpencil
+    bl_label = "Tool"
+    bl_parent_id = "STORYTOOLS_PT_storytools_ui" # as_subpanel
+
+    # def draw_header_preset(self, context):
+    #     layout = self.layout
+    #     layout.operator("storytools.open_addon_prefs", text='', icon='PREFERENCES')
+
+    # @classmethod
+    # def poll(cls, context):
+    #     return context.object and context.object.type == 'GREASEPENCIL'
+
+    def draw(self, context):
+        col = self.layout.column()
+        tool_layout(self, col, context)
+
+# endregion
+
+# region GP options
+
+class STORYTOOLS_PT_gp_objects_list_options(bpy.types.Panel):
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI' # 'HEADER'
+    bl_category = "View"
+    bl_label = "Options"
+    bl_options = {'INSTANCED'}
+    # bl_ui_units_x = 12
 
     def draw(self, context):
         layout = self.layout
-        col=layout.column()
-        col.operator('storytools.load_default_palette', text='Load Base Palette')
-        # col.operator('storytools.load_materials_from_object', text='Load Materials From Object')
-        col.operator('storytools.add_existing_materials', text='Add An Existing Material')
-        col.operator('storytools.load_materials_from_object', text='Load Materials From Other Object')
+        settings = context.scene.storytools_settings
+        # layout.prop(settings, 'show_scale_figure', text='Scale Helper') # Added in overlay
+        row = layout.row()
+        row.label(text='Drawing List Display Toggles')
+        info = row.operator('storytools.info_note', text='', icon='QUESTION', emboss=False)
+        info.title = 'Display Toggles Informations'
+        info.text = 'Show/hide: Define what infos you want to see in list\
+                \nAutomatic: icons appear only if there is enough sidebar space'
 
-        ## Cleanup material slots (from gp_toolbox if active)
-        ## Weird to repeat it there. it's already added in dropdown menu...
-        # if hasattr(bpy.types, 'GP_OT_clean_material_stack'):
-        #     col.operator('gp.clean_material_stack', text='Clean Material Stack')
+        col = layout.column(align=True)
+
+        col.label(text='Visibility State')
+        row=col.row(align=True)
+        row.prop(settings, 'show_gp_visibility', text='Show GP Visibility', expand=True)
+
+        col.separator()
+
+        col.label(text='In Front State')
+        row=col.row(align=True)
+        row.prop(settings, 'show_gp_in_front', text='Show In Front State', expand=True)
+        
+        col.separator()
+
+        col.label(text='Parent State')
+        row=col.row(align=True)
+        row.prop(settings, 'show_gp_parent', text='Show Parent State', expand=True)
+
+        col.separator()
+
+        col.label(text='Multiple Users State')
+        row=col.row(align=True)
+        row.prop(settings, 'show_gp_users', text='Show GP users', expand=True)
+
+        ## Show a delete icon in submenu (only relevent if the minus icon is removed from side list)
+        # if context.object and context.object.type == 'GREASEPENCIL':
+        #     col.separator()
+        #     row = col.row()
+        #     row.alert = True
+        #     row.operator("storytools.delete_gp_object", text="Delete Active GP Object", icon='TRASH')
+
+# endregion
+
+
+# region exposed Native UI
 
 class STORYTOOLS_PT_brushes_ui(Panel):
     bl_space_type = "VIEW_3D"
@@ -579,57 +734,6 @@ class STORYTOOLS_PT_colors_ui(Panel):
         else:
             layout.label(text="Can't display this panel here!", icon="ERROR")
 
-class STORYTOOLS_PT_create_material_ui(Panel):
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "Storytools" # Gpencil
-    bl_label = "Create Material From Vertex Color"
-    bl_parent_id = "STORYTOOLS_PT_colors_ui" # as_subpanel
-    bl_options = {'DEFAULT_CLOSED'}
-
-    @classmethod
-    def poll(cls, context):
-        return context.object and context.object.type == 'GREASEPENCIL'
-
-    def draw(self, context):
-        layout = self.layout
-        settings = context.scene.tool_settings.gpencil_paint
-        
-        
-        col = layout.column(align=True)
-        # col.label(text='Create Material From Vertex Color:')
-        try:
-            # if settings.color_mode == 'MATERIAL':
-            col.prop(settings.brush, 'color', text='')
-
-            row = col.row(align=True)
-            row.operator('storytools.create_material_from_color', text='Stroke').mode = 'STROKE'
-            row.operator('storytools.create_material_from_color', text='Fill').mode = 'FILL'
-            row.operator('storytools.create_material_from_color', text='Both').mode = 'BOTH'
-        
-        except Exception:
-            col.label(text='Need to enter draw mode once', icon='ERROR')
-
-        ### Mix color and palette show greyed cause of the poll !
-        ## Mix color
-        # if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_v3_brush_mixcolor"):
-        #     return
-        
-        # mixcolor_cls = bpy.types.VIEW3D_PT_tools_grease_pencil_v3_brush_mixcolor
-        # if not hasattr(mixcolor_cls, "poll") or mixcolor_cls.poll(context):
-        #     mixcolor_cls.draw(self, context)
-        # else:
-        #     layout.label(text="Can't display this panel here!", icon="ERROR")
-
-        ## Palette
-        # if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_brush_mix_palette"):
-        #     return
-        # palette_cls = bpy.types.VIEW3D_PT_tools_grease_pencil_brush_mix_palette
-        # if not hasattr(palette_cls, "poll") or palette_cls.poll(context):
-        #     palette_cls.draw(self, context)
-            
-        # else:
-        #     layout.label(text="Can't display this panel here!", icon="ERROR")
 
 class STORYTOOLS_PT_palette_ui(Panel):
     bl_space_type = "VIEW_3D"
@@ -657,79 +761,9 @@ class STORYTOOLS_PT_palette_ui(Panel):
         else:
             layout.label(text="Can't display this panel here!", icon="ERROR")
 
+# endregion
 
-## Sub-panel for camera exclusion settings in camera menu, operartors in "cam_exclude_filter.py"
-class STORYTOOLS_PT_camera_exclusion_settings(Panel):
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "Storytools"
-    bl_label = "Camera Exclusions"
-    bl_parent_id = "STORYTOOLS_PT_camera_settings"
-    bl_options = {'DEFAULT_CLOSED'}
-
-    @classmethod
-    def poll(cls, context):
-        return context.scene.camera
-
-    def draw_header(self, context):
-        cam = context.scene.camera
-        layout = self.layout
-        if cam and hasattr(cam, 'exclude_props') and cam.exclude_props:
-            layout.prop(cam.exclude_props, "enabled", text="")
-
-    ## Do not appear in popover menu
-    # def draw_header_preset(self, context):
-    #     layout = self.layout
-    #     info = layout.operator('storytools.info_note', text='', icon='QUESTION', emboss=False)
-    #     info.title = 'Visibility exclusions from camera'
-    #     info.text = 'List object or collection you want to hide from this camera view\
-    #         \nVisibility will be restored when going into another camera that does not exclude it'
-
-    def draw(self, context):
-        layout = self.layout
-        cam = context.scene.camera
-
-        ## Make sure the camera has the property group
-        if not hasattr(cam, 'exclude_props') or not cam.exclude_props:
-            layout.label(text="Missing exclusion properties", icon='ERROR')
-            return
-        
-        ## Hide lists when disabled
-        # if not cam.exclude_props.enabled:
-        #     return
-
-        # Objects section
-        main_col = layout.column()
-        main_col.label(text="Excluded Objects:")
-        
-        row = main_col.row()
-        row.template_list("STORYTOOLS_UL_excluded_objects", "", 
-                         cam.exclude_props, "excluded_objects", 
-                         cam.exclude_props, "active_object_index", 
-                         rows=3)
-        
-        col = row.column(align=True)
-        col.operator("storytools.add_excluded_object_from_selection", text="", icon='ADD')
-        col.operator("storytools.search_add_excluded_object", text="", icon='VIEW_ZOOM')
-        op = col.operator("storytools.remove_excluded_object", text="", icon='REMOVE')
-        op.index = cam.exclude_props.active_object_index
-        
-        # Collections section
-        # main_col = layout.column()
-        main_col.label(text="Excluded Collections:")
-        
-        row = main_col.row()
-        row.template_list("STORYTOOLS_UL_excluded_collections", "", 
-                         cam.exclude_props, "excluded_collections", 
-                         cam.exclude_props, "active_collection_index", 
-                         rows=3)
-        
-        col = row.column(align=True)
-        col.operator("storytools.search_add_excluded_collection", text="", icon='VIEW_ZOOM')
-        op = col.operator("storytools.remove_excluded_collection", text="", icon='REMOVE')
-        op.index = cam.exclude_props.active_collection_index
-
-        main_col.active = cam.exclude_props.enabled
+# region Info Note hint
 
 class STORYTOOLS_OT_info_note(Operator):
     bl_idname = "storytools.info_note"
@@ -750,6 +784,10 @@ class STORYTOOLS_OT_info_note(Operator):
         lines = self.text.split('\n')
         fn.show_message_box(_message=lines, _title=self.title, _icon=self.icon)
         return {"FINISHED"}
+
+# endregion
+
+# region draw functions
 
 # class DummyPanel:
 #     def __init__(self, layout):
@@ -811,8 +849,9 @@ def storyboard_file_new(self, context):
     op.filepath = str(DUAL_STORYBOARD_TEMPLATE_BLEND)
     op.load_ui = True
 
+# endregion
 
-#-# REGISTER
+# region register
 
 panel_classes = (
     # STORYTOOLS_MT_focal_presets,
@@ -877,3 +916,5 @@ def unregister():
     
     bpy.utils.unregister_class(STORYTOOLS_OT_info_note)
     bpy.utils.unregister_class(STORYTOOLS_MT_material_context_menu)
+
+# endregion

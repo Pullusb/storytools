@@ -347,9 +347,8 @@ class STORYTOOLS_OT_visibility_toggle(Operator):
 class STORYTOOLS_OT_object_draw(Operator):
     bl_idname = "storytools.object_draw"
     bl_label = 'Object Draw'
-    bl_description = "Switch between draw mode and object mode\
-        \nEnter first GP object available\
-        \nIf no GPencil object exists, pop-up creation menu\
+    bl_description = "On GP object: Switch between draw mode and object mode\
+        \nEnter first GP object available or pop-up creation menu\
         \n+ Shift : pop-up creation menu"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
