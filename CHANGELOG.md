@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+2.26.2
+
+- added: expose more camera property in camera panel dropdown: camera type, shift and clip
+
 2.26.1
 
 - fixed: when choosing object in drawing panel, previous active get's deselected, even if it's not a GP object

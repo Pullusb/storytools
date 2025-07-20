@@ -128,9 +128,17 @@ class STORYTOOLS_PT_camera_settings(Panel):
                 col.prop(cam.data, "angle")
             else:
                 col.prop(cam.data, "lens")
-        
+
+        ## Main cam data settings
         col = layout.column(align=True)
-        
+        col.prop(cam.data, 'shift_x')
+        col.prop(cam.data, 'shift_y')
+        col.separator()
+        col.prop(cam.data, 'clip_start')
+        col.prop(cam.data, 'clip_end')
+
+        ## Focal presets (disabled when using orthographic)
+        col = layout.column(align=True)
         row = col.row()
         row.label(text='Focal Length Presets:')
         focal_list = (18, 21, 25, 28, 35, 40, 50, 85, 135, 200)
@@ -138,11 +146,14 @@ class STORYTOOLS_PT_camera_settings(Panel):
             if i % 2 == 0:
                 row = col.row(align=True)
             row.operator('storytools.set_focal', text=f'{f} mm').lens = f
-        
-        col.active = cam.data.type != 'ORTHO'
 
+        col.enabled = cam.data.type != 'ORTHO'
+
+
+        ## Cam type
         col = layout.column()
-        
+        col.prop(cam.data, 'type', text='Type')
+
         col.separator()
         col.label(text='Track To Constraint:')
         ## Track To Constraints
@@ -170,7 +181,7 @@ class STORYTOOLS_PT_camera_settings(Panel):
 
             col.separator()
             col.operator('storytools.add_track_to_constraint', text='Remove Track To constraints', icon='X').remove = True
-        
+
         ## Cam delete
         col.separator()
         row = col.row()
