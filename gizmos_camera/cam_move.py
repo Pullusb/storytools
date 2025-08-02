@@ -550,12 +550,23 @@ class STORYTOOLS_OT_lock_camera_to_view_toggle(Operator):
     bl_idname = "storytools.lock_camera_to_view_toggle"
     bl_label = 'Toggle Lock Camera To View'
     bl_description = "In Camera view: Toggle 'lock camera to view' (active viewport)\
-        \nIn free view: Go to camera\
+        \nIn free view: Go to camera (create new when none in scene)\
         \n+ Ctrl : Center and resize view to fit camera bounds\
         \n+ Shift : Match view zoom to render resolution"
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def invoke(self, context, event):
+        if context.space_data.region_3d.view_perspective != 'CAMERA' and not context.scene.camera:
+            cam = next((obj for obj in context.scene.objects if obj.type == 'CAMERA'), None)
+            if cam:
+                # Set existing camera active
+                context.scene.camera = cam
+                context.space_data.region_3d.view_perspective = 'CAMERA'
+            else:
+                # No camera in scene, create a new one
+                bpy.ops.storytools.create_camera("INVOKE_DEFAULT")
+            return {'FINISHED'}
+
         self.fit_viewport = event.ctrl
         self.zoom_full_res = event.shift
         

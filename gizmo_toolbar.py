@@ -145,13 +145,13 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         op.camera = True
         self.camera_gizmos.append(self.gz_cam_rot)
 
-        ## Camera lock
+        ## Camera lock + go into camera view + new camera when none in scene
         self.gz_lock_cam = self.gizmos.new("GIZMO_GT_button_2d")
         fn.set_gizmo_settings(self.gz_lock_cam, 'OUTLINER_OB_CAMERA')
         self.gz_lock_cam.target_set_operator("storytools.lock_camera_to_view_toggle")
         self.camera_gizmos.append(self.gz_lock_cam)
 
-        ## Lock view
+        ## Lock view rotation
         self.gz_lock_view = self.gizmos.new("GIZMO_GT_button_2d")
         fn.set_gizmo_settings(self.gz_lock_view, 'LOCKVIEW_ON')
         self.gz_lock_view.target_set_operator("storytools.lock_view")
