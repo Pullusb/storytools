@@ -70,12 +70,12 @@ def layer_change_callback():
         set_material_by_name(ob, scn.gp_mat_by_layer.get(ob.data.layers.active.name))
 
 def subscribe_layer():
-    subscribe_to = (bpy.types.GreasePencilv3Layers, "active")
+    subscribe_to = (bpy.types.GreasePencilv3Layers, "active") # Still named "v3", API may change later
     bpy.msgbus.subscribe_rna(
         key=subscribe_to,
         # owner of msgbus subcribe (for clearing later)
         # owner=handle,
-        owner=bpy.types.GreasePencilv3, # <-- can attach to an ID during all it's lifetime...
+        owner=bpy.types.GreasePencil, # <-- can attach to an ID during all it's lifetime...
         # Args passed to callback function (tuple)
         args=(),
         # Callback function for property update

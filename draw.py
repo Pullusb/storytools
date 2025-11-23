@@ -568,7 +568,7 @@ def zenith_view_callback(self, context):
     #     shader.uniform_float("color", (1.0, 0.0, 0.2, 0.8))
     #     batch.draw(shader)
 
-    draw_texture_2d(self.pip_offscreen.texture_color, (x, y), width, height)
+    draw_texture_2d(self.pip_offscreen.texture_color, (x, y), width, height, is_scene_linear_with_rec709_srgb_target=True)
 
     ## Shader for all 2D line below
     shader = gpu.shader.from_builtin('UNIFORM_COLOR')

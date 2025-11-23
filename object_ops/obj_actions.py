@@ -703,10 +703,10 @@ def register():
     
     bpy.types.Scene.gp_object_props = PointerProperty(type=STORYTOOLS_object_collection)
     
-    # bpy.types.GPENCIL_MT_....append(menu_add_storytools_gp)
+    # bpy.types.GREASE_PENCIL_MT_....append(menu_add_storytools_gp)
 
 def unregister():
-    # bpy.types.GPENCIL_MT_....remove(menu_add_storytools_gp)
+    # bpy.types.GREASE_PENCIL_MT_....remove(menu_add_storytools_gp)
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

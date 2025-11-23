@@ -436,7 +436,7 @@ def materials_layout(layout, context):
 
     col.separator()
 
-    col.menu("GPENCIL_MT_material_context_menu", icon='DOWNARROW_HLT', text="")
+    col.menu("GREASE_PENCIL_MT_material_context_menu", icon='DOWNARROW_HLT', text="")
 
     if is_sortable:
         col.separator()
@@ -532,9 +532,9 @@ class STORYTOOLS_PT_create_material_ui(Panel):
         #     layout.label(text="Can't display this panel here!", icon="ERROR")
 
         ## Palette
-        # if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_brush_mix_palette"):
+        # if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_brush_vertex_palette"):
         #     return
-        # palette_cls = bpy.types.VIEW3D_PT_tools_grease_pencil_brush_mix_palette
+        # palette_cls = bpy.types.VIEW3D_PT_tools_grease_pencil_brush_vertex_palette
         # if not hasattr(palette_cls, "poll") or palette_cls.poll(context):
         #     palette_cls.draw(self, context)
             
@@ -704,9 +704,9 @@ class STORYTOOLS_PT_colors_ui(Panel):
         layout = self.layout
         settings = context.scene.tool_settings.gpencil_paint
         
+        row = layout.row(align=True)
+        row.prop(settings, "color_mode", expand=True)
         if settings.color_mode == 'MATERIAL':
-            row = layout.row(align=True)
-            row.prop(settings, "color_mode", expand=True)
             if not (mat := context.object.active_material):
                 layout.label(text='No active material')
                 return
@@ -736,10 +736,18 @@ class STORYTOOLS_PT_colors_ui(Panel):
 
             # return
 
-        if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_v3_brush_mixcolor"):
+
+        ## Vertex colors
+        if context.mode != 'PAINT_GREASE_PENCIL':
+            layout.label(text='Vertex color picker in Draw mode', icon='INFO')
+            return
+
+        # if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_v3_brush_mixcolor"):
+        if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_brush_vertex_color"):
             return
         
-        mixcolor_cls = bpy.types.VIEW3D_PT_tools_grease_pencil_v3_brush_mixcolor
+        # mixcolor_cls = bpy.types.VIEW3D_PT_tools_grease_pencil_v3_brush_mixcolor
+        mixcolor_cls = bpy.types.VIEW3D_PT_tools_grease_pencil_brush_vertex_color
         if not hasattr(mixcolor_cls, "poll") or mixcolor_cls.poll(context):
             mixcolor_cls.draw(self, context)
         else:
@@ -763,10 +771,10 @@ class STORYTOOLS_PT_palette_ui(Panel):
 
     def draw(self, context):
         layout = self.layout
-        if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_brush_mix_palette"):
+        if not hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_brush_vertex_palette"):
             return
 
-        palette_cls = bpy.types.VIEW3D_PT_tools_grease_pencil_brush_mix_palette
+        palette_cls = bpy.types.VIEW3D_PT_tools_grease_pencil_brush_vertex_palette
         if not hasattr(palette_cls, "poll") or palette_cls.poll(context):
             palette_cls.draw(self, context)
         else:
@@ -806,11 +814,11 @@ class STORYTOOLS_OT_info_note(Operator):
 
 # def palette_layout(layout, context):
 #     dummy_panel = DummyPanel(layout)
-#     if hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_brush_mix_palette"):
+#     if hasattr(bpy.types, "VIEW3D_PT_tools_grease_pencil_brush_vertex_palette"):
 #         if not hasattr(
-#             bpy.types.VIEW3D_PT_tools_grease_pencil_brush_mix_palette, "poll"
-#         ) or bpy.types.VIEW3D_PT_tools_grease_pencil_brush_mix_palette.poll(context):
-#             bpy.types.VIEW3D_PT_tools_grease_pencil_brush_mix_palette.draw(
+#             bpy.types.VIEW3D_PT_tools_grease_pencil_brush_vertex_palette, "poll"
+#         ) or bpy.types.VIEW3D_PT_tools_grease_pencil_brush_vertex_palette.poll(context):
+#             bpy.types.VIEW3D_PT_tools_grease_pencil_brush_vertex_palette.draw(
 #                 dummy_panel, context
 #             )
 #         else:
@@ -819,7 +827,7 @@ class STORYTOOLS_OT_info_note(Operator):
 # ## function to append in a menu
 # def palette_manager_menu(self, context):
 #     """Palette menu to append in existing menu"""
-#     # GPENCIL_MT_material_context_menu
+#     # GREASE_PENCIL_MT_material_context_menu
 #     layout = self.layout
 #     # {'EDIT_GREASE_PENCIL', 'PAINT_GREASE_PENCIL','SCULPT_GREASE_PENCIL','WEIGHT_GREASE_PENCIL', 'VERTEX_GPENCIL'}
 #     layout.separator()

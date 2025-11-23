@@ -2015,7 +2015,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         frame_number = context.scene.frame_start
 
         if need_new_object:
-            gp_data = bpy.data.grease_pencils_v3.new("Storyboard")
+            gp_data = bpy.data.grease_pencils.new("Storyboard")
             obj = bpy.data.objects.new("Storyboard", gp_data)
             context.collection.objects.link(obj)
             context.view_layer.objects.active = obj

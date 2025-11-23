@@ -12,11 +12,11 @@ from bpy.props import (FloatProperty,
 
 from bpy.types import PropertyGroup
 
-## Update on prop change
-def change_edit_lines_opacity(self, context):
-    for gp in bpy.data.grease_pencils:
-        if not gp.is_annotation:
-            gp.edit_line_color[3]=self.edit_lines_opacity
+## Update on prop change (old code, unused)
+# def change_edit_lines_opacity(self, context):
+#     for gp in bpy.data.grease_pencils:
+#         if not gp.is_annotation:
+#             gp.edit_line_color[3]=self.edit_lines_opacity
 
 def apply_on_all_scene(self, context):
     '''Propagate settings on other scene from property update'''
@@ -143,9 +143,9 @@ class STORYTOOLS_PGT_main_settings(PropertyGroup):
         default=8.0, min=0.0, max=600, step=3, precision=1)
     
     ## property with update on change
-    edit_lines_opacity : FloatProperty(
-        name="Edit Lines Opacity", description="Change edit lines opacity for all grease pencils in scene", 
-        default=0.5, min=0.0, max=1.0, step=3, precision=2, update=change_edit_lines_opacity)
+    # edit_lines_opacity : FloatProperty(
+    #     name="Edit Lines Opacity", description="Change edit lines opacity for all grease pencils in scene", 
+    #     default=0.5, min=0.0, max=1.0, step=3, precision=2, update=change_edit_lines_opacity)
     
     # stringprop : StringProperty(
     #     name="str prop",

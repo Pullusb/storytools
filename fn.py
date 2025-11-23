@@ -790,7 +790,7 @@ def create_gp_object(
     # TODO bonus : maybe check if want to use same data as another drawing ?
 
     # Create Grease Pencil object
-    gp = bpy.data.grease_pencils_v3.new(name)
+    gp = bpy.data.grease_pencils.new(name)
     ob = bpy.data.objects.new(name, gp)
 
     # Find appropriate collection

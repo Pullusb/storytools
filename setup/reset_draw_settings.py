@@ -37,7 +37,7 @@ class STORYTOOLS_OT_setup_drawing(bpy.types.Operator):
         ## Reset edit lines opacity on all GP # Cannot affect this anymore
         # if prefs.set_edit_line_opacity:
         #     # Iterate in gp datas
-        #     for gp in bpy.data.grease_pencils_v3:
+        #     for gp in bpy.data.grease_pencils:
         #         # if not gp.is_annotation:
         #         ## Set edit line opacity to 0 on all GP
         #         gp.edit_line_color[3] = prefs.default_edit_line_opacity
