@@ -492,9 +492,8 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
                     continue
                 col.prop(self.gp, prop_name)
 
-        elif self.pref_tab == 'TOOLPRESETS':
-            
-            
+        elif self.pref_tab == 'TOOLPRESETS':            
+
             """ # Direct draw
             kc = bpy.context.window_manager.keyconfigs.user
             user_keymaps = kc.keymaps
@@ -664,15 +663,18 @@ class STORYTOOLS_OT_add_tool_preset_shortcut(bpy.types.Operator):
     bl_idname = "storytools.add_tool_preset_shortcut"
     bl_label = "Add Tool Preset Shortcut"
     bl_description = "Add a tool preset shortcut in user keymap\
-        \nAdd new keymap entry: Grease pencil > Grease Pencil Paint Mode\
+        \nAdd new keymap entry: Grease pencil > Grease Pencil Draw Mode\
         \nWith operator idname 'storytools.set_draw_tool' and default value"
     bl_options = {"REGISTER", "INTERNAL"}
 
     def execute(self, context):
         ## Add keymap entry to USER keymap (not ADDON), treated differently in preference display 
         user_km = bpy.context.window_manager.keyconfigs.user
-        # km = user_km.keymaps.get('Grease Pencil Paint Mode') 
-        km = user_km.keymaps.new(name="Grease Pencil Paint Mode", space_type="EMPTY")
+        if bpy.app.version >= (5, 1, 0):
+            draw_mode_name = 'Grease Pencil Draw Mode'
+        else:
+            draw_mode_name = 'Grease Pencil Paint Mode'
+        km = user_km.keymaps.new(name=draw_mode_name, space_type="EMPTY")
         # km.keymap_items
         existing_presets = [kmi for kmi in km.keymap_items if kmi.idname == 'storytools.set_draw_tool']
         

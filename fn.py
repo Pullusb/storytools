@@ -1045,7 +1045,7 @@ def set_material_association(ob, layer, mat_name):
     Create custom prop for layer material association if possible
     '''
     if not ob.data.materials.get(mat_name):
-        print(f'/!\ material "{mat_name}" not found (for association with layer "{layer.name}")')
+        print(f'/!\\ material "{mat_name}" not found (for association with layer "{layer.name}")')
         return
     # create custom prop at object level
     ob[LAYERMAT_PREFIX + layer.name] = mat_name
@@ -1354,10 +1354,6 @@ def get_tool_presets_keymap():
     list of tuple (keymap, keymap_item)'''
     kc = bpy.context.window_manager.keyconfigs.user
     user_keymaps = kc.keymaps
-    
-    ## limit to  paint mode kms ? (List only in 'Grease Pencil Paint Mode' as other modes are not supported yet ?)
-    # km = user_keymaps.get('Grease Pencil Paint Mode')
-    # tool_preset_kmis = [(km, kmi) for kmi in km.keymap_items if kmi.idname == 'storytools.set_draw_tool']
     
     ## On the whole keymap
     tool_preset_kmis = [(km, kmi) for km in user_keymaps for kmi in km.keymap_items if kmi.idname == 'storytools.set_draw_tool']

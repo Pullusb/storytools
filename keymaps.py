@@ -193,6 +193,7 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
             except Exception as e:
                 print('Error loading brush from asset', e)
                 self.report({'ERROR'}, f'Cannot load {self.brush}, need to be an asset path, ex: "Saved/Brushes/CustomFill.asset.blend/Brush/CustomFill"')
+                self.report({'ERROR'}, f'Cannot load {self.brush}, need to be an asset path, ex: "Saved/Brushes/CustomFill.asset.blend/Brush/CustomFill"')
                 return {"CANCELLED"}
 
         elif self.brush:
@@ -307,8 +308,11 @@ addon_keymaps = []
 
 def register_keymap():
     addon = bpy.context.window_manager.keyconfigs.addon
-    km = addon.keymaps.new(name="Grease Pencil Paint Mode", space_type="EMPTY")
-
+    if bpy.app.version >= (5, 1, 0):
+        draw_mode_name = 'Grease Pencil Draw Mode'
+    else:
+        draw_mode_name = 'Grease Pencil Paint Mode'    
+    km = addon.keymaps.new(name=draw_mode_name, space_type="EMPTY")
     '''
     ## Hardcoded
     numbers = ['ZERO', 'ONE', 'TWO', 'THREE', 'FOUR']

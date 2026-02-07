@@ -33,14 +33,6 @@ class STORYTOOLS_GGT_toolpreset_bar(GizmoGroup):
 
         ## Object Pan
         user_keymaps = bpy.context.window_manager.keyconfigs.user.keymaps
-        # km = user_keymaps['Grease Pencil Paint Mode']
-
-        ## Only display addon keymap :
-        # from .keymaps import addon_keymaps
-        # for akm in set([kms[0] for kms in addon_keymaps]):
-        #     km = user_keymaps.get(akm.name)
-        #     if not km:
-        #         continue
         
         ## List available icons to use fallback
         # available_icons = [i.identifier for i in bpy.types.UILayout.bl_rna.functions['prop'].parameters['icon'].enum_items]

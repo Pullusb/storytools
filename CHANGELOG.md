@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+3.0.1
+
+- fixed: compatibility with blender 5.1 (broke toolpresets registration)
+
 3.0.0
 
 - fixed: (breaking release) API changes for Blender 5.0, not retrocompatible with prior version (for those use branch `bl42to45` or `gpv2` branch for older version)
