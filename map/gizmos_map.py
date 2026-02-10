@@ -127,7 +127,8 @@ class STORYTOOLS_GGT_gp_gizmos(GizmoGroup):
 
     @classmethod
     def poll(cls, context):
-        # if context.scene 
+        if not context.space_data.show_gizmo:
+            return False
         return any(ob.type == 'GREASEPENCIL' for ob in context.scene.objects)
 
     def setup(self, context):
@@ -253,6 +254,8 @@ class STORYTOOLS_GGT_map_gizmos(GizmoGroup):
 
     @classmethod
     def poll(cls, context):
+        if not context.space_data.show_gizmo:
+            return False
         return True
 
     def setup(self, context):

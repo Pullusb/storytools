@@ -24,6 +24,8 @@ class STORYTOOLS_GGT_toolpreset_bar(GizmoGroup):
 
     @classmethod
     def poll(cls, context):
+        if not context.space_data.show_gizmo:
+            return False
         # return 'GREASEPENCIL' in context.mode and not fn.is_minimap_viewport(context)
         return context.object and context.object.type == 'GREASEPENCIL' and not fn.is_minimap_viewport(context)
 

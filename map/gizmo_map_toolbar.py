@@ -24,6 +24,8 @@ class STORYTOOLS_GGT_map_toolbar(GizmoGroup):
 
     @classmethod
     def poll(cls, context):
+        if not context.space_data.show_gizmo:
+            return False
         return fn.is_minimap_viewport(context)
 
     def setup(self, context):

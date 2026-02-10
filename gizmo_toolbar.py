@@ -68,9 +68,10 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
 
     @classmethod
     def poll(cls, context):
-        ## To only show in camera
+        if not context.space_data.show_gizmo:
+            return False
+        ## To only show in camera view
         # return context.space_data.region_3d.view_perspective == 'CAMERA'
-        # return True
         return not fn.is_minimap_viewport(context)
 
     def setup(self, context):
@@ -239,12 +240,12 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         
         section_separator = int(gap_size / 2) # Fixed at 20 ?
         px_scale = context.preferences.system.ui_scale
-
+        hide_gizmos = not settings.show_session_toolbar or not context.space_data.show_gizmo
         for gz in self.gizmos:
-            gz.hide = not settings.show_session_toolbar
-        if not settings.show_session_toolbar:
+            gz.hide = hide_gizmos
+        if hide_gizmos:
             return
-        
+
         region = context.region
         # count = len(self.gizmos) # Wrong with gizmo added out of main line (GP gizmos)
         count = len(self.object_gizmos + self.camera_gizmos + self.interact_gizmos)
@@ -556,6 +557,8 @@ class STORYTOOLS_GGT_toolbar_switch(GizmoGroup):
 
     @classmethod
     def poll(cls, context):
+        if not context.space_data.show_gizmo:
+            return False
         return not fn.is_minimap_viewport(context)
 
     # @staticmethod

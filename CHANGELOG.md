@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+3.0.2
+
+- fixed: gizmo buttons still being clickable when viewport show_gizmo option is disabled
+
 3.0.1
 
 - fixed: compatibility with blender 5.1 (broke toolpresets registration)
