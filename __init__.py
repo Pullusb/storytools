@@ -1,17 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-bl_info = {
-    "name": "Storytools - Storyboard Tools",
-    "description": "Set of tools for Storyboarding",
-    "author": "Samuel Bernou",
-    "version": (3, 0, 2),
-    "blender": (5, 0, 0),
-    "location": "View3D",
-    "warning": "",
-    "doc_url": "https://github.com/Pullusb/storytools",
-    "tracker_url": "https://github.com/Pullusb/storytools/issues",
-    "category": "Object"}
-
 import bpy
 
 from . import properties

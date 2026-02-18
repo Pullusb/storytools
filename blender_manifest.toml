@@ -1,0 +1,22 @@
+schema_version = "1.0.0"
+
+id = "storytools"
+version = "3.1.0"
+name = "Storytools - Storyboard Tools"
+tagline = "Set of tools for Storyboarding and 2D animation"
+maintainer = "Samuel Bernou <bernou.samuel@gmail.com>"
+type = "add-on"
+
+blender_version_min = "5.0.0"
+
+tags = ["Animation", "Grease Pencil", "3D View"]
+license = ["SPDX:GPL-3.0-or-later"]
+website = "https://github.com/Pullusb/storytools"
+
+# tracker_url = "https://github.com/Pullusb/storytools/issues"
+# documentation = "https://pullusb.github.io/storytools-docs/"
+
+copyright = ["2026 Samuel Bernou"]
+
+[permissions]
+network = "install library to convert rendered images to pdf"

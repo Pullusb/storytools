@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+3.1.0
+
+- changed: converted to extension
+- added: manifest.toml
+
 3.0.2
 
 - fixed: gizmo buttons still being clickable when viewport show_gizmo option is disabled
