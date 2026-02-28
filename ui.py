@@ -7,7 +7,6 @@ from .fn import get_addon_prefs
 # from bl_ui.utils import PresetPanel
 
 from . import fn
-from .constants import STORYBOARD_TEMPLATE_BLEND, DUAL_STORYBOARD_TEMPLATE_BLEND
 
 ## Main UI panel
 class STORYTOOLS_PT_storytools_ui(Panel):
@@ -858,16 +857,6 @@ def additional_gp_overlay_options(self, context):
         subcol.prop(settings, 'scale_figure_height', text='Height')
         subcol.prop(settings, 'scale_figure_subdivision', text='Subdivision')
 
-
-def storyboard_file_new(self, context):
-    self.layout.separator()
-    op = self.layout.operator('wm.read_homefile', text="Storyboard")
-    op.filepath = str(STORYBOARD_TEMPLATE_BLEND)
-    op.load_ui = True
-    op = self.layout.operator('wm.read_homefile', text="Storyboard Dual Window")
-    op.filepath = str(DUAL_STORYBOARD_TEMPLATE_BLEND)
-    op.load_ui = True
-
 # endregion
 
 # region register
@@ -924,12 +913,10 @@ def register():
     if get_addon_prefs().show_sidebar_ui:
         register_panels()
 
-    bpy.types.TOPBAR_MT_file_new.append(storyboard_file_new)
     bpy.types.VIEW3D_PT_overlay_grease_pencil_options.append(additional_gp_overlay_options)
 
 def unregister():
     bpy.types.VIEW3D_PT_overlay_grease_pencil_options.remove(additional_gp_overlay_options)
-    bpy.types.TOPBAR_MT_file_new.remove(storyboard_file_new)
     
     unregister_panels()
     

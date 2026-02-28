@@ -72,13 +72,11 @@ class STORYTOOLS_PT_viewport_setup(bpy.types.Panel):
             col.operator('storytools.save_load_settings_preset', text='Tool Settings Presets', icon='PRESET').category = 'tool_settings'
 
             col.separator()
+            
             ## -- Workspace load
-            # show_workspace_switch = context.window.workspace.name != 'Storyboard'
-            # if show_workspace_switch:
+            # if context.window.workspace.name != 'Storyboarding':
             col.label(text='Workspace:')
-            col.operator('storytools.set_storyboard_workspace', text='Storyboard Workspace', icon='WORKSPACE')
-            col.operator('storytools.set_storyboard_dual_window_workspace', text='Storyboard Dual Workspace', icon='WORKSPACE')
-            # col.operator('storytools.setup_spark', text='Storyboard Spark Workspace', icon='WORKSPACE')
+            col.operator('storytools.set_storyboard_workspace', text='Set Storyboard Workspace', icon='WORKSPACE')
 
             ## Minimap
             col.separator()
