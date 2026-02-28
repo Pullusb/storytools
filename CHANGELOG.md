@@ -7,6 +7,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - removed: internal git updater feature, not needed after submission to extension platform
 - removed: image to _rendered images to pdf_ feature (#106)
 - removed: template blend files, use native Blender 5.0's storyboarding workspace instead
+- fixed: Changed toolpreset eraser to `Hard` (`Point` was removed in 4.5)
 
 3.1.0
 

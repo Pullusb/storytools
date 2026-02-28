@@ -376,7 +376,7 @@ def register_keymap():
     kmi.properties.name = 'Eraser by points'
     kmi.properties.mode = 'PAINT_GREASE_PENCIL'
     kmi.properties.tool = 'builtin_brush.Erase'
-    kmi.properties.brush = 'Eraser Point'
+    kmi.properties.brush = 'Eraser Hard'
     kmi.properties.icon = 'CLIPUV_DEHLT'
     kmi.properties.order = 50
     # kmi.properties.description = 'Set Point Eraser'
