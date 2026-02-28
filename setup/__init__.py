@@ -1,4 +1,5 @@
 from . import (
+    render_static_storyboard,
     workspace_setup,
     reset_draw_settings,
     viewport_options,
@@ -7,7 +8,6 @@ from . import (
     storyboard_add_pages,
     storyboard_panel_management,
     generate_marker_animatic,
-    render_to_pdf,
     ui,
 )
 
@@ -20,7 +20,7 @@ modules = (
     storyboard_add_pages,
     storyboard_panel_management,
     generate_marker_animatic,
-    render_to_pdf,
+    render_static_storyboard,
     ui,
 )
 
