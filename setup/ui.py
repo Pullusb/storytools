@@ -108,7 +108,6 @@ class STORYTOOLS_PT_viewport_setup(bpy.types.Panel):
                 subcol.operator("storytools.storyboard_offset_panel_modal", text='Swap Two Panels', icon='AREA_SWAP').mode = 'SWAP'
                 col.separator()
             col.operator("storytools.render_storyboard_images", text='Render StoryBoard', icon='RESTRICT_RENDER_OFF')
-            col.menu("STORYTOOLS_MT_export_storyboard_to_pdf", icon='DOCUMENTS', text='Create PDF')
 
             # show_storypencil_setup = len(context.window_manager.windows) == 1 and context.preferences.addons.get('storypencil')
             # if show_workspace_switch or show_storypencil_setup:        

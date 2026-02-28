@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "storytools"
-version = "3.1.1"
+version = "3.2.0"
 name = "Storytools - Storyboard Tools"
 tagline = "Set of tools for Storyboarding and 2D animation"
 maintainer = "Samuel Bernou <bernou.samuel@gmail.com>"
@@ -17,6 +17,3 @@ website = "https://github.com/Pullusb/storytools"
 # documentation = "https://pullusb.github.io/storytools-docs/"
 
 copyright = ["2026 Samuel Bernou"]
-
-[permissions]
-network = "install library to convert rendered images to pdf"

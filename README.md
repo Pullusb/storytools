@@ -18,9 +18,9 @@ Blender addon - Set of tool for storyboarding in Blender
 
 
 Sponsored by:
+- **Samuel Bernou** (Maintainer)
 - [**CNC**](https://www.cnc.fr/)
 - [**Autour de Minuit**](https://blog.autourdeminuit.com/)
-- **Samuel Bernou** (Maintainer)
 - Version 1.0 was sponsored by [**El Guiri Studios**](https://www.elguiristudios.com/)
 
 ---  
