@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "storytools"
-version = "3.1.0"
+version = "3.1.1"
 name = "Storytools - Storyboard Tools"
 tagline = "Set of tools for Storyboarding and 2D animation"
 maintainer = "Samuel Bernou <bernou.samuel@gmail.com>"

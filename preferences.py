@@ -358,10 +358,6 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         description="Show beginner friendly warnings and hints",
         default=True)
 
-    # Update variables
-    is_git_repo : BoolProperty(default=False)
-    has_git : BoolProperty(default=False)
-
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
@@ -450,18 +446,6 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             # tool_col.prop(self, 'map_toolbar_margin')
             # tool_col.prop(self, 'map_toolbar_gap_size', text='Buttons Spread')
             # tool_col.prop(self, 'map_toolbar_backdrop_size')
-
-            ## Git update code
-            if self.is_git_repo:
-                box = col.box()
-                box.label(text='Addon Update')
-                if self.is_git_repo and self.has_git:
-                    box.operator('storytools.git_pull', text='Pull Last Update Using Git', icon='PLUGIN')
-                else:
-                    box.label(text='Addon can be updated using git')
-                    row = box.row()
-                    row.operator('wm.url_open', text='Download and install git here', icon='URL').url = 'https://git-scm.com/download/'
-                    row.label(text='then restart blender')
 
         elif self.pref_tab == 'GPSETTINGS':
             ## GP setttings
@@ -739,12 +723,6 @@ classes = (
 def register(): 
     for cls in classes:
         bpy.utils.register_class(cls)
-
-    ## Update section
-    prefs = get_addon_prefs()
-    ## Change a variable in prefs if a '.git is detected'
-    prefs.is_git_repo = (Path(__file__).parent / '.git').exists()
-    prefs.has_git = bool(which('git'))
 
     if not 'replicate_preference_settings' in [hand.__name__ for hand in bpy.app.handlers.load_post]:
         bpy.app.handlers.load_post.append(replicate_preference_settings)

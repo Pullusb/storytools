@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+3.1.1
+
+- removed: internal git updater feature, not needed after submission to extension platform (task #106)
+
 3.1.0
 
 - changed: converted to extension
