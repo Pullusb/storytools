@@ -142,16 +142,6 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
 
         return '\n'.join(desc)
 
-    @staticmethod
-    def get_brush_from_blend(brush_name, blend_file):
-        '''Load brush from blend file by name, return brush object if found'''
-        with bpy.data.libraries.load(str(blend_file), assets_only=True, link=False) as (data_from, data_to):
-            if brush_name in data_from.brushes:
-                print(f'Load brush {brush_name} from {blend_file}')
-                data_to.brushes = [brush_name]
-        if data_to.brushes:
-            return data_to.brushes[0]
-
     def execute(self, context):
         ## Mode needs to add shortcut to generic Gpencil (would conflict with Selection mask)
         # if self.mode != 'NONE' and context.mode != self.mode:
@@ -184,74 +174,30 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
                 return {"CANCELLED"}
         
         if '/' in self.brush:
-            ## always Consider that this is a custom user brush to use with asset_activate
-            ## But need a more robust solution
+            ## if the brush name is a path,  always Consider that this is a custom user brush to use with asset_activate
             try:
                 bpy.ops.brush.asset_activate(asset_library_type='CUSTOM',
-                asset_library_identifier="User Library",
-                relative_asset_identifier=self.brush)
+                    asset_library_identifier="User Library",
+                    relative_asset_identifier=self.brush)
             except Exception as e:
                 print('Error loading brush from asset', e)
-                self.report({'ERROR'}, f'Cannot load {self.brush}, need to be an asset path, ex: "Saved/Brushes/CustomFill.asset.blend/Brush/CustomFill"')
                 self.report({'ERROR'}, f'Cannot load {self.brush}, need to be an asset path, ex: "Saved/Brushes/CustomFill.asset.blend/Brush/CustomFill"')
                 return {"CANCELLED"}
 
         elif self.brush:
-            ## self.brush is brush name as str here
-            br = bpy.data.brushes.get(self.brush)
-
-            if not br:
-                ## Try to load brush
-                ## First search in brush from essential lib (Problem ! when used this way it does not)
-                
-                essential_brush_lib = Path(bpy.utils.resource_path('LOCAL')) / 'datafiles' / 'assets' / 'brushes' / 'essentials_brushes-gp_draw.blend'
-                ## /!\ Loading directly duplicate the brush if then used from asset shelf ! (Using operator)
-                # br = self.get_brush_from_blend(self.brush, essential_brush_lib)
-                # if br:
-                #     print('Essential brush found')
-
-                ## Load using "asset_activate" operator
-                with bpy.data.libraries.load(str(essential_brush_lib), assets_only=True, link=False) as (data_from, data_to):
-                    if self.brush in data_from.brushes:
-                        ## Just True to know brush exists in essential pack, activate and skip next search
-                        br = True
-                if br:
-                    bpy.ops.brush.asset_activate(asset_library_type='ESSENTIALS', 
+            ## check if brush exists in essential library.
+            # brush_exists = False
+            # essential_brush_lib = Path(bpy.utils.resource_path('LOCAL')) / 'datafiles' / 'assets' / 'brushes' / 'essentials_brushes-gp_draw.blend'
+            # with bpy.data.libraries.load(str(essential_brush_lib), assets_only=True, link=False) as (data_from, data_to):
+            #     if self.brush in data_from.brushes:
+            #         brush_exists = True
+            try:
+                bpy.ops.brush.asset_activate(asset_library_type='ESSENTIALS', 
                     asset_library_identifier="", 
                     relative_asset_identifier=f"brushes/essentials_brushes-gp_draw.blend/Brush/{self.brush}")
-
-            if not br:
-                ## Search in user libs
-                asset_libs = bpy.context.preferences.filepaths.asset_libraries
-                for asset_library in asset_libs:
-                    library_path = Path(asset_library.path)
-                    blend_files = [fp for fp in library_path.glob("**/*.blend") if fp.is_file()]
-                    print('blend_files: ', blend_files)
-                    for blend_file in blend_files:
-                        br = self.get_brush_from_blend(self.brush, blend_file)
-                        if br:
-                            print('Found brush in ', blend_file)
-                            break
-                    if br:
-                        break
-            
-            if not isinstance(br, bool):
-                # when found in blend (not a boolean value from checks above)
-                if br:
-                    # Use asset-activate operator, instead of deprecated : context.scene.tool_settings.gpencil_paint.brush = br
-
-                    ## FIXME: brush source hardcoded to essential for now, but will miserably fail if user set brush name from another library
-                    ## Need to find a way to get library type and relative_asset_identifier from brush object
-                    bpy.ops.brush.asset_activate(asset_library_type='ESSENTIALS', 
-                    asset_library_identifier="", 
-                    relative_asset_identifier=f"brushes/essentials_brushes-gp_draw.blend/Brush/{self.brush}")
-
-                else:
-                    self.report({'WARNING'}, f'Could not find brush named {self.brush}')
-                    # return {"CANCELLED"}
-
-                    ## Using name, can directly try to load brush from essential library ?
-                    # bpy.data.libraries['es`sentials_brushes-gp_draw.blend'].users_id[0]
+            except Exception as e:
+                print("Error loading brush from essentials library", e)
+                self.report({'WARNING'}, f'Could not find brush named {self.brush}')
 
         if self.layer:
             fn.set_layer_by_name(ob, self.layer)
