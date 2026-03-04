@@ -38,27 +38,16 @@ def register_keymaps():
     # print("Register locked pan keymaps") #Dbg
     addon = bpy.context.window_manager.keyconfigs.addon
 
-    ## Key properteis to compare
-    ## Other: active, compare, idname, name, repeat, map_type
-    # key_props = [
-    # 'type',
-    # 'value',
-    # 'ctrl',
-    # 'alt',
-    # 'shift',
-    # 'oskey',
-    # 'any',
-    # 'key_modifier',
-    # ]
-
     ## Scan current keymaps to replicate
     user_km = bpy.context.window_manager.keyconfigs.user.keymaps.get('3D View')
     if not user_km:
+        ## During Blender loading, user km are not reachable, return silently here (will be registered afterward by handler)
         # print('-- Storytools could not reach user keymap') #Dbg
         return
 
     if len(addon_keymaps):
         ## Skip if keymaps are already registered, avoid duplicates
+        # print("-- View lock pan Keymap already registered")
         return
 
     for skmi in user_km.keymap_items:
@@ -97,8 +86,7 @@ def register_keymaps():
             )
 
         addon_keymaps.append((km, kmi))
-    
-    # print("keymap register - OK\n") #dbg
+
 
 def unregister_keymaps():
     for km, kmi in addon_keymaps:
@@ -117,7 +105,13 @@ classes=(
 def register(): 
     for cls in classes:
         bpy.utils.register_class(cls)
+    
+    ## Direct keymap registation call is needed here when user trigger register manually (first time or after unregister)
+    ## It does not do anything on blender loading, silently return early. Hence load_post below.
     register_keymaps()
+
+    ## Handler ensure the keymap is registered after Blender loading with addon enabled
+    ## Need this post loading action because it's based on a pre-existing keymap that need to be reachable.
     bpy.app.handlers.load_post.append(set_lockpan_km)
 
 def unregister():
