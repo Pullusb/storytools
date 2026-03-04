@@ -1152,10 +1152,22 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         ## Add black material for text
         if not (text_mat := bpy.data.materials.get('stb_text_color')):
             text_mat = bpy.data.materials.new('stb_text_color')
-            text_mat.use_nodes = False
-            text_mat.diffuse_color = (0,0,0,1)
-            text_mat.specular_intensity = 0
+            ## viewport color
+            text_mat.diffuse_color = (0.0, 0.0, 0.0, 1.0) 
             text_mat.roughness = 0
+            # text_mat.specular_intensity = 0 # seem not exposed in UI anymore
+
+            # Render color
+            nodes = text_mat.node_tree.nodes
+            if principled := nodes.get('Principled BSDF'):
+                nodes.remove(principled) # remove principled shader
+            
+            # Create emit and link to output
+            emit = nodes.new(type='ShaderNodeEmission')
+            emit.inputs[0].default_value = (0.0, 0.0, 0.0, 1.0) # Emit black
+            if out := next((n for n in nodes if n.type == 'OUTPUT_MATERIAL'), None):
+                text_mat.node_tree.links.new(emit.outputs[0], out.inputs[0])
+
         if not text_mat in obj.data.materials[:]:
             obj.data.materials.append(text_mat)
         

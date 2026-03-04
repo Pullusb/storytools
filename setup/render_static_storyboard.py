@@ -20,9 +20,11 @@ class WORLD_OT_create_white_world(Operator):
         if not world:
             world = bpy.data.worlds.new(world_name)
             # Disable nodes
-            world.use_nodes = False
             # Set background color to white
-            world.color = (1.0, 1.0, 1.0)
+            # world.color = (1.0, 1.0, 1.0) # Blender 5 Now force use_nodes
+            if nodes := world.node_tree.nodes:
+                if bg_nodes := nodes.get('Background'):
+                    bg_nodes.inputs['Color'].default_value = (1.0, 1.0, 1.0, 1.0)
 
         if world == context.scene.world:
             self.report({'INFO'}, 'World background already set')
@@ -43,6 +45,7 @@ class STORYTOOLS_OT_render_storyboard_images(Operator):
         description="Set the filepath for rendering images",
         default="",
         subtype='FILE_PATH',
+        options={'PATH_SUPPORTS_BLEND_RELATIVE'}
     )
 
     set_range_to_marker: BoolProperty(
