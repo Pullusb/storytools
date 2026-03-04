@@ -60,11 +60,10 @@ def ui_in_sidebar_update(self, _):
     """
     # Import at function level to avoid circular imports
     from .ui import (
-        panel_classes,
         unregister_panels,
         register_panels,
     )
-    
+
     unregister_panels()
 
     if self.show_sidebar_ui:
