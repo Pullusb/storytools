@@ -1161,10 +1161,11 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         
         ## Apply custom Typography
         if self.use_custom_font:
-            regular = bpy.data.fonts.load(str(FONT_DIR / 'Lato' / "Lato-Regular.ttf"), check_existing=True)
-            bold = bpy.data.fonts.load(str(FONT_DIR / 'Lato' / "Lato-Bold.ttf"), check_existing=True)
-            italic = bpy.data.fonts.load(str(FONT_DIR / 'Lato' / "Lato-Italic.ttf"), check_existing=True)
-            bold_italic = bpy.data.fonts.load(str(FONT_DIR / 'Lato' / "Lato-BoldItalic.ttf"), check_existing=True)
+            ## Aileron, CC0 font by Sora Sagano
+            regular = bpy.data.fonts.load(str(FONT_DIR / 'Aileron' / "Aileron-Regular.otf"), check_existing=True)
+            italic = bpy.data.fonts.load(str(FONT_DIR / 'Aileron' / "Aileron-Italic.otf"), check_existing=True)
+            bold = bpy.data.fonts.load(str(FONT_DIR / 'Aileron' / "Aileron-Bold.otf"), check_existing=True)
+            bold_italic = bpy.data.fonts.load(str(FONT_DIR / 'Aileron' / "Aileron-BoldItalic.otf"), check_existing=True)
 
             obj.data.font = regular
             obj.data.font_bold = bold
