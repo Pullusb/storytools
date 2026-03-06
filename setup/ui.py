@@ -94,7 +94,6 @@ class STORYTOOLS_PT_viewport_setup(bpy.types.Panel):
             col = col.column(align=True)
             row = col.row(align=True)
             row.operator("storytools.create_static_storyboard_pages", text='Create Storyboard Pages', icon='GRID')
-            # row.menu("STORYTOOLS_MT_storyboard_presets_management", text="", icon='TOOL_SETTINGS') # menu for presets management
             row.menu("STORYTOOLS_MT_static_storyboard_options", text="", icon='TOOL_SETTINGS') # menu for presets management and animatic creation
             if context.object and context.object.type == 'GREASEPENCIL' and context.object.get('stb_settings'):
                 subcol = col.column(align=True)
@@ -154,7 +153,6 @@ class STORYTOOLS_MT_static_storyboard_options(bpy.types.Menu):
 
     def draw(self, context):
         layout = self.layout
-        layout.menu("STORYTOOLS_MT_storyboard_presets_management", icon='FILE_LARGE', text='Manage Storyboard Presets')
             
         layout.label(text='Animatic:')
         layout.operator("storytools.create_animatic_from_board", text='Create Animatic Scene', icon='SCENE_DATA') # SCENE_DATA, MARKER_HLT ## idea of animatic
