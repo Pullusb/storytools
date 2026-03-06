@@ -1,11 +1,10 @@
 ## Create pages of panel grid, suitable for static storyboard or quick thumbnails
 
 import bpy
-import shutil
 
 from bpy.props import FloatProperty, IntProperty, EnumProperty, BoolProperty, StringProperty
 from bpy.types import Operator, Panel, Menu
-# from bpy_extras.io_utils import ExportHelper, ImportHelper
+
 from bl_operators.presets import AddPresetBase
 from mathutils import Vector
 from pathlib import Path
@@ -21,12 +20,12 @@ notes_default_bodys = {
     'ActionDialogLighting' : 'Action:\n\n\n\nDialog:\n\n\n\nLighting:\n',
     }
 
-# Preset system for storyboard settings
+## Preset system for storyboard settings
 class STORYTOOLS_MT_storyboard_presets(Menu):
     """Storyboard presets menu"""
     bl_label = "Storyboard Presets"
     bl_idname = "STORYTOOLS_MT_storyboard_presets"
-    preset_subdir = "storytools/storyboard"
+    preset_subdir = "operator/storytools.create_static_storyboard_pages"
     preset_operator = "script.execute_preset"
     draw = Menu.draw_preset
 
@@ -36,13 +35,14 @@ class STORYTOOLS_OT_add_storyboard_preset(AddPresetBase, Operator):
     bl_label = "Add Storyboard Preset"
     bl_description = "Add or remove a storyboard preset"
     preset_menu = "STORYTOOLS_MT_storyboard_presets"
-    
+
+    preset_subdir = "operator/storytools.create_static_storyboard_pages"
     # Variable used for all preset values
     preset_defines = [
         "op = bpy.context.active_operator",
     ]
-    
-    # Properties to store in the preset (excluding operational properties)
+
+    # Properties to store in the preset (excluding operational properties : "op.force_new_object","op.remove_pre_generated",)
     preset_values = [
         "op.canvas_x",
         "op.canvas_y", 
@@ -98,61 +98,6 @@ class STORYTOOLS_OT_add_storyboard_preset(AddPresetBase, Operator):
         "op.camera_margin",
         "op.add_timeline_markers",
     ]
-    
-    preset_subdir = "storytools/storyboard"
-
-def get_user_preset_path():
-    '''retrurn a path object of the user preset directory'''
-    if user_stb_presets := bpy.utils.preset_paths("storytools/storyboard"):
-        ## Since 4.4, it returns the path
-        return Path(user_stb_presets[0])
-    else:
-        return Path(bpy.utils.script_path_user()) / 'presets' / 'storytools' / 'storyboard'
-
-class STORYTOOLS_OT_add_default_storyboard_presets(Operator):
-    """Load default storyboard presets"""
-    bl_idname = "storytools.add_default_storyboard_presets"
-    bl_label = "Load Default Storyboard Presets"
-    bl_description = "Load default storyboard presets into user presets\
-        \nNeeded only one time per Blender version to load presets shipped with the addon\
-        \nThis will not overwrite any existing presets"
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    def execute(self, context):
-        create_default_presets()
-        self.report({'INFO'}, "Default storyboard presets loaded in user persets")
-        return {'FINISHED'}
-
-## Menu for management
-class STORYTOOLS_MT_storyboard_presets_management(Menu):
-    bl_label = "Storyboard Presets Management"
-    bl_idname = "STORYTOOLS_MT_storyboard_presets_management"
-
-    def draw(self, context):
-        layout = self.layout
-        source_presets = Path(PRESETS_DIR) / 'storyboard'
-
-        # Add preset
-        user_stb_presets = get_user_preset_path()
-        missing_main_presets = False
-        if not user_stb_presets.exists():
-            missing_main_presets = True
-        else:
-            layout.operator("wm.path_open", text="Open Presets Folder", icon='FILE_FOLDER').filepath = str(user_stb_presets)
-            ## Check if any missing
-            source_py_names = [f.name for f in source_presets.glob('*.py')]
-            user_py_names = [f.name for f in user_stb_presets.glob('*.py')]
-            if not all(n in user_py_names for n in source_py_names):
-                missing_main_presets = True
-
-        if missing_main_presets:
-            layout.label(text="Missing Default Presets", icon='ERROR')
-            layout.operator("storytools.add_default_storyboard_presets", text="Add Default Presets", icon='IMPORT')
-        else:
-            layout.label(text="Default Presets Ok", icon='CHECKMARK')
-
-        # TODO: Add option to setup scene (world, transparency, or anyone else)
-        # Convert to animatic option here ?
 
 class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
     bl_idname = "storytools.create_static_storyboard_pages"
@@ -160,7 +105,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
     bl_description = "Generate a modulable storyboard grid\
         \nAdjust settings in redo panel\
         \nFor performance, set the number of pages after everything else (leave at 1 during setup)"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'UNDO'} # , 'PRESET'
     
     # Canvas presets
     canvas_preset: EnumProperty(
@@ -799,21 +744,7 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         row.menu("STORYTOOLS_MT_storyboard_presets", text=STORYTOOLS_MT_storyboard_presets.bl_label)
         row.operator("storytools.add_storyboard_preset", text="", icon='ADD')
         row.operator("storytools.add_storyboard_preset", text="", icon='REMOVE').remove_active = True
-        # row.operator("wm.path_open", text="", icon='FILE_FOLDER').filepath = str(user_stb_presets) # only open button
-        row.menu("STORYTOOLS_MT_storyboard_presets_management", text="", icon='TOOL_SETTINGS')
-
-        user_stb_presets = get_user_preset_path()
-        if not user_stb_presets.exists():
-            row = layout.row(align=True)
-            row.label(text="No presets", icon='INFO')
-            preset_row = row.row()
-            preset_row.alert = True
-            preset_row.operator("storytools.add_default_storyboard_presets", text="Add Default Presets", icon='IMPORT')
-
-        # Import/Export presets
-        # row = layout.row(align=True)
-        # row.operator("storytools.export_storyboard_preset", text="Export Preset", icon='EXPORT')
-        # row.operator("storytools.import_storyboard_preset", text="Import Preset", icon='IMPORT')
+        # # row.operator("wm.path_open", text="", icon='FILE_FOLDER').filepath = str(user_stb_presets) # only open button
 
         # layout.separator()
 
@@ -2118,44 +2049,20 @@ class STORYTOOLS_PT_frame_grid_panel(Panel):
         layout.operator("storytools.create_static_storyboard_pages", icon='GRID')
 """
 
-def create_default_presets():
-    source_presets = Path(PRESETS_DIR) / 'storyboard'
-    
-    if not source_presets.exists():
-        return
-    
-    user_stb_presets = get_user_preset_path()
-
-    if not user_stb_presets.exists():
-        user_stb_presets.mkdir(parents=True, exist_ok=True)
-
-    for preset_src in source_presets.iterdir():
-        if preset_src.suffix != '.py':
-            continue
-        preset_dest = user_stb_presets / preset_src.name
-        
-        if preset_dest.exists():
-            continue
-
-        shutil.copy(preset_src, preset_dest)
-
 classes = (
     STORYTOOLS_MT_storyboard_presets,
     STORYTOOLS_OT_add_storyboard_preset,
-    STORYTOOLS_OT_add_default_storyboard_presets,
-    STORYTOOLS_MT_storyboard_presets_management,
     STORYTOOLS_OT_create_static_storyboard_pages,
+
     # STORYTOOLS_PT_frame_grid_panel,  # Panel for use in standalone mode
 )
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-
-    ## Uncomment below to always copy default presets to users presets directory
-    ## Replace by user manual action, using in the associated menu
-    # create_default_presets()
+    bpy.utils.register_preset_path(str(Path(PRESETS_DIR).parent))
 
 def unregister():
+    bpy.utils.unregister_preset_path(str(Path(PRESETS_DIR).parent))
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
