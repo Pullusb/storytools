@@ -3,9 +3,8 @@
 import bpy
 
 from bpy.props import FloatProperty, IntProperty, EnumProperty, BoolProperty, StringProperty
-from bpy.types import Operator, Panel, Menu
+from bpy.types import Operator
 
-from bl_operators.presets import AddPresetBase
 from mathutils import Vector
 from pathlib import Path
 
@@ -20,92 +19,13 @@ notes_default_bodys = {
     'ActionDialogLighting' : 'Action:\n\n\n\nDialog:\n\n\n\nLighting:\n',
     }
 
-## Preset system for storyboard settings
-class STORYTOOLS_MT_storyboard_presets(Menu):
-    """Storyboard presets menu"""
-    bl_label = "Storyboard Presets"
-    bl_idname = "STORYTOOLS_MT_storyboard_presets"
-    preset_subdir = "operator/storytools.create_static_storyboard_pages"
-    preset_operator = "script.execute_preset"
-    draw = Menu.draw_preset
-
-class STORYTOOLS_OT_add_storyboard_preset(AddPresetBase, Operator):
-    """Add or remove a storyboard preset"""
-    bl_idname = "storytools.add_storyboard_preset"
-    bl_label = "Add Storyboard Preset"
-    bl_description = "Add or remove a storyboard preset"
-    preset_menu = "STORYTOOLS_MT_storyboard_presets"
-
-    preset_subdir = "operator/storytools.create_static_storyboard_pages"
-    # Variable used for all preset values
-    preset_defines = [
-        "op = bpy.context.active_operator",
-    ]
-
-    # Properties to store in the preset (excluding operational properties : "op.force_new_object","op.remove_pre_generated",)
-    preset_values = [
-        "op.canvas_x",
-        "op.canvas_y", 
-        "op.canvas_preset",
-        "op.canvas_margin",
-        "op.line_radius",
-        "op.rows",
-        "op.columns",
-        "op.panel_margin_x",
-        "op.panel_margin_y",
-        "op.coverage",
-        "op.frame_ratio",
-        "op.custom_ratio_x",
-        "op.custom_ratio_y", 
-        "op.use_custom_xy",
-        "op.ratio_preset",
-        "op.include_notes",
-        "op.notes_width_percent",
-        "op.notes_header_height",
-        "op.show_notes_frames",
-        "op.create_text_objects",
-        "op.use_custom_font",
-        "op.note_text_format",
-        "op.panel_header_left",
-        "op.panel_header_right",
-        "op.num_pages",
-        "op.page_spacing",
-        "op.include_page_header",
-        "op.page_header_height",
-        "op.enable_page_head_left",
-        "op.page_head_left",
-        "op.page_head_left_linked",
-        "op.enable_page_head_center", 
-        "op.page_head_center",
-        "op.page_head_center_linked",
-        "op.enable_page_head_right",
-        "op.page_head_right",
-        "op.page_head_right_linked",
-        "op.include_page_footer",
-        "op.page_footer_height",
-        "op.enable_page_foot_left",
-        "op.page_foot_left",
-        "op.page_foot_left_linked",
-        "op.enable_page_foot_center",
-        "op.page_foot_center", 
-        "op.page_foot_center_linked",
-        "op.enable_page_foot_right",
-        "op.enable_footer_logo",
-        "op.footer_logo_path",
-        "op.footer_logo_height",
-        "op.show_canvas_frame",
-        "op.create_camera",
-        "op.camera_margin",
-        "op.add_timeline_markers",
-    ]
-
 class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
     bl_idname = "storytools.create_static_storyboard_pages"
     bl_label = "Create Static Storyboard Pages"
     bl_description = "Generate a modulable storyboard grid\
         \nAdjust settings in redo panel\
         \nFor performance, set the number of pages after everything else (leave at 1 during setup)"
-    bl_options = {'REGISTER', 'UNDO'} # , 'PRESET'
+    bl_options = {'REGISTER', 'UNDO', 'PRESET'}
     
     # Canvas presets
     canvas_preset: EnumProperty(
@@ -558,17 +478,19 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
         description="Add timeline markers bound to camera frame numbers",
         default=True
     )
-    
+
     force_new_object: BoolProperty(
         name="Create New Object",
         description="Force creation of a new grease pencil object instead of using the active one",
-        default=False
+        default=False,
+        options={'SKIP_PRESET'}
     )
 
     remove_pre_generated: BoolProperty(
         name="Remove Pre-generated Elements",
         description="Remove all previously generated text objects, cameras, and timeline markers before creating new ones",
-        default=True
+        default=True,
+        options={'SKIP_PRESET'}
     )
     
     def _validate_image_path(self, filepath):
@@ -738,15 +660,6 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
     
     def draw(self, context):
         layout = self.layout
-
-        # Preset system
-        row = layout.row(align=True)
-        row.menu("STORYTOOLS_MT_storyboard_presets", text=STORYTOOLS_MT_storyboard_presets.bl_label)
-        row.operator("storytools.add_storyboard_preset", text="", icon='ADD')
-        row.operator("storytools.add_storyboard_preset", text="", icon='REMOVE').remove_active = True
-        # # row.operator("wm.path_open", text="", icon='FILE_FOLDER').filepath = str(user_stb_presets) # only open button
-
-        # layout.separator()
 
         # Canvas settings
         box = layout.box()
@@ -2050,10 +1963,7 @@ class STORYTOOLS_PT_frame_grid_panel(Panel):
 """
 
 classes = (
-    STORYTOOLS_MT_storyboard_presets,
-    STORYTOOLS_OT_add_storyboard_preset,
     STORYTOOLS_OT_create_static_storyboard_pages,
-
     # STORYTOOLS_PT_frame_grid_panel,  # Panel for use in standalone mode
 )
 
