@@ -22,7 +22,9 @@ from mathutils import (Matrix,
 from .constants import LAYERMAT_PREFIX
 
 
-### -- mapping --
+### ---
+# region mapping
+
 ## Mapping of keymap items to their id
 KEYNUM_MAP = {
     # Top row numbers
@@ -50,7 +52,8 @@ KEYNUM_MAP = {
     "NUMPAD_0": "0"
 }
 
-### -- prefs --
+### ---
+# region prefs
 
 def get_addon_prefs():
     return bpy.context.preferences.addons[__package__].preferences
@@ -59,11 +62,13 @@ def open_addon_prefs():
     '''Open addon prefs windows with focus on current addon'''
     bpy.ops.preferences.addon_show(module=__package__)
 
+
+### ---
+# region Vector
+
 def snap_to_step(value, step):
     # return (value//step)*step # Also valid
     return round(value / step) * step
-
-### -- Vector --
 
 def location_to_region(worldcoords) -> Vector:
     '''return 2d location'''
@@ -294,7 +299,8 @@ def any_point_in_box(coords, min_corner, max_corner):
     '''
     return any(min_corner.x <= co.x <= max_corner.x and min_corner.z <= co.z <= max_corner.z for co in coords)
 
-### -- Camera/View Frustum --
+### ---
+# region Camera/View Frustum
 
 ## User view calculation from Swann Martinez's Multi-user addon
 def project_to_viewport(region: bpy.types.Region, rv3d: bpy.types.RegionView3D, coords: tuple, distance: float = 1.0) -> Vector:
@@ -501,7 +507,8 @@ def get_viewport_frustum(area, region, rv3d, space):
                             far_clip_point, rv3d.view_perspective)
 
 
-### -- Collection management --
+### ---
+# region Collection management
 
 def get_view_layer_collection(col, vl_col=None, view_layer=None):
     '''return viewlayer collection from collection
@@ -522,7 +529,8 @@ def get_view_layer_collection(col, vl_col=None, view_layer=None):
             if c is not None:
                 return c
 
-### -- Object --
+### ---
+# region Object
 
 def empty_at(pos, name='Empty', type='PLAIN_AXES', size=1.0, show_name=False, link=True):
     '''
@@ -563,7 +571,8 @@ def pack_images_in_object(obj, verbose=False):
                     if verbose:
                         print(f"Packed image: {node.image.name}")
 
-### -- GP --
+### ---
+# region GP
 
 ## Unused, but has potential for later utility
 def get_gp_draw_plane(context):
@@ -920,7 +929,8 @@ def get_frame_coord_and_normal(obj, frame, tol=0.0003):
     return plane_co, plane_no
 
 
-### -- Palette --
+### ---
+# region Palette
 
 def name_to_hue(name):
     # Use MD5 hash for consistency across sessions
@@ -1007,7 +1017,8 @@ def set_layer_by_name(ob, name):
     if target_layer := ob.data.layers.get(name):
         ob.data.layers.active = target_layer
 
-### -- Animation --
+### ---
+# region Animation
 
 def key_object(ob, loc=True, rot=True, scale=True, use_autokey=False, mode=None, options=set(), context=None):
     '''Keyframe object location, rotation, scale 
@@ -1109,7 +1120,8 @@ def key_data_path(ob, data_path, use_autokey=False, options=set(), context=None)
         return f'{ob.name}: Insert {", ".join(text)} keyframes'
     return
 
-### -- UI --
+### ---
+# region UI
 
 def refresh_areas():
     for area in bpy.context.screen.areas:
@@ -1261,7 +1273,8 @@ def update_ui_prop_index(context):
     if gp_index is not None:
         scn.gp_object_props['index'] = gp_index
 
-### -- keymap UI --
+### ---
+# region keymap UI
 
 def get_tool_presets_keymap():
     '''Return ordered list of tool_presets operator keymap
@@ -1442,7 +1455,8 @@ def draw_kmi_custom(km, kmi, layout):
         box.template_keymap_item_properties(kmi)
 
 
-### -- Property dump --
+### ---
+# region Property dump
 
 def convert_attr(Attr):
     '''Convert given value to a Json serializable format'''
