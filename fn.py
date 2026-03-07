@@ -57,17 +57,7 @@ def get_addon_prefs():
 
 def open_addon_prefs():
     '''Open addon prefs windows with focus on current addon'''
-    #TODO futureproof update: make if work with manifest as well
-    from .__init__ import bl_info
-    wm = bpy.context.window_manager
-    wm.addon_filter = 'All'
-    if not 'COMMUNITY' in  wm.addon_support: # reactivate community
-        wm.addon_support = set([i for i in wm.addon_support] + ['COMMUNITY'])
-    wm.addon_search = bl_info['name']
-    bpy.context.preferences.active_section = 'ADDONS'
-    bpy.ops.preferences.addon_expand(module=__package__)
-    bpy.ops.screen.userpref_show('INVOKE_DEFAULT')
-
+    bpy.ops.preferences.addon_show(module=__package__)
 
 def snap_to_step(value, step):
     # return (value//step)*step # Also valid
