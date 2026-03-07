@@ -208,13 +208,6 @@ def replace_rotation_matrix(M1, M2):
     M1_new = Matrix(M1_np.tolist())
     return M1_new
 
-def rotate_by_90_degrees(ob, axis='X', negative=True):
-    angle = pi/2
-    if negative:
-        angle += -1
-    mat_90 = Matrix.Rotation(angle, 4, axis)
-    ob.matrix_world = ob.matrix_world @ mat_90
-
 def get_scale_matrix(scale) -> Matrix:
     '''Recreate a neutral mat scale'''
     matscale_x = Matrix.Scale(scale[0], 4,(1,0,0))
@@ -258,21 +251,6 @@ def assign_rotation_from_ref_matrix(obj, ref_mat, rot_90=True):
         obj.matrix_basis = new_mat
 
     return new_mat
-
-
-def get_view_orientation_from_matrix(view_matrix):
-    '''Get orientation from view_matrix'''
-    r = lambda x: round(x, 2)
-    view_rot = view_matrix.to_euler()
-
-    orientation_dict = {(0.0, 0.0, 0.0) : 'TOP',
-                        (r(math.pi), 0.0, 0.0) : 'BOTTOM',
-                        (r(-math.pi/2), 0.0, 0.0) : 'FRONT',
-                        (r(math.pi/2), 0.0, r(-math.pi)) : 'BACK',
-                        (r(-math.pi/2), r(math.pi/2), 0.0) : 'LEFT',
-                        (r(-math.pi/2), r(-math.pi/2), 0.0) : 'RIGHT'}
-
-    return orientation_dict.get(tuple(map(r, view_rot)), 'UNDEFINED')
 
 
 ### -- Camera/View Frustum --
@@ -332,6 +310,7 @@ def generate_user_camera(area, region, rv3d) -> list:
 
     return coords
 
+# Unused, but could be called by get_frustum_lines()
 def extrapolate_points_by_length(a, b, length):
     '''
     Return a third point C from by continuing in AB direction
@@ -342,32 +321,6 @@ def extrapolate_points_by_length(a, b, length):
     if not ab:
         return None
     return b + (ab.normalized() * length)
-
-def view3d_camera_border_2d(context, cam):
-    # based on https://blender.stackexchange.com/questions/6377/coordinates-of-corners-of-camera-view-border
-    # cam = context.scene.camera
-    frame = cam.data.view_frame(scene=context.scene)
-    # to world-space
-    frame = [cam.matrix_world @ v for v in frame]
-    # to pixelspace
-    region, rv3d = context.region, context.space_data.region_3d
-    frame_px = [location_3d_to_region_2d(region, rv3d, v) for v in frame]
-    return frame_px
-
-def vertices_to_line_loop(v_list, closed=True) -> list:
-    '''Take a sequence of vertices
-    return a position lists of segments to create a line loop passing in all points
-    the result is usable with gpu_shader 'LINES'
-    ex: vlist = [a,b,c] -> closed=True return [a,b,b,c,c,a], closed=False return [a,b,b,c]
-    '''
-    loop = []
-    for i in range(len(v_list) - 1):
-        loop += [v_list[i], v_list[i + 1]]
-    if closed:
-        # Add segment between last and first to close loop
-        loop += [v_list[-1], v_list[0]]
-    return loop
-
 
 def circle_3d(x, y, radius, segments):
     coords = []
@@ -528,28 +481,6 @@ def get_view_layer_collection(col, vl_col=None, view_layer=None):
             if c is not None:
                 return c
 
-def get_parents_cols(col, root=None, scene=None, cols=None):
-    '''Return a list of parents collections of passed col
-    root : Pass a collection to search in (recursive)
-        Else search in master collection
-    scene: scene to search in (active scene if not passed)
-    cols: used internally by the function to collect results
-    '''
-    if cols is None:
-        cols = []
-        
-    if root == None:
-        scn = scene or bpy.context.scene
-        root=scn.collection
-
-    for sub in root.children:
-        if sub == col:
-            cols.append(root)
-
-        if len(sub.children):
-            cols = get_parents_cols(col, root=sub, cols=cols)
-    return cols
-
 ### -- Object --
 
 def empty_at(pos, name='Empty', type='PLAIN_AXES', size=1.0, show_name=False, link=True):
@@ -593,6 +524,7 @@ def pack_images_in_object(obj, verbose=False):
 
 ### -- GP --
 
+## Unused, but has potential for later utility
 def get_gp_draw_plane(context):
     ''' return tuple with plane coordinate and normal
     of the curent drawing according to geometry'''
@@ -870,12 +802,6 @@ def create_gp_object(
 
     return ob
 
-def mean_vector(vec_list):
-    '''Get mean vector from a list of vectors
-    e.g: mean_vector([self.ob.matrix_world @ co for co in self.init_pos])
-    '''
-    return Vector(np.mean(vec_list, axis=0))
-
 def get_coplanar_stroke_vector(obj, s, ensure_colplanar=True, tol=0.0003):
     '''Get a GP stroke object and return plane normal vector.
     
@@ -951,31 +877,6 @@ def get_frame_coord_and_normal(obj, frame, tol=0.0003):
     #     plane_co = plane_co or bbox_center
 
     return plane_co, plane_no
-        
-
-def reset_gp_toolsettings():
-    '''hardcoded and arbitrary set of changes to get better settings for a storyboard session'''
-    
-    context = bpy.context
-
-    ## Set opacity at 1.0 and disable pressure on current pen
-    # br = context.tool_settings.gpencil_paint.brush
-    # br.gpencil_settings.use_strength_pressure = False
-    # br.gpencil_settings.pen_strength = 1.0
-
-    ## Affect pen
-    if pencil := bpy.data.brushes.get("Pencil"):
-        pencil.gpencil_settings.pen_strength = 0.7
-        # pencil.gpencil_settings.pen_strength = 1.0
-        pencil.gpencil_settings.use_strength_pressure = False
-    
-    if pencil := bpy.data.brushes.get("Ink Pen"):
-        pencil.gpencil_settings.pen_strength = 1.0
-        # pencil.gpencil_settings.pen_strength = 1.0
-        pencil.gpencil_settings.use_strength_pressure = False
-
-    ## Disable use guide
-    context.tool_settings.gpencil_sculpt.guide.use_guide = False
 
 
 ### -- Palette --
@@ -1064,24 +965,6 @@ def set_layer_by_name(ob, name):
         return
     if target_layer := ob.data.layers.get(name):
         ob.data.layers.active = target_layer
-
-## ---
-## Brushes
-## ---
-
-def create_brush(name, context=None):
-    context = context or bpy.context
-    brush = bpy.data.grease_pencil.brushes.new(name)
-    bpy.data.brushes.create_gpencil_data(brush)
-
-    # need to create preview
-    # how to add to brush list
-    # how to define brush type
-
-    ## maybe better to append brush from a provided blend file or targeted brushlib
-    ## (Better for customization)
-
-    # context.scene.tool_settings.gpencil_paint.brush = brush
 
 ### -- Animation --
 
@@ -1638,253 +1521,6 @@ def list_attr(obj, rna_path_step, ct=0, data=None, recursion_limit=0, get_defaul
 
     return data
 
-def get_version_name():
-    version = bpy.app.version
-    return f'bl-{version[0]}_{version[1]}'
-
-
-""" def list_attr(path, ct=0, l=None, recursion_limit=0, get_default=False, skip_readonly=True, includes=None, excludes=None):
-    '''
-    List recursively attribute and their value at passed data_path and return a serializable dict
-
-    path (str): data_path to get 
-    recursion_limit (int, default: 0): 0 no limit, 1 mean
-    get_default (bool, default: False): get default property value intead of current value
-    skip_readonly (bool, default: True): Do not list readonly
-    includes (list, str) : String or list of strings fnmatch pattern, include attribute if match
-    excludes (list, str) : String or list of strings fnmatch pattern, exclude attribute if match
-    '''
-
-    if includes:
-        if not isinstance(includes, list):
-            includes = [includes]
-    if excludes:
-        if not isinstance(excludes, list):
-            excludes = [excludes]
-
-    if l is None:
-        l = {}
-
-    ## TODO: use objects instead of strings
-    path_obj = eval(path)
-    for attr in dir(path_obj):
-        print('>', path, attr)
-        if attr.startswith('__') or attr in basic_exclusions:
-            continue
-
-        # if path.endswith('context.preferences') and attr in root_exclusions:
-        #     continue
-        
-        ## Filters
-        if includes:
-            if not any(fnmatch(attr, pattern) for pattern in includes):
-                continue
-        if excludes:
-            if any(fnmatch(attr, pattern) for pattern in excludes):
-                continue
-
-        try:
-            value = getattr(path_obj, attr)
-        except AttributeError:
-            value = None
-        
-        if value is None:
-            continue
-
-        if callable(value):
-            continue
-
-        ## -> in the end, same condition as else below...
-        # if isinstance(value, bpy.types.bpy_struct):
-        #     ## test inspect sub struct, 
-        #     # print(attr, value) # Show struct name
-        #     if recursion_limit and ct+1 >= recursion_limit:
-        #         continue
-        #     list_attr(f'{path}.{attr}', ct+1, l=l,
-        #               recursion_limit=recursion_limit, get_default=get_default, skip_readonly=skip_readonly)
-        #     continue
-
-        ## No support for collection yet
-        if isinstance(value, (bpy.types.bpy_prop_collection, bpy.types.bpy_prop_array)): # , bpy.types.bpy_struct
-            continue
-        
-        if skip_readonly and path_obj.bl_rna.properties[attr].is_readonly:
-            if not isinstance(value, bpy.types.bpy_struct):
-                # struct container are readonly
-                print('readonly:', path, attr)
-                continue
-            print('struct:', path, attr)
-
-        if isinstance(value, known_types):
-            if get_default:
-                # print(attr, value, path_obj.bl_rna.properties[attr].default)
-                l[f'{path}.{attr}'] = convert_attr(path_obj.bl_rna.properties[attr].default)
-            else:
-                l[f'{path}.{attr}'] = convert_attr(value)
-
-        else:
-            if recursion_limit and ct+1 >= recursion_limit:
-                continue
-
-            # print('>>', [f'{path}.{attr}', convert_attr(value), type(value)])
-            # Comment this call to kill recursion
-            list_attr(f'{path}.{attr}', ct+1, l=l,
-                      recursion_limit=recursion_limit, get_default=get_default, skip_readonly=skip_readonly, includes=includes, excludes=excludes)
-
-    return l """
-
-""" ## old_method passing data_path as string
-    viewport_options = ('overlay', 'shading')
-    for part in viewport_options:
-        prop_dic[part] = fn.list_attr(f"bpy.context.space_data.{part}")
-
-    inc = ['show_object_*', 'show_region_*', 'show_gizmo_*']
-    prop_dic['space_data'] = fn.list_attr(f"bpy.context.space_data",
-                                                recursion_limit=1,
-                                                includes=inc)
-    
-    excl = ['annotation_stroke_placement_view*', 'gpencil_interpolate', 'use_lock_relative']
-    prop_dic['tool_settings'] = fn.list_attr(f"bpy.context.scene.tool_settings",
-                                                recursion_limit=2,
-                                                # includes=[],
-                                                excludes=excl)
-"""
-
-## -- Fit view with sidebars (Unused yet)
-
-class Rect:
-    def __init__(self, x, y, width, height):
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-
-    @property
-    def top_left(self):
-        return Vector((self.x, self.y))
-
-    @property
-    def bottom_left(self):
-        return Vector((self.x, self.y - self.height))
-
-    @property
-    def bottom_right(self):
-        return Vector((self.x + self.width, self.y - self.height))
-
-    @property
-    def top_right(self):
-        return Vector((self.x + self.width, self.y))
-    
-    @property
-    def center(self):
-        return Vector((self.x + self.width / 2, self.y + self.height / 2))
-
-    
-    def __str__(self):
-        return f'Rect(x={self.x}, y={self.y}, width={self.width}, height={self.height})'
-
-def get_reduced_rect(context):
-    '''return a Rect instance representing region coordinate of the frame'''
-    area = context.area
-    w, h = area.width, area.height
-    # if not bpy.context.preferences.system.use_region_overlap:
-    #     return w, h
-
-    regions = area.regions
-    header = next((r for r in regions if r.type == 'HEADER'), None)
-    tool_header = next((r for r in regions if r.type == 'TOOL_HEADER'), None)
-    asset_shelf = next((r for r in regions if r.type == 'ASSET_SHELF'), None)
-    toolbar = next((r for r in regions if r.type == 'TOOLS'), None)
-    sidebar = next((r for r in regions if r.type == 'UI'), None)
-
-    bottom_margin = 0
-    up_margin = 0
-    if header.alignment == 'BOTTOM':
-        bottom_margin += header.height
-    else:
-        up_margin += header.height
-
-    if tool_header.alignment == 'BOTTOM':
-        bottom_margin += tool_header.height
-    else:
-        up_margin += tool_header.height
-
-    if asset_shelf.height > 1:
-        bottom_margin += asset_shelf.height
-        ## Header of asset shelf should only be added if shelf open
-        # asset_shelf_header = next((r for r in regions if r.type == 'ASSET_SHELF_HEADER'), None)
-        # bottom_margin += asset_shelf.height + asset_shelf_header.height
-
-    reduced_x = 0
-    reduced_y = 0
-
-    reduced_width = w - sidebar.width - toolbar.width
-    reduced_height = h - tool_header.height - 1
-
-    return Rect(toolbar.width, h - reduced_y - 1, reduced_width, reduced_height)
-    # return Rect(self.toolbar.width, h - reduced_y - 1, right_down, left_down)
-
-
-def get_camera_frame_2d(scene=None, camera=None):
-    '''return a Rect instance representing camera 2d frame region coordinate'''
-    if scene is None:
-        scene = bpy.context.scene
-
-    frame_3d = get_cam_frame_world(scene.camera, scene=scene)
-
-    frame_2d = [location_to_region(v) for v in frame_3d]
-
-    rd = scene.render
-    resolution_x = rd.resolution_x * rd.pixel_aspect_x
-    resolution_y = rd.resolution_y * rd.pixel_aspect_y
-    ratio_x = min(resolution_x / resolution_y, 1.0)
-    ratio_y = min(resolution_y / resolution_x, 1.0)
-
-    ## Top right - CW
-    frame_width = (frame_2d[1].x - frame_2d[2].x) # same size (square)
-    frame_height = (frame_2d[0].y - frame_2d[1].y) # same size (square)
-    
-    cam_width = (frame_2d[1].x - frame_2d[2].x) * ratio_x
-    cam_height = (frame_2d[0].y - frame_2d[1].y) * ratio_y
-    
-    cam_x = frame_2d[3].x - ((frame_width - cam_width) / 2)
-    cam_y = frame_2d[3].y - ((frame_height - cam_height) / 2)
-    
-    return Rect(cam_x, cam_y, cam_width, cam_height)
-
-
-def fit_view(context=None):
-    context = context or bpy.context
-
-    def zoom_from_fac(zoomfac):
-        from math import sqrt
-        ## sqrt(2) = 1.41421356237309504880
-        return (sqrt(4 * zoomfac) - 1.41421356237309504880) * 50.0
-
-    r3d = context.space_data.region_3d
-    
-    view_frame = get_reduced_rect(context)
-    cam_frame = get_camera_frame_2d()
-    print('view_frame: ', view_frame)
-    print('cam_frame: ', cam_frame)
-
-    ## CENTER
-    r3d.view_camera_offset = (0,0) # Center as if always using region overlap
-
-    print('view_frame.width: ', view_frame.width)
-    print('cam_frame.width: ', cam_frame.width)
-    xfac = view_frame.width / (cam_frame.width + 4.0)
-    yfac = view_frame.height / (cam_frame.height + 4.0)
-
-    # xfac = view_frame.width / cam_frame.width
-    # yfac = view_frame.height / cam_frame.height
-
-    ## ZOOM
-    print('zoom before', r3d.view_camera_zoom) # Dbg
-    zoom_value = zoom_from_fac(min(xfac, yfac))
-    zoom_value = max(min(zoom_value, 300.0), -30.0) # clamp between -30 and 30
-    r3d.view_camera_zoom = zoom_value
-    print('zoom after', r3d.view_camera_zoom) # Dbg
 
 def frame_objects(context, target='NONE', objects=None, apply=True):
     '''frame objects in view using BBox
