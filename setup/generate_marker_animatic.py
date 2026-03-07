@@ -8,45 +8,6 @@ from bpy.props import FloatProperty, IntProperty, EnumProperty, BoolProperty, St
 
 from .. import fn
 
-def get_min_max_corner(positions, margin=0):
-    ## Sort in place (modify list !!)
-    positions.sort(key=lambda vec: (vec.x, vec.z))
-    min_corner = positions[0]
-    max_corner = positions[-1]
-    
-    if not margin:
-        return min_corner, max_corner
-    
-    ## Add 20% margin to get strokes in frame
-    diagonal = (min_corner - max_corner).length
-    margin = diagonal * 0.2 / 2
-    max_corner = max_corner + Vector((1, 0, 1)) * margin
-    min_corner = min_corner + Vector((-1, 0, -1)) * margin
-    return min_corner, max_corner
-
-## unused - need to test performance
-def any_point_in_rectangle_numpy(stroke, bottom_left, upper_right):
-    """
-    NumPy vectorized version - fastest for large point collections.
-    """
-    # Extract X and Z coordinates
-    x_coords = np.array([p.position.x for p in stroke.points])
-    z_coords = np.array([p.position.z for p in stroke.points])
-    
-    # Check bounds
-    x_in_bounds = (x_coords >= bottom_left.x) & (x_coords <= upper_right.x)
-    z_in_bounds = (z_coords >= bottom_left.z) & (z_coords <= upper_right.z)
-
-    # Return True if any point satisfies both conditions
-    return np.any(x_in_bounds & z_in_bounds)
-
-def any_point_in_box(coords, min_corner, max_corner):
-    ''' Check if any point in coords list is within the X-Z bounding box defined by min_corner and max_corner
-    coords : list of Vector3 or tuple coordinates
-    min_corner : Vector3, lower left corner of the bounding box
-    max_corner : Vector3, upper right corner of the bounding box
-    '''
-    return any(min_corner.x <= co.x <= max_corner.x and min_corner.z <= co.z <= max_corner.z for co in coords)
 
 class STORYTOOLS_OT_create_animatic_from_board(Operator):
     bl_idname = "storytools.create_animatic_from_board"
@@ -117,7 +78,7 @@ class STORYTOOLS_OT_create_animatic_from_board(Operator):
         
         self.number_of_frames = len(st_frames)
 
-        corner_min, corner_max = get_min_max_corner([p.position for p in st_frames[0].points])
+        corner_min, corner_max = fn.get_min_max_corner([p.position for p in st_frames[0].points])
         width = corner_max.x - corner_min.x
         height = corner_max.z - corner_min.z
         self.aspect_ratio = height / width if width != 0 else 1.0
@@ -180,14 +141,14 @@ class STORYTOOLS_OT_create_animatic_from_board(Operator):
         
         ## Get the each frame corners and center in list (min, max, center)
         ## Exact corner position
-        # frame_corners = [get_min_max_corner([p.position for p in s.points]) for s in stroke_frames]
+        # frame_corners = [fn.get_min_max_corner([p.position for p in s.points]) for s in stroke_frames]
         ## Add center as a third element in list
         # frames_coords = [(f[0], f[1], ((f[0] + f[1]) / 2)) for f in frame_corners]
         
         ## contract by radius to fit inside the frame and add center in same loop.
         frames_coords = []
         for s in stroke_frames:
-            min_corner, max_corner = get_min_max_corner([p.position for p in s.points])
+            min_corner, max_corner = fn.get_min_max_corner([p.position for p in s.points])
             radius = s.points[0].radius
             frames_coords.append((
                 min_corner + Vector((radius, 0, radius)),
@@ -202,14 +163,14 @@ class STORYTOOLS_OT_create_animatic_from_board(Operator):
             draw_frames = []
             camera = marker.camera
             cam_frame = fn.get_cam_frame_world(camera, scene=source_scene)
-            cam_min, cam_max = get_min_max_corner(cam_frame)
+            cam_min, cam_max = fn.get_min_max_corner(cam_frame)
 
             for i in range(len(frames_coords)-1,-1,-1):
                 ## frame_coord -> tuple of vectors : (min_corner, max_corner, center)
                 
                 frame_coord = frames_coords[i]
 
-                if any_point_in_box(frame_coord, cam_min, cam_max):
+                if fn.any_point_in_box(frame_coord, cam_min, cam_max):
                     ## append in current page list and remove from source list
                     draw_frames.append(frames_coords.pop(i))
 

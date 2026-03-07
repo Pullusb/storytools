@@ -252,6 +252,47 @@ def assign_rotation_from_ref_matrix(obj, ref_mat, rot_90=True):
 
     return new_mat
 
+## -- used for static storyboard
+
+def get_min_max_corner(positions, margin=0):
+    ## Sort in place (modify list !!)
+    positions.sort(key=lambda vec: (vec.x, vec.z))
+    min_corner = positions[0]
+    max_corner = positions[-1]
+    
+    if not margin:
+        return min_corner, max_corner
+    
+    ## Add 20% margin to get strokes in frame
+    diagonal = (min_corner - max_corner).length
+    margin = diagonal * 0.2 / 2
+    max_corner = max_corner + Vector((1, 0, 1)) * margin
+    min_corner = min_corner + Vector((-1, 0, -1)) * margin
+    return min_corner, max_corner
+
+## unused - need to test performance against any_point_in_box
+def any_point_in_rectangle_numpy(stroke, bottom_left, upper_right):
+    """
+    NumPy vectorized version - fastest for large point collections.
+    """
+    # Extract X and Z coordinates
+    x_coords = np.array([p.position.x for p in stroke.points])
+    z_coords = np.array([p.position.z for p in stroke.points])
+    
+    # Check bounds
+    x_in_bounds = (x_coords >= bottom_left.x) & (x_coords <= upper_right.x)
+    z_in_bounds = (z_coords >= bottom_left.z) & (z_coords <= upper_right.z)
+
+    # Return True if any point satisfies both conditions
+    return np.any(x_in_bounds & z_in_bounds)
+
+def any_point_in_box(coords, min_corner, max_corner):
+    ''' Check if any point in coords list is within the X-Z bounding box defined by min_corner and max_corner
+    coords : list of Vector3 or tuple coordinates
+    min_corner : Vector3, lower left corner of the bounding box
+    max_corner : Vector3, upper right corner of the bounding box
+    '''
+    return any(min_corner.x <= co.x <= max_corner.x and min_corner.z <= co.z <= max_corner.z for co in coords)
 
 ### -- Camera/View Frustum --
 
