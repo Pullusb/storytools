@@ -65,13 +65,6 @@ class STORYTOOLS_PT_viewport_setup(bpy.types.Panel):
             col.operator("storytools.open_addon_prefs", text='Open Storytools Preferences', icon='PREFERENCES')
 
             col.separator()
-            col.label(text="Settings Presets")
-
-            ## Export / Restore settings
-            col.operator('storytools.save_load_settings_preset', text='View Settings Presets', icon='PRESET').category = 'view_settings'
-            col.operator('storytools.save_load_settings_preset', text='Tool Settings Presets', icon='PRESET').category = 'tool_settings'
-
-            col.separator()
             
             ## -- Workspace load
             # if context.window.workspace.name != 'Storyboarding':
