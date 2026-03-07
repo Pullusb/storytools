@@ -2,6 +2,13 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+3.3.0
+
+- fixed: compatibility with extension platform (#106)
+- changed: Static storyboard font to _Aileron_ (CC0)
+- removed: viewport preset option
+- removed: extra images for static storyboard footer (and reduce size for the other)
+
 3.2.0
 
 - removed: internal git updater feature, not needed after submission to extension platform
