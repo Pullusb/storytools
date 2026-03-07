@@ -3,7 +3,6 @@
 import bpy
 
 from . import properties
-# from . import tool_presets # abandonned tool preset system
 from . import preferences
 from . import setup
 from . import gpencil_ops
@@ -25,7 +24,6 @@ modules = (
     scale_figure,
     setup,
     properties,
-    # tool_presets, # abandonned tool preset system
     preferences,
     gpencil_ops,
     camera_ops,

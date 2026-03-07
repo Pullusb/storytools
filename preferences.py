@@ -16,7 +16,7 @@ from bpy.app.handlers import persistent
 from .fn import get_addon_prefs, open_addon_prefs, draw_kmi_custom, get_tool_presets_keymap
 # from rna_keymap_ui import draw_km, draw_kmi
 from .properties import STORYTOOLS_PGT_gp_settings # gp local settings
-# from .tool_presets.properties import STORYTOOLS_PG_tool_presets
+
 
 def toggle_gizmo_buttons(self, _):
     from . import gizmo_toolbar
@@ -68,27 +68,6 @@ def ui_in_sidebar_update(self, _):
 
     if self.show_sidebar_ui:
         register_panels(self.category.strip())
-
-def toolset_edit_ui(col):
-    col.use_property_split = True
-    tools = get_addon_prefs().tool_presets.tools
-    idx = get_addon_prefs().tool_presets.index
-    item = tools[idx]
-    # layout.label(text='Name:', icon='INFO') # Tell that it's used by shortcut (better than order)
-    col.prop(item, 'preset_name')
-    if dupe := next((i for i, tool in enumerate(tools) if i != idx and tool.preset_name == item.preset_name), None):
-        col.label(text=f'Name is already used by tool {dupe}')
-
-    col.prop(item, 'mode')
-    col.prop(item, 'tool')
-    col.prop(item, 'layer')
-    col.prop(item, 'material')
-    col.prop(item, 'brush')
-    col.prop(item, 'icon')
-    col.prop(item, 'show')
-
-    # if not item.valid:
-    #     col.label(text='Invalid Path', icon='ERROR')
 
 class STORYTOOLS_prefs(bpy.types.AddonPreferences):
     bl_idname = __package__
@@ -347,9 +326,6 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             ),
         )
 
-    ## Tool presets (Old tool presets)
-    # tool_presets : PointerProperty(type=STORYTOOLS_PG_tool_presets)
-
     ## Hint / Tips / Warning management
 
     use_warnings : BoolProperty(
@@ -535,48 +511,6 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
 
             bcol.prop(self, 'set_selection_tool')
 
-
-        """
-        elif self.pref_tab == 'TOOLS':
-            col.label(text='Draw Topbar:', icon='NODE_TOP')
-            ## show 
-            tool_presets = self.tool_presets
-            
-            ## Tool UI list
-            row = col.row()
-            minimum_row = 6 # default number of displayed lines
-            row.template_list("STORYTOOLS_UL_toolpreset_list", "", tool_presets, "tools", tool_presets, "index", 
-                rows=minimum_row)
-
-            idx = tool_presets.index
-            tools = tool_presets.tools
-
-            # UI list right side
-            subcol = row.column(align=True)
-            ## Add / remove
-            subcol.operator('storytools.add_toolpreset', text='', icon='ADD')
-            subcol.operator('storytools.duplicate_toolpreset', text='', icon='DUPLICATE')
-            subcol.operator('storytools.remove_toolpreset', text='', icon='REMOVE')
-
-            subcol.separator()
-
-            ## move up / down
-            move_op = subcol.operator('storytools.move_collection_item', text='', icon='TRIA_UP')
-            move_op.direction = 'UP'
-            move_op.prop_name = 'tool_presets'
-            move_op.items_name = 'tools'
-
-            move_op = subcol.operator('storytools.move_collection_item', text='', icon='TRIA_DOWN')
-            move_op.direction = 'DOWN'
-            move_op.prop_name = 'tool_presets'
-            move_op.items_name = 'tools'
-
-            if idx == -1 or not len(tools):
-                col.label(text='No Brush toolpreset selected above', icon='ERROR')
-                col.label(text='Use "+" button to add brush')
-            else:                
-                toolset_edit_ui(col)
-        """
 
 class STORYTOOLS_OT_restore_keymap_item(bpy.types.Operator):
     bl_idname = "storytools.restore_keymap_item"
