@@ -1,27 +1,42 @@
 # Storytools - Storyboard Tools
 
-Blender addon - Set of tool for storyboarding in Blender
+Blender addon - Set of tools for storyboarding in Blender
 
-## [Download latest (Blender 5+)](https://github.com/Pullusb/storytools/archive/master.zip)
+### Available on extension platform for Blender 5+ ([extension page](https://extensions.blender.org/add-ons/storytools/))
+
+⬇️ Install directly from Blender: Edit > Preferences > Get Extension > search "Storytools" and click install 
+
+#### [Documentation](https://pullusb.github.io/storytools-docs/)
+
+---
+
+## Links for 4.2 to 4.5 version and latest dev
+
+Latest stable for Blender 5 and above is on the extension platform
+
+#### [Download latest dev version (manual install for Blender 5+) ](https://github.com/Pullusb/storytools/archive/master.zip)
 
 > /!\ Important notes:
-> - the releases available on release pages are only for older version (below 5.0), access on link below
+> - the releases available on release pages are only for older version (below 5.0), see link below
 > - the gpv2 branch (blender 4.0 to 4.2) is no longer maintained.
 > - bl42to45 branch (blender 4.3 to 4.5) is no longer maintained.
 > - version below 4.0 are not supported.
 
-## [Downloads for Blender 4.0 to 4.2 and 4.3 to 4.5 are listed in release page](https://github.com/Pullusb/storytools/releases)
 
-## [Documentation](https://pullusb.github.io/storytools-docs/)
+#### [Downloads for Blender 4.0 to 4.2 and 4.3 to 4.5 are listed in release page](https://github.com/Pullusb/storytools/releases)
 
-![Storytools UI](https://github.com/Pullusb/images_repo/blob/master/storytools_ui_demo.jpg)
+---
+
+![Storytools v1 UI](https://raw.githubusercontent.com/Pullusb/images_repo/master/storytools_ui_demo.jpg)
 
 
 Sponsored by:
 - **Samuel Bernou** (Maintainer)
+
+Previous sponsors:
 - [**CNC**](https://www.cnc.fr/)
 - [**Autour de Minuit**](https://blog.autourdeminuit.com/)
-- Version 1.0 was sponsored by [**El Guiri Studios**](https://www.elguiristudios.com/)
+- [**El Guiri Studios**](https://www.elguiristudios.com/)
 
 ---  
 
@@ -71,7 +86,7 @@ Objects Actions:
 - Rotate object on camera view axis (Ctrl to snap on 15 degrees angles)
 - Scale object
 - Align object to camera: rotate object to have front axis face view (`-Y` direction)
-- key object tranform at current time (note: object, not GP frame)
+- key object transform at current time (note: object, not GP frame)
 
 Camera Actions:
 
@@ -89,9 +104,6 @@ Defined through a shortcut and appear as button in the `Tool preset topbar` at t
 
 
 <!-- ## TODO
-
--> Add a tool preset "refresh" in addon prefs (if using custom UI, can also refresh on properties update, but might be hazardous)
--> New tool preset button from prefs > tool presets
 -> Add UI to better view and customize tools presets (icon selector, pre-entered names for builtin brush category, can use old code from "presets as collection"
 
 -> How or when to fine tune settings of bucket fill (need to add lenght)
@@ -99,24 +111,8 @@ Defined through a shortcut and appear as button in the `Tool preset topbar` at t
 
 -> Check if tool presets can handle multiple modes with bypass on main default shortcuts depending on each contexts
 
--> Create a test storyboard template and check how to load
-
 Modals
 - Opt: For all modals, add icon warning if in autokey (same draw func call/stop for all) 
-
-## Ideas
-Change Objects canvas colors (very optional)
-Set different canvas grid color per object, at generation pick a new color 
-Or change it according to depth ? Refreshed when changing object from dedicated UI list
-
-## Map
-
-#### TODO
-- [ ] Set 2D openGL draw instead of 3D
-- [ ] Hide storytoolbar in map
-- [ ] Find a way to enable/disable map mode, should be available in both
-- [ ] Create a nav gyzmo for the minimzp
-- [ ] opt: Custom Gizmo ? Rotate object (same), rotate/orbit camera (? orbit need point)
 
 ## Custom actions: Map Select could be overriden by custom action (while letting most of usual action valid)
 pro:
@@ -124,8 +120,6 @@ pro:
     - would allow custom action on specific zone. like pointing camera at something.
 cons:
     - Break default click action from blender
-
-
 ---
 
 ##Gizmo API tests
@@ -171,7 +165,6 @@ use_grab_cursor
 use_operator_tool_properties
 use_select_background
 use_tooltip
-
 
 
 ## Note for gizmoGroup
