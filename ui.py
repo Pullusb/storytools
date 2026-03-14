@@ -714,12 +714,18 @@ class STORYTOOLS_PT_colors_ui(Panel):
             layout.label(text=mat.name, icon='MATERIAL')
             ## One row each
             col = layout.column(align=True)
-            row = col.row(align=True)
-            row.prop(mat.grease_pencil, "show_stroke", text="Stroke")
-            row.prop(mat.grease_pencil, "color", text="")
-            row = col.row(align=True)
-            row.prop(mat.grease_pencil, "show_fill", text="Fill")
-            row.prop(mat.grease_pencil, "fill_color", text="")
+            if bpy.app.version >= (5, 1, 0):
+                row = col.row()
+                row.prop(mat.grease_pencil, "color", text="Stroke")
+                row = col.row()
+                row.prop(mat.grease_pencil, "fill_color", text="Fill")
+            else:
+                row = col.row(align=True)
+                row.prop(mat.grease_pencil, "show_stroke", text="Stroke")
+                row.prop(mat.grease_pencil, "color", text="")
+                row = col.row(align=True)
+                row.prop(mat.grease_pencil, "show_fill", text="Fill")
+                row.prop(mat.grease_pencil, "fill_color", text="")
             return
 
             ## Tried to show the full original "Surface" panel (use context.material that does not exists in viewport context):
@@ -872,8 +878,8 @@ panel_classes = (
     STORYTOOLS_PT_drawings_ui,
     STORYTOOLS_PT_layers_ui,
     STORYTOOLS_PT_materials_ui,
-    STORYTOOLS_PT_brushes_ui, # Wrapper : Reference a native panel
     STORYTOOLS_PT_colors_ui, # Wrapper : Reference a native panel
+    STORYTOOLS_PT_brushes_ui, # Wrapper : Reference a native panel
     STORYTOOLS_PT_create_material_ui, # Wrapper : Reference a native panel, children of colors
     STORYTOOLS_PT_palette_ui, # Wrapper : Reference a native panel
     STORYTOOLS_PT_tool_ui,

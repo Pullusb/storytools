@@ -2,6 +2,12 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+3.3.1
+
+- fixed: Bug were a Misc tab would appear in Dopesheet
+- fixed: In Blender 5.1, remove exposition of `show_stroke` and `show_fill` checkbox (those states now exists at stroke level starting )
+- changed: Move Colors panel above Brushes panel in Storytools sidebar
+
 3.3.0
 
 - fixed: compatibility with extension platform (#106)
