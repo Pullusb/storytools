@@ -115,8 +115,7 @@ class STORYTOOLS_PT_viewport_setup(bpy.types.Panel):
 
 class STORYTOOLS_PT_marker_management(bpy.types.Panel):
     bl_space_type = "DOPESHEET_EDITOR"
-    # bl_region_type = "HEADER"
-    bl_region_type = "UI"
+    bl_region_type = "HEADER"
     bl_label = "Marker Management"
     bl_options = {"INSTANCED"}
 
