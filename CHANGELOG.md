@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+3.3.2
+
+- fixed: Bug when using a material target in toolpreset with material sync enabled would lead to conflict. Now toolpreset's material target takes precedence.
+
 3.3.1
 
 - fixed: Bug were a Misc tab would appear in Dopesheet

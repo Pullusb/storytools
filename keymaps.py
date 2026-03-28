@@ -200,10 +200,14 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
                 self.report({'WARNING'}, f'Could not find brush named {self.brush}')
 
         if self.layer:
+            if self.material:
+                # if material name is specified, prevent material sync on this layer change msg_bus update (avoid override)
+                bpy.context.window_manager["skip_layer_sync_flag"] = True
             fn.set_layer_by_name(ob, self.layer)
         
         if self.material:
-            # FIXME: Sync happen after material set... how to prevent
+            # if material name is specified, prevent material pairing on this material change msg_bus update (avoid unwated pairing)
+            bpy.context.window_manager["skip_material_sync_flag"] = True
             fn.set_material_by_name(ob, self.material)
 
         return {"FINISHED"}

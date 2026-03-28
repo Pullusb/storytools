@@ -48,11 +48,16 @@ def layer_change_callback():
     scn, ob = get_object_and_scene()
     if scn is None or ob is None:
         return
-    
+
+    wm = bpy.context.window_manager
+    if wm.get("skip_layer_sync_flag"):
+        del wm["skip_layer_sync_flag"]
+        return
+
     mode = scn.storytools_settings.material_sync
     if mode == 'DISABLED':
         return
-    
+
     ## FIXME store the material name in the layer custom property now that it's possible ?
     ## Maybe it's better to keep at object level to avoid sync issue using global mode..
     if mode == 'INDIVIDUAL':
@@ -101,7 +106,12 @@ def material_change_callback():
         return
     if not ob.active_material:
         return
-    
+
+    wm = bpy.context.window_manager
+    if wm.get("skip_material_sync_flag"):
+        del wm["skip_material_sync_flag"]
+        return
+
     mode = scn.storytools_settings.material_sync
     if mode == 'DISABLED':
         return
