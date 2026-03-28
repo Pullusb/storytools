@@ -509,12 +509,16 @@ class STORYTOOLS_PT_create_material_ui(Panel):
         # col.label(text='Create Material From Vertex Color:')
         try:
             # if settings.color_mode == 'MATERIAL':
-            col.prop(settings.brush, 'color', text='')
-
-            row = col.row(align=True)
-            row.operator('storytools.create_material_from_color', text='Stroke').mode = 'STROKE'
-            row.operator('storytools.create_material_from_color', text='Fill').mode = 'FILL'
-            row.operator('storytools.create_material_from_color', text='Both').mode = 'BOTH'
+            if bpy.app.version >= (5, 1, 0):
+                row = col.row(align=True)
+                row.prop(settings.brush, 'color', text='')
+                row.operator('storytools.create_material_from_color', text='Create Material').mode = 'STROKE'
+            else:
+                col.prop(settings.brush, 'color', text='')
+                row = col.row(align=True)
+                row.operator('storytools.create_material_from_color', text='Stroke').mode = 'STROKE'
+                row.operator('storytools.create_material_from_color', text='Fill').mode = 'FILL'
+                row.operator('storytools.create_material_from_color', text='Both').mode = 'BOTH'
         
         except Exception:
             col.label(text='Need to enter draw mode once', icon='ERROR')

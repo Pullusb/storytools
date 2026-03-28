@@ -964,6 +964,9 @@ def load_palette(filepath, ob=None):
         
         ob.data.materials.append(mat)
         for attr, value in attrs.items():
+            if bpy.app.version >= (5, 1, 0) and attr in ('show_fill', 'show_stroke'):
+                ## Starting Blender 5.1, Those are transferred to stroke and are now deprecated.
+                continue
             setattr(mat.grease_pencil, attr, value)
 
 

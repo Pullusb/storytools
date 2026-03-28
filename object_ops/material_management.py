@@ -208,10 +208,6 @@ class STORYTOOLS_OT_create_material_from_color(bpy.types.Operator):
         ## Add alpha 1.0 (need 4 components)
         self.color = (color[0], color[1], color[2], 1.0)
 
-        ## TODO: check color against existing materials
-        ## if exists propose to use it (would happen for absolute color, of if comming from a palette)
-        ## list all materials with same value
-
         self.similar_materials = []
         for material in bpy.data.materials:
             if not material.is_grease_pencil:
@@ -265,8 +261,9 @@ class STORYTOOLS_OT_create_material_from_color(bpy.types.Operator):
         bpy.data.materials.create_gpencil_data(mat)
         self.obj.data.materials.append(mat)
 
-        mat.grease_pencil.show_stroke = self.mode in ('STROKE', 'BOTH')
-        mat.grease_pencil.show_fill = self.mode in ('FILL', 'BOTH')
+        if bpy.app.version < (5, 1, 0):
+            mat.grease_pencil.show_stroke = self.mode in ('STROKE', 'BOTH')
+            mat.grease_pencil.show_fill = self.mode in ('FILL', 'BOTH')
         mat.grease_pencil.color = self.color
         mat.grease_pencil.fill_color = self.color
 
