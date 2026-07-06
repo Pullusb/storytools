@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+3.4.0
+
+- added: `Pan/Tilt` Operator to pivot camera, aiming laterally or vertically. Mimic turntable behavior
+
 3.3.2
 
 - fixed: Bug when using a material target in toolpreset with material sync enabled would lead to conflict. Now toolpreset's material target takes precedence.

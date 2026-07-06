@@ -261,8 +261,8 @@ def shift_lines(context):
 
 class STORYTOOLS_OT_camera_pan(Operator):
     bl_idname = "storytools.camera_pan"
-    bl_label = 'Camera Pan/Shift'
-    bl_description = "Pan Camera, X/Y to lock on axis\
+    bl_label = 'Translate Camera Truck/Boom or Shift'
+    bl_description = "Translate Camera (Truck/Boom) or Shift, X/Y to lock on axis\
                     \n+ Shift : Precision mode\
                     \n+ Ctrl (During) : Autolock on moved axis\
                     \n+ Ctrl (Start) : Camera Shift instead of Pan\

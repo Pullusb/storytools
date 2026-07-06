@@ -14,7 +14,8 @@ from .cam_move import setup_top_view_map
 class STORYTOOLS_OT_camera_aim(Operator):
     bl_idname = "storytools.camera_aim"
     bl_label = 'Camera Pan/Tilt'
-    bl_description = "Pivot Camera on itself (Pan / Tilt), X/Y to lock on axis\
+    bl_description = "Camera Pan/Tilt\
+                    \nPivot Camera on itself (Pan left-right / Tilt up-down), X/Y to lock on axis\
                     \n+ Ctrl : Autolock on major axis\
                     \n+ Shift : Precision mode"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
@@ -58,11 +59,27 @@ class STORYTOOLS_OT_camera_aim(Operator):
 
         self.update_rotation(context, event)
 
+        ### Lock visual hint section
         ## Draw handler for lock axis visual hint
         center = fn.get_cam_frame_world_center(self.cam)
+
+        ## Local lock axis (here should align with current pan-tilt)
+        # self.lock_x_coords = [center + self.pitch_axis * 10000, center + self.pitch_axis * -10000]
+        # self.lock_y_coords = [center + self.yaw_axis * 10000, center + self.yaw_axis * -10000]
         
-        self.lock_x_coords = [center + self.pitch_axis * 10000, center + self.pitch_axis * -10000]
-        self.lock_y_coords = [center + self.yaw_axis * 10000, center + self.yaw_axis * -10000]
+        # circle_3d_coords = fn.circle_3d(0, 0, radius=20, segments=64)
+        cam_translation = self.init_mat.to_translation()
+        ## calculate X-loc circle radius size without z dimension
+        circle_lock_x = fn.circle_3d(0, 0, radius=(Vector(center).xy - cam_translation.xy).length, segments=100)
+        ## No special radius needed for Y-loc circle, just need to rotate to align
+        circle_lock_y = fn.circle_3d(0, 0, radius=1, segments=64) # radius=(center_v - cam_translation).length # no need to match camera frame
+        
+        ## Calculate rotation to apply to lock circle for pitch
+        top_vec = Vector((0, 0, 1))
+        rot_diff = top_vec.rotation_difference(pitch_axis)
+        ## Offset z based on center (flatten pairs to avoid getting dotted lines)
+        self.lock_x_coords = fn.to_flatten_pairs([v + Vector((0, 0, center[2]-cam_translation.z)) + cam_translation for v in circle_lock_x], closed=False) 
+        self.lock_y_coords = fn.to_flatten_pairs([rot_diff @ v + cam_translation for v in circle_lock_y], closed=False)
 
         ## Draw handler to show initial camera frame during rotation (ghost of source position)
         init_cam_frame = fn.get_cam_frame_world(self.cam, context.scene)
@@ -84,7 +101,7 @@ class STORYTOOLS_OT_camera_aim(Operator):
         lock = self.lock
 
         ## Slower with shift (precision mode)
-        fac = 0.0005 if event.shift else 0.005 # 0.001
+        fac = 0.0002 if event.shift else 0.004
         if event.shift != self.shift_pressed:
             self.shift_pressed = event.shift
             self.cumulated_delta += self.current_delta

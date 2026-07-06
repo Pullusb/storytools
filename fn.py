@@ -299,6 +299,23 @@ def any_point_in_box(coords, min_corner, max_corner):
     '''
     return any(min_corner.x <= co.x <= max_corner.x and min_corner.z <= co.z <= max_corner.z for co in coords)
 
+def to_flatten_pairs(v_list, closed=True) -> list:
+    """Take a sequence of item (vector, vertices), return a lists of flattened pairs.
+    ex: for continuous coordinate, return segments pairs, result is usable with gpu_shader 'LINES'
+
+    v_list (list): List of coordinates [a,b,c]
+    closed (bool): 
+        True return  [a,b,b,c,c,a] (add segment closing last to first coordinate)
+        False return [a,b,b,c]
+    """
+    loop = []
+    for i in range(len(v_list) - 1):
+        loop += [v_list[i], v_list[i + 1]]
+    if closed:
+        # Add segment between last and first to close loop
+        loop += [v_list[-1], v_list[0]]
+    return loop
+
 ### ---
 # region Camera/View Frustum
 
@@ -371,18 +388,19 @@ def extrapolate_points_by_length(a, b, length):
 
 def circle_3d(x, y, radius, segments):
     m = (1.0 / (segments - 1)) * (pi * 2)
+    
     ## Detailed version
     # coords = []
     # for p in range(segments):
     #     p1 = x + cos(m * p) * radius
     #     p2 = y + sin(m * p) * radius
     #     coords.append(Vector((p1, p2, 0)))
-    ## Use list comprehension for faster computation
-    coords = [Vector((
-        x + cos(m * p) * radius, 
-        y + sin(m * p) * radius, 
-        0)) 
-        for p in range(segments)]
+    
+    ## List comprehension for faster computation
+    coords = [Vector((x + cos(m * p) * radius, 
+                      y + sin(m * p) * radius, 
+                      0)) 
+                for p in range(segments)]
     return coords
 
 def get_frustum_lines(loc, left, right, orient, near_clip_point, far_clip_point, view_type):
@@ -1265,16 +1283,20 @@ def set_gizmo_settings(gz, icon,
     # gz.line_width = 1.0 # no affect on 2D gizmo ?
 
 def circle_2d(x, y, radius, segments):
-    coords = []
     m = (1.0 / (segments - 1)) * (pi * 2)
-    for p in range(segments):
-        p1 = x + cos(m * p) * radius
-        p2 = y + sin(m * p) * radius
-        coords.append((p1, p2))
+    
+    ## Detailed
+    # coords = []
+    # for p in range(segments):
+    #     p1 = x + cos(m * p) * radius
+    #     p2 = y + sin(m * p) * radius
+    #     coords.append((p1, p2))
+    
+    ## list comprehension for faster result
     coords = [Vector((x + cos(m * p) * radius, 
                       y + sin(m * p) * radius, 
                       0)) 
-                      for p in range(segments)]
+                for p in range(segments)]
     return coords
 
 def update_ui_prop_index(context):
