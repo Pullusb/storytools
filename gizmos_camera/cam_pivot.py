@@ -9,8 +9,7 @@ from .. import fn
 from .. import draw
 from .cam_move import setup_top_view_map
 
-## FIXME: pivoting on both axis makes weird angular rotation on camera
-## Use same behavior as cam on a turntable with locked Z up to avoid roll and keep natural horizon when rotating on both axis (yaw then pitch or reverse)
+## Note: some terms used interchangeably in code yaw = Pan, pitch = Tilt
 
 class STORYTOOLS_OT_camera_aim(Operator):
     bl_idname = "storytools.camera_aim"
@@ -40,9 +39,20 @@ class STORYTOOLS_OT_camera_aim(Operator):
         self.init_mouse = Vector((event.mouse_x, event.mouse_y))
         self.lock_text = 'Camera Pan/Tilt'
 
-        ## Get camera local axes for rotation
-        self.local_x = self.cam.matrix_world.to_quaternion() @ Vector((1, 0, 0))
-        self.local_y = self.cam.matrix_world.to_quaternion() @ Vector((0, 1, 0))
+        ## World-relative rotation axis (turntable style, independent of camera roll):
+        ## yaw (left-right) around world Z
+        ## pitch (up-down) around the horizontal axis perpendicular to the view (aligned on world)
+        self.yaw_axis = Vector((0, 0, 1)) # world Z
+        init_quat = self.init_mat.to_quaternion()
+        view_dir = init_quat @ Vector((0, 0, -1))
+        # view vec cross world Z -> horizontal axis perpendicular to view
+        pitch_axis = self.yaw_axis.cross(view_dir)
+        if pitch_axis.length_squared < 1e-8:
+            ## Looking straight up/down: local X is horizontal, use it directly
+            pitch_axis = init_quat @ Vector((1, 0, 0))
+            pitch_axis.z = 0.0
+        pitch_axis.normalize()
+        self.pitch_axis = pitch_axis
 
         context.window.cursor_set("SCROLL_XY")
 
@@ -50,11 +60,11 @@ class STORYTOOLS_OT_camera_aim(Operator):
 
         ## Draw handler for lock axis visual hint
         center = fn.get_cam_frame_world_center(self.cam)
-        self.lock_x_coords = [center + self.local_x * 10000, center + self.local_x * -10000]
-        self.lock_y_coords = [center + self.local_y * 10000, center + self.local_y * -10000]
         
-        ## Draw handler to show initial camera frame during rotation
-        # FIXME : In turntable mode, should draw line based on world axis
+        self.lock_x_coords = [center + self.pitch_axis * 10000, center + self.pitch_axis * -10000]
+        self.lock_y_coords = [center + self.yaw_axis * 10000, center + self.yaw_axis * -10000]
+
+        ## Draw handler to show initial camera frame during rotation (ghost of source position)
         init_cam_frame = fn.get_cam_frame_world(self.cam, context.scene)
         init_cam_frame += [init_cam_frame[0], init_cam_frame[-1], init_cam_frame[1], init_cam_frame[2]]  # Add top and bottom pair
         self.line_coords = init_cam_frame
@@ -74,7 +84,7 @@ class STORYTOOLS_OT_camera_aim(Operator):
         lock = self.lock
 
         ## Slower with shift (precision mode)
-        fac = 0.0005 if event.shift else 0.01 # 0.001
+        fac = 0.0005 if event.shift else 0.005 # 0.001
         if event.shift != self.shift_pressed:
             self.shift_pressed = event.shift
             self.cumulated_delta += self.current_delta
@@ -91,32 +101,21 @@ class STORYTOOLS_OT_camera_aim(Operator):
                 lock = 'Y'
 
         ## Build rotation from mouse delta
-        rot_x = 0.0  # tilt (around camera local X)
-        rot_y = 0.0  # pan/yaw (around camera local Y)
+        rot_x = 0.0  # tilt (around world-horizontal axis)
+        rot_y = 0.0  # pan/yaw (around world Z)
 
         if not lock or lock == 'X':
-            rot_y = -rot_2d.x  # mouse X -> yaw around local Y
+            rot_y = -rot_2d.x  # mouse X -> yaw around world Z
         if not lock or lock == 'Y':
-            rot_x = rot_2d.y  # mouse Y -> tilt around local X (inverted for natural feel)
+            rot_x = -rot_2d.y  # mouse Y -> tilt around horizontal axis (inverted for natural feel)
 
         self.final_lock = lock
 
-        ## Apply rotation around camera's own position
-        ## Get local axes from initial matrix (stable reference)
-        init_local_x = self.init_mat.to_quaternion() @ Vector((1, 0, 0))
-        init_local_y = self.init_mat.to_quaternion() @ Vector((0, 1, 0))
-
-        rot_mat_x = Matrix.Rotation(rot_x, 4, init_local_x)
-        rot_mat_y = Matrix.Rotation(rot_y, 4, init_local_y)
-
-        ## Compose rotation:
-        # -> apply yaw (x) then tilt (y) goes diagonally faster
-        # -> apply tilt (y) then yaw (x) has more natural to control but we probably want to still align Zup...
-        combined_rot = rot_mat_y @ rot_mat_x
-
-        ## Tests to apply directly
-        # rot_mat = Matrix.LocRotScale(self.init_mat.to_translation(), combined_rot.to_quaternion(), Vector((1,1,1)))
-        # self.cam.matrix_world = self.init_mat @ rot_mat
+        ## Turntable composition: pitch around the initial horizontal axis first,
+        ## then yaw around world Z. Keeps horizon level (no added roll) on combined moves.
+        rot_mat_pitch = Matrix.Rotation(rot_x, 4, self.pitch_axis)
+        rot_mat_yaw = Matrix.Rotation(rot_y, 4, self.yaw_axis)
+        combined_rot = rot_mat_yaw @ rot_mat_pitch
 
         ## Apply rotation to initial matrix, preserving position
         mat = self.init_mat.copy()
@@ -125,37 +124,10 @@ class STORYTOOLS_OT_camera_aim(Operator):
         mat = combined_rot @ mat
         mat.translation = cam_pos
 
-        ## Apply new matrix with rotation applyed (when rotating on both axis, this rolls view)
         self.cam.matrix_world = mat
 
-        ### TurnTable pivot mode (avoid roll): From New position, apply lock to track quat Z
-        ## Should be ok to use view rotation if also used in free_nav.
-        # aim = context.space_data.region_3d.view_rotation @ Vector((0.0, 0.0, 1.0))
-
-        # FIXME: This should be adapted to keep initial view angle... (or only used when cam is horizontal ?...)
-        aim = self.cam.matrix_world.to_quaternion() @ Vector((0.0, 0.0, 1.0))
-        z_up_quat = aim.to_track_quat('Z','Y')
-        cam_quat = z_up_quat
-        self.cam.rotation_euler = cam_quat.to_euler('XYZ')
-        
-        ### / Calc with parent (copied from GPtools)
-        # q = self.cam.matrix_world.to_quaternion() # store current rotation
-
-        # if self.cam.parent:
-        #     q = self.cam.parent.matrix_world.inverted().to_quaternion() @ q
-        #     cam_quat = self.cam.parent.matrix_world.inverted().to_quaternion() @ z_up_quat
-        # else:
-        #     cam_quat = z_up_quat
-        # self.cam.rotation_euler = cam_quat.to_euler('XYZ')
-        ### /
-
-        # combined_rot @ mat
-        # aim = combined_rot @ Vector((0.0, 0.0, 1.0))
-        # print(aim)
-        # q = self.cam.matrix_world.to_quaternion()
-
         ## Set header text
-        self.lock_text = f'Camera Aim: Yaw: {degrees(rot_y):.2f}°, Tilt: {degrees(rot_x):.2f}°'
+        self.lock_text = f'Camera Aim: Pan: {degrees(rot_y):.2f}°, Tilt: {degrees(rot_x):.2f}°'
         self.lock_text += f' | Lock Axis {lock}' if lock else ''
         context.area.header_text_set(self.lock_text)
 

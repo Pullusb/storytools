@@ -370,12 +370,19 @@ def extrapolate_points_by_length(a, b, length):
     return b + (ab.normalized() * length)
 
 def circle_3d(x, y, radius, segments):
-    coords = []
     m = (1.0 / (segments - 1)) * (pi * 2)
-    for p in range(segments):
-        p1 = x + cos(m * p) * radius
-        p2 = y + sin(m * p) * radius
-        coords.append(Vector((p1, p2, 0)))
+    ## Detailed version
+    # coords = []
+    # for p in range(segments):
+    #     p1 = x + cos(m * p) * radius
+    #     p2 = y + sin(m * p) * radius
+    #     coords.append(Vector((p1, p2, 0)))
+    ## Use list comprehension for faster computation
+    coords = [Vector((
+        x + cos(m * p) * radius, 
+        y + sin(m * p) * radius, 
+        0)) 
+        for p in range(segments)]
     return coords
 
 def get_frustum_lines(loc, left, right, orient, near_clip_point, far_clip_point, view_type):
@@ -1264,6 +1271,10 @@ def circle_2d(x, y, radius, segments):
         p1 = x + cos(m * p) * radius
         p2 = y + sin(m * p) * radius
         coords.append((p1, p2))
+    coords = [Vector((x + cos(m * p) * radius, 
+                      y + sin(m * p) * radius, 
+                      0)) 
+                      for p in range(segments)]
     return coords
 
 def update_ui_prop_index(context):
