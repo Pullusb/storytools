@@ -146,6 +146,12 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         op.camera = True
         self.camera_gizmos.append(self.gz_cam_rot)
 
+        ## Camera Aim
+        self.gz_cam_aim = self.gizmos.new("GIZMO_GT_button_2d")
+        fn.set_gizmo_settings(self.gz_cam_aim, 'PIVOT_BOUNDBOX', show_drag=True)
+        self.gz_cam_aim.target_set_operator("storytools.camera_aim")
+        self.camera_gizmos.append(self.gz_cam_aim)
+
         ## Camera lock + go into camera view + new camera when none in scene
         self.gz_lock_cam = self.gizmos.new("GIZMO_GT_button_2d")
         fn.set_gizmo_settings(self.gz_lock_cam, 'OUTLINER_OB_CAMERA')

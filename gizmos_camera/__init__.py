@@ -2,6 +2,7 @@ from . import (
     cam_move,
     view_locked_pan,
     cam_dolly,
+    cam_pivot,
     # cam_shift,
     )
 
@@ -9,6 +10,7 @@ modules = (
     cam_move,
     view_locked_pan,
     cam_dolly,
+    cam_pivot,
     # cam_shift,
 )
 
