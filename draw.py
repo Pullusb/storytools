@@ -619,28 +619,24 @@ def zenith_view_callback(self, context):
         # view_line = [cam.matrix_world.translation, far_point]
         # frustum_lines += view_line
 
-        # Project to 2D space in the PIP view
+        ## Project to 2D space in the PIP view
         frustum_lines_2d = []
         for point_3d in frustum_lines:
-            # Convert world space to normalized device coordinates (NDC)
-            point_4d = Vector((point_3d.x, point_3d.y, point_3d.z, 1.0))
+            ## Convert world space to normalized device coordinates (NDC)
+            ## Flatten z axis to cam height (avoid clipping issues with point above the pip view origin).
+            ## only allowed beccause pip view is looking straight down.
+            point_4d = Vector((point_3d.x, point_3d.y, obj_loc.z, 1.0))
             point_view = pip_view_matrix @ point_4d
             point_clip = proj_matrix @ point_view
-            
-            # Perspective division
-            if abs(point_clip.w) > 0.0001:
-                point_ndc = Vector((
-                    point_clip.x / point_clip.w,
-                    point_clip.y / point_clip.w
-                ))
-                
-                # Convert NDC to screen coordinates in the PIP view
-                screen_x = x + (point_ndc.x + 1.0) * 0.5 * width
-                screen_y = y + (point_ndc.y + 1.0) * 0.5 * height
-                frustum_lines_2d.append(Vector((screen_x, screen_y)))
-            else:
-                # Skip if the point is at infinity
-                frustum_lines_2d.append(Vector((0, 0))) # Need to maintain parity for the pairs
+            # Perspective division (w is always positive at this depth)
+            point_ndc = Vector((
+                point_clip.x / point_clip.w,
+                point_clip.y / point_clip.w
+            ))
+            # Convert NDC to screen coordinates in the PIP view
+            screen_x = x + (point_ndc.x + 1.0) * 0.5 * width
+            screen_y = y + (point_ndc.y + 1.0) * 0.5 * height
+            frustum_lines_2d.append(Vector((screen_x, screen_y)))
 
         # Draw frustum lines
         if len(frustum_lines_2d) >= 2:
