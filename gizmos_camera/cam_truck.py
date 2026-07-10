@@ -13,9 +13,9 @@ from .. import draw
 ## Standalone Camera Pan 
 ## Pan and shift are merged in cam_move, stored in case of button split in the future)
 
-class STORYTOOLS_OT_camera_pan(Operator):
-    bl_idname = "storytools.camera_pan"
-    bl_label = 'Camera Translate'
+class STORYTOOLS_OT_camera_truck(Operator):
+    bl_idname = "storytools.camera_truck"
+    bl_label = 'Translate Camera Truck/Boom'
     bl_description = "Truck/Pedestal Camera\
                     \nMove Camera lateraly (Truck) or vertically (Pedestal)\
                     \nX/Y to lock on axis\
@@ -124,7 +124,7 @@ class STORYTOOLS_OT_camera_pan(Operator):
 
 
 classes=(
-    STORYTOOLS_OT_camera_pan,
+    STORYTOOLS_OT_camera_truck,
 )
 
 def register(): 

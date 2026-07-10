@@ -11,8 +11,8 @@ from .cam_move import setup_top_view_map
 
 ## Note: some terms used interchangeably in code yaw = Pan, pitch = Tilt
 
-class STORYTOOLS_OT_camera_aim(Operator):
-    bl_idname = "storytools.camera_aim"
+class STORYTOOLS_OT_camera_pivot(Operator):
+    bl_idname = "storytools.camera_pivot"
     bl_label = 'Camera Pan/Tilt'
     bl_description = "Camera Pan/Tilt\
                     \nPivot Camera on itself (Pan left-right / Tilt up-down), X/Y to lock on axis\
@@ -170,7 +170,7 @@ class STORYTOOLS_OT_camera_aim(Operator):
         return {'RUNNING_MODAL'}
 
 classes=(
-    STORYTOOLS_OT_camera_aim,
+    STORYTOOLS_OT_camera_pivot,
 )
 
 def register(): 

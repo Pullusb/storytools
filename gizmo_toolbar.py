@@ -124,7 +124,7 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         ## Camera Pan
         self.gz_cam_pan = self.gizmos.new("GIZMO_GT_button_2d")
         fn.set_gizmo_settings(self.gz_cam_pan, 'VIEW_PAN', show_drag=True)
-        self.gz_cam_pan.target_set_operator("storytools.camera_pan")
+        self.gz_cam_pan.target_set_operator("storytools.camera_truck")
         self.camera_gizmos.append(self.gz_cam_pan)
 
         ## Camera Shift
@@ -149,7 +149,7 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
         ## Camera Aim
         self.gz_cam_aim = self.gizmos.new("GIZMO_GT_button_2d")
         fn.set_gizmo_settings(self.gz_cam_aim, 'PIVOT_BOUNDBOX', show_drag=True)
-        self.gz_cam_aim.target_set_operator("storytools.camera_aim")
+        self.gz_cam_aim.target_set_operator("storytools.camera_pivot")
         self.camera_gizmos.append(self.gz_cam_aim)
 
         ## Camera lock + go into camera view + new camera when none in scene

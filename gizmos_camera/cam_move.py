@@ -259,8 +259,8 @@ def shift_lines(context):
 
     return lines
 
-class STORYTOOLS_OT_camera_pan(Operator):
-    bl_idname = "storytools.camera_pan"
+class STORYTOOLS_OT_camera_truck(Operator):
+    bl_idname = "storytools.camera_truck"
     bl_label = 'Translate Camera Truck/Boom or Shift'
     bl_description = "Translate Camera (Truck/Boom) or Shift, X/Y to lock on axis\
                     \n+ Shift : Precision mode\
@@ -632,7 +632,7 @@ class STORYTOOLS_OT_camera_key_transform(Operator):
  
 
 classes=(
-    STORYTOOLS_OT_camera_pan,
+    STORYTOOLS_OT_camera_truck,
     STORYTOOLS_OT_camera_depth,
     STORYTOOLS_OT_camera_key_transform,
     STORYTOOLS_OT_lock_camera_to_view_toggle,
