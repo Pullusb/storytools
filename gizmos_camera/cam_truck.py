@@ -44,6 +44,7 @@ class STORYTOOLS_OT_camera_truck(Operator):
         self.current_delta = Vector((0, 0))
 
         self.final_lock = self.lock = None
+        self.auto_lock = None  # axis engaged by Ctrl, kept until Ctrl release
         self.init_pos = self.cam.location.copy() # to restore if cancelled
         self.init_mouse = Vector((event.mouse_x, event.mouse_y))
         self.lock_text = 'Camera Pan'
@@ -79,12 +80,15 @@ class STORYTOOLS_OT_camera_truck(Operator):
         self.current_delta = (mouse_co - self.init_mouse) * fac
         move_2d = self.cumulated_delta + self.current_delta
         
-        # Ctrl: override lock to "major" direction
+        # Ctrl: Keep engaged lock on current major axis, until Ctrl release or X/Y pressed
         if event.ctrl:
-            if abs(move_2d.x) >= abs(move_2d.y):
-                lock = 'X'
-            else:
-                lock = 'Y'
+            if self.auto_lock is None and move_2d.length:
+                self.auto_lock = 'X' if abs(move_2d.x) >= abs(move_2d.y) else 'Y'
+        else:
+            self.auto_lock = None
+
+        if not lock and self.auto_lock:
+            lock = self.auto_lock
 
         move_vec = Vector((0,0,0))
         if not lock or lock == 'X': 
@@ -106,6 +110,7 @@ class STORYTOOLS_OT_camera_truck(Operator):
         
         if event.type in ('X','Y') and event.value == 'PRESS':
             self.lock = event.type if self.lock != event.type else None
+            self.auto_lock = None  # manual toggle overrides Ctrl
         
         elif event.type == 'LEFTMOUSE': # and event.value == 'RELEASE'
             context.window.cursor_set("DEFAULT")

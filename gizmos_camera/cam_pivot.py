@@ -35,6 +35,7 @@ class STORYTOOLS_OT_camera_pivot(Operator):
         self.cumulated_delta = Vector((0, 0))
         self.current_delta = Vector((0, 0))
 
+        self.auto_lock = None
         self.final_lock = self.lock = None
         self.init_mat = self.cam.matrix_world.copy()  # to restore if cancelled
         self.init_mouse = Vector((event.mouse_x, event.mouse_y))
@@ -110,12 +111,15 @@ class STORYTOOLS_OT_camera_pivot(Operator):
         self.current_delta = (mouse_co - self.init_mouse) * fac
         rot_2d = self.cumulated_delta + self.current_delta
 
-        # Ctrl: override lock to "major" direction
+        # Auto-lock with Ctrl: override lock to "major" direction (engaged until Ctrl release or X/Y toggle)
         if event.ctrl:
-            if abs(rot_2d.x) >= abs(rot_2d.y):
-                lock = 'X'
-            else:
-                lock = 'Y'
+            if self.auto_lock is None and rot_2d.length:
+                self.auto_lock = 'X' if abs(rot_2d.x) >= abs(rot_2d.y) else 'Y'
+        else:
+            self.auto_lock = None
+
+        if not lock and self.auto_lock:
+            lock = self.auto_lock
 
         ## Build rotation from mouse delta
         rot_x = 0.0  # tilt (around world-horizontal axis)
@@ -153,6 +157,7 @@ class STORYTOOLS_OT_camera_pivot(Operator):
 
         if event.type in ('X', 'Y') and event.value == 'PRESS':
             self.lock = event.type if self.lock != event.type else None
+            self.auto_lock = None  # manual toggle overrides Ctrl
 
         elif event.type == 'LEFTMOUSE':
             context.window.cursor_set("DEFAULT")

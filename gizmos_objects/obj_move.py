@@ -83,6 +83,7 @@ class STORYTOOLS_OT_object_pan(Operator):
             return {'CANCELLED'}
 
         self.final_lock = self.lock = None
+        self.auto_lock = None  # axis engaged by Ctrl, kept until Ctrl release
         self.shift_pressed = event.shift
         self.cumulated_translate = Vector((0, 0, 0))
         self.current_translate = Vector((0, 0, 0))
@@ -149,13 +150,17 @@ class STORYTOOLS_OT_object_pan(Operator):
         move_vec = self.current_translate + self.cumulated_translate
 
         lock = self.lock
-        ## Override lock with ctrl auto-axis lock if pressed
+        ## Ctrl: engage lock on current major axis, kept until Ctrl release or X/Y toggle
         if event.ctrl:
-            move_2d = mouse_co - self.init_mouse
-            if abs(move_2d.x) >= abs(move_2d.y):
-                lock = 'X'
-            else:
-                lock = 'Y'
+            if self.auto_lock is None:
+                move_2d = mouse_co - self.init_mouse
+                if move_2d.length:
+                    self.auto_lock = 'X' if abs(move_2d.x) >= abs(move_2d.y) else 'Y'
+        else:
+            self.auto_lock = None
+
+        if not lock and self.auto_lock:
+            lock = self.auto_lock
 
         new_loc = self.init_world_loc + move_vec
         
@@ -186,6 +191,7 @@ class STORYTOOLS_OT_object_pan(Operator):
 
         if event.type in ('X','Y') and event.value == 'PRESS':
             self.lock = event.type if self.lock != event.type else None
+            self.auto_lock = None  # manual toggle overrides Ctrl
 
         if event.type == 'LEFTMOUSE': # and event.value == 'RELEASE'
             fn.key_object(self.ob, use_autokey=True)

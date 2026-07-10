@@ -291,7 +291,8 @@ class STORYTOOLS_OT_camera_truck(Operator):
         self.current_delta = Vector((0, 0))
 
         self.final_lock = self.lock = None
-        
+        self.auto_lock = None  # axis engaged by Ctrl, kept until Ctrl release
+
         # Store initial values based on mode
         if self.shift_mode:
             self.init_shift_x = self.cam.data.shift_x
@@ -397,15 +398,18 @@ class STORYTOOLS_OT_camera_truck(Operator):
             if not self.ctrl_released and self.shift_mode:
                 # Don't apply autolock until Ctrl has been released and pressed again
                 # Only for shift mode
-                lock = self.lock
-            else:
-                if abs(move_2d.x) >= abs(move_2d.y):
-                    lock = 'X'
-                else:
-                    lock = 'Y'
-        elif not self.ctrl_released:
-            ## Detected released once, kept as flag for next Ctrl press
-            self.ctrl_released = True
+                pass
+            elif self.auto_lock is None and move_2d.length:
+                ## Engage lock on current major axis, kept until Ctrl release or X/Y toggle
+                self.auto_lock = 'X' if abs(move_2d.x) >= abs(move_2d.y) else 'Y'
+        else:
+            self.auto_lock = None
+            if not self.ctrl_released:
+                ## Detected released once, kept as flag for next Ctrl press
+                self.ctrl_released = True
+
+        if not lock and self.auto_lock:
+            lock = self.auto_lock
 
         # Apply transformation based on mode
         if self.shift_mode:
@@ -446,11 +450,12 @@ class STORYTOOLS_OT_camera_truck(Operator):
         
         if event.type in ('X','Y') and event.value == 'PRESS':
             self.lock = event.type if self.lock != event.type else None
-        
+            self.auto_lock = None  # manual toggle overrides Ctrl
+
         elif event.type == 'LEFTMOUSE':
             context.window.cursor_set("DEFAULT")
             draw.stop_callback(self, context)
-            
+
             if self.shift_mode:
                 fn.key_data_path(self.cam.data, data_path=['shift_x', 'shift_y'], use_autokey=True)
             else:
