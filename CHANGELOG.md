@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+3.4.1
+
+- fixed: Bug with camera frustum line in the temporary minimap
+- changed: when using interactive gizmo with `Ctrl` key to autolock axis, now keep the engaged one (instead of jumping at the crossroad)
+
 3.4.0
 
 - added: `Pan/Tilt` Operator to pivot camera, aiming laterally or vertically. Mimic turntable behavior
