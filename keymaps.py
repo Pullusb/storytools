@@ -64,6 +64,17 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
         default="", # line
         options={'SKIP_SAVE'})
 
+    stroke_type : EnumProperty(
+        name="Stroke Type", description="Set brush stroke type\
+            \nDefine if drawn strokes are lines, fills or both",
+        default='NONE', options={'SKIP_SAVE'},
+        items=(
+            ('NONE', 'No Change', 'Untouched, keep current brush stroke type', 0),
+            ('STROKE', 'Stroke', 'Set brush to stroke-only ', 1),
+            ('FILL', 'Fill', 'Set brush to fill-only', 2),
+            ('BOTH', 'Stroke And Fill', 'Set brush to both stroke and fill', 3),
+            ))
+
     ## Interface options
     show : BoolProperty(
         name='Show in UI', description='Show in brushbar',
@@ -123,6 +134,9 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
                 brush_name = properties.brush
             tools.append(f'Brush: {brush_name}')
 
+        if properties.stroke_type != 'NONE' and bpy.app.version >= (5, 1, 0):
+            tools.append(f'Type: {properties.stroke_type.title()}')
+
         if tools:
             desc.append(' > '.join(tools))
         
@@ -149,7 +163,7 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
         
         prop_names = ('tool', 'brush', 'layer', 'material')
         # if not self.tool and not self.brush and not self.layer and not self.material:
-        if not any(getattr(self, prop_name) for prop_name in prop_names) and self.mode == 'NONE':
+        if not any(getattr(self, prop_name) for prop_name in prop_names) and self.mode == 'NONE' and self.stroke_type == 'NONE':
             message = [
                 'This Storytools keymap has no settings yet',
                 'Customize or disable the keymap in addon preferences',
@@ -198,6 +212,11 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
             except Exception as e:
                 print("Error loading brush from essentials library", e)
                 self.report({'WARNING'}, f'Could not find brush named {self.brush}')
+
+        if self.stroke_type != 'NONE' and bpy.app.version >= (5, 1, 0):
+            ## Starting Blender 5.1, brush define stroke/fill (not material)
+            if (brush := context.tool_settings.gpencil_paint.brush) and brush.gpencil_settings:
+                brush.gpencil_settings.stroke_type = self.stroke_type
 
         if self.layer:
             if self.material:
@@ -279,6 +298,7 @@ def register_keymap():
     kmi.properties.mode = 'PAINT_GREASE_PENCIL'
     kmi.properties.tool = 'builtin.brush'
     kmi.properties.brush = 'Pencil'
+    kmi.properties.stroke_type = 'STROKE'
     kmi.properties.layer = 'Sketch'
     # kmi.properties.material = '' # line
     # kmi.properties.icon = 'GPBRUSH_PEN'
@@ -292,6 +312,7 @@ def register_keymap():
     kmi.properties.mode = 'PAINT_GREASE_PENCIL'
     kmi.properties.tool = 'builtin.brush'
     kmi.properties.brush = 'Ink Pen'
+    kmi.properties.stroke_type = 'STROKE'
     kmi.properties.layer = 'Line'
     kmi.properties.icon = 'LINE_DATA'
     kmi.properties.order = 20
@@ -315,6 +336,7 @@ def register_keymap():
     kmi.properties.name = 'Fill Draw'
     kmi.properties.mode = 'PAINT_GREASE_PENCIL'
     kmi.properties.tool = 'builtin.brush'
+    kmi.properties.stroke_type = 'FILL'
     kmi.properties.layer = 'Color'
     kmi.properties.icon = 'NODE_MATERIAL'
     kmi.properties.order = 40
@@ -348,6 +370,7 @@ def register_keymap():
     kmi = km.keymap_items.new('storytools.set_draw_tool', type='SEVEN', value='PRESS')
     kmi.properties.name = 'Annotate'
     kmi.properties.tool = 'builtin.brush'
+    kmi.properties.stroke_type = 'STROKE'
     kmi.properties.layer = 'Annotate'
     kmi.properties.material = 'line_red' # Sync override material
     kmi.properties.order = 70

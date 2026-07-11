@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+3.4.2
+
+- added: `Stroke Type` option in toolpresets to define if brush stroke type: `No Change`, `Stroke`, `Fill`, `Both`. Only affect blender 5.1+ where brush define stroke type instead of the material.
+
 3.4.1
 
 - fixed: Bug with camera frustum line in the temporary minimap

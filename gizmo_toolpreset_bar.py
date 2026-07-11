@@ -60,6 +60,7 @@ class STORYTOOLS_GGT_toolpreset_bar(GizmoGroup):
             op.layer = props.layer
             op.material = props.material
             op.brush = props.brush
+            op.stroke_type = props.stroke_type
             op.description = props.description
             op.shortcut = kmi.to_string() # Shortcut text for description
             self.tool_preset_gizmos.append(gz)
