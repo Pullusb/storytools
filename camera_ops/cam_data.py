@@ -103,10 +103,24 @@ class STORYTOOLS_OT_camera_options(bpy.types.Operator):
         layout = self.layout
         col = layout.column()
 
-        # if self.sidebar_width <= 290:
         show_lens(col, self.object)
-        col.operator('storytools.make_active_and_select', text='Select Camera', icon='RESTRICT_SELECT_OFF').name = self.object_name
+        col.prop(self.object.data, "show_limits", text="Show Limits")
+        col.separator()
+        guide_col = col.column(align=True)
 
+        guide_col.use_property_split = True
+        guide_col.use_property_decorate = False
+        guide_col.label(text="Composition Guides:")
+        guide_col.prop(self.object.data, "show_composition_thirds", text="Thirds")
+        guide_col.prop(self.object.data, "show_composition_center", text="Center")
+        guide_col.prop(self.object.data, "show_composition_center_diagonal", text="Diagonal")
+        col.prop(self.object.data, "composition_guide_color", text="Guide Color")
+
+        # col.prop(self.object.data.dof, "use_dof", text="Depth of Field")
+        ## Dof management is difficult here since fields have opeartor attached !
+        # col.prop(self.object.data.dof, "focus_object", text="Focus Object")
+        # col.prop(self.object.data.dof, "focus_distance", text="Focus Distance")
+        #col.operator('storytools.make_active_and_select', text='Select Camera', icon='RESTRICT_SELECT_OFF').name = self.object_name
 
         ## TODO: Test to remove useless cancel button (and eventually OK button).
         ## /!\ "template_popup_confirm" exists, only compatible with 4.2+
@@ -170,15 +184,18 @@ class STORYTOOLS_UL_camera_list(bpy.types.UIList):
         #     # row.label(text='', icon='HIDE_ON')
         #     row.operator('storytools.visibility_toggle', text='', icon='HIDE_ON', emboss=False).name = item.name
 
-        if settings.show_cam_settings == 'SHOW' or (settings.show_cam_settings == 'AUTO' and sidebar_width > 300):
-            show_lens(row, item)
+        if settings.show_cam_settings_lens == 'SHOW' or (settings.show_cam_settings_lens == 'AUTO' and sidebar_width > 320):
             # Select camera 
-            row.operator('storytools.make_active_and_select', text='', icon='RESTRICT_SELECT_OFF').name = item.name
-        else:
-            ## Collapsed panel with infos
-            op = row.operator('storytools.camera_options', text='', icon='THREE_DOTS', emboss=False)
-            op.object_name = item.name
-        # if sidebar_width <= 290:
+            show_lens(row, item)
+        # else:
+        #     ## Collapsed panel with infos
+
+        ## 3 dots always visible ?
+        op = row.operator('storytools.camera_options', text='', icon='THREE_DOTS', emboss=False)
+        op.object_name = item.name
+        ## Always show select button
+        row.operator('storytools.make_active_and_select', text='', icon='RESTRICT_SELECT_OFF').name = item.name
+        
 
     # Called once to draw filtering/reordering options.
     # def draw_filter(self, context, layout):

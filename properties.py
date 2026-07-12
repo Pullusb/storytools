@@ -178,9 +178,9 @@ class STORYTOOLS_PGT_main_settings(PropertyGroup):
             \nTo completely disable, uncheck 'Active Toolbar' in addon Storytools preferences",
         default=True)
     
-    show_cam_settings : EnumProperty(
-        name='Show Camera Settings',
-        description="Show Camera properties of every camera in list (when sidebar size allow)",
+    show_cam_settings_lens : EnumProperty(
+        name='Show Camera Lens',
+        description="Show Camera focal length of every camera in list (when sidebar size allow)",
         default='AUTO',
         items=display_choice_items
         )

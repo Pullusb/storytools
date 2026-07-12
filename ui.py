@@ -196,8 +196,9 @@ class STORYTOOLS_PT_camera_settings(Panel):
         info.text = 'Show/hide: Define what infos you want to see in list\
                 \nAutomatic: icons appear only if there is enough sidebar space'
 
+        col.label(text='Focal Length')
         row = col.row()
-        row.prop(context.scene.storytools_settings, "show_cam_settings", text='Show Settings In List', expand=True)
+        row.prop(context.scene.storytools_settings, "show_cam_settings_lens", text='Show focal length In List', expand=True)
 
 
 ## Sub-panel for camera exclusion settings in camera menu, operators in "cam_exclude_filter.py"
