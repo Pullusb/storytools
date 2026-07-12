@@ -835,7 +835,8 @@ def create_gp_object(
     else:
         load_default_palette(ob=ob)
 
-    ## No edit line color in GPv3 (wire is displayed using curve theme)
+    ## edit_line_opacity not available anymore, kept in case feature is re-implemented in the future
+    ## (No edit line color in GPv3, wire is displayed using curve theme)
     # gp.edit_line_color[3] = prefs.default_edit_line_opacity # Bl default is 0.5
     gp.use_autolock_layers = prefs.use_autolock_layers
     

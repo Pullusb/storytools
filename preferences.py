@@ -240,13 +240,14 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
     ### --- Grease pencil settings
 
     gp : PointerProperty(type=STORYTOOLS_PGT_gp_settings) # gp local settings
-
-    default_edit_line_opacity : FloatProperty(
-        name='Default Edit Line Opacity',
-        description="Edit line opacity for newly created objects\
-            \nSome users prefer to set it to 0 (show only selected line in edit mode)\
-            \nBlender default is 0.5",
-        default=0.2, min=0.0, max=1.0)
+    
+    ## edit_line_opacity not available anymore, kept in case feature is re-implemented in the future
+    # default_edit_line_opacity : FloatProperty(
+    #     name='Default Edit Line Opacity',
+    #     description="Edit line opacity for newly created objects\
+    #         \nSome users prefer to set it to 0 (show only selected line in edit mode)\
+    #         \nBlender default is 0.5",
+    #     default=0.2, min=0.0, max=1.0)
 
     use_autolock_layers : BoolProperty(
         name='Default Autolock Layers',
@@ -433,7 +434,7 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             # col.prop(self, 'default_orientation')
             col.prop(self, 'use_autolock_layers')
             col.prop(self, 'use_lights')
-            col.prop(self, 'default_edit_line_opacity')
+            # col.prop(self, 'default_edit_line_opacity')
             
             ## gp local settings
             ## GP properties that are also in scene through property group
@@ -505,11 +506,13 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             subrow.prop(self, 'sidebar_tab_target', text='')
             subrow.active = self.set_sidebar_tab
             
-            row = bcol.row()
-            row.prop(self, 'set_edit_line_opacity')
-            row.label(text=f'{self.default_edit_line_opacity:.1f} (located in "Settings" Tab)')
 
             bcol.prop(self, 'set_selection_tool')
+
+            ## Set edit line opacity (not available anymore, kept in case feature is re-implemented in the future)
+            # row = bcol.row()
+            # row.prop(self, 'set_edit_line_opacity')
+            # row.label(text=f'{self.default_edit_line_opacity:.1f} (located in "Settings" Tab)')
 
 
 class STORYTOOLS_OT_restore_keymap_item(bpy.types.Operator):
