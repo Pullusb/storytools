@@ -19,7 +19,7 @@ from mathutils import (Matrix,
                        geometry,
                        )
 
-from .constants import LAYERMAT_PREFIX
+from .constants import LAYERMAT_PREFIX, DEFAULT_LAYER_STACK, DEFAULT_MATERIAL_STACK
 
 
 ### ---
@@ -698,24 +698,29 @@ def get_gp_draw_plane_matrix(context):
     return draw_plane_mat
 
 
+def get_default_layer_stack_entries(prefs=None):
+    '''Return the default layer stack as a list of (layer_name, material_name) tuples
+    Top layer first (as displayed in Blender's layer list)
+    Use the customized stack from addon preferences when defined, fallback to hardcoded default
+    '''
+    prefs = prefs or get_addon_prefs()
+    if len(prefs.layer_stack):
+        return [(l.name.strip(), l.material.strip()) for l in prefs.layer_stack if l.name.strip()]
+    return list(DEFAULT_LAYER_STACK)
+
 def create_default_layers(object, frame=None, use_lights=False, set_material_sync=True):
     gp = object.data
     if frame is None:
         frame = bpy.context.scene.frame_current
-    # Create default layers
-    for l_name in ['Color', 'Line', 'Sketch', 'Annotate']:
+    # Create default layers (entries are stored top layer first, create bottom layer first)
+    for l_name, mat_name in reversed(get_default_layer_stack_entries()):
         layer = gp.layers.new(l_name)
         layer.frames.new(frame)
         layer.use_lights = use_lights
 
-        if set_material_sync:
+        if set_material_sync and mat_name:
             # Set default material association
-            if l_name in ['Line', 'Sketch']:
-                set_material_association(object, layer, 'line')
-            elif l_name == 'Color':
-                set_material_association(object, layer, 'fill_white')
-            elif l_name == 'Annotate':
-                set_material_association(object, layer, 'line_red')
+            set_material_association(object, layer, mat_name)
 
 def create_gp_object(
         name="",
@@ -996,20 +1001,52 @@ def load_palette(filepath, ob=None):
             setattr(mat.grease_pencil, attr, value)
 
 
-def load_default_palette(ob=None):
-    '''Return a tuple compatible with Blender operator return values'''
-    ob = ob or bpy.context.object
-    pfp = Path(__file__).parent / 'palettes'
-    
-    if not pfp.exists():
-        return ('ERROR', f'Palette path not found')
+def get_default_material_stack_entries(prefs=None):
+    """Return the default material stack as a list of dicts
+    with keys: name, stroke_color, fill_color, same_color, holdout
+    Use the customized stack from addon preferences when defined
+    Fallback to hardcoded default if preference is empty (should not happen)
+    """
+    prefs = prefs or get_addon_prefs()
+    if len(prefs.material_stack):
+        return [{'name': m.name.strip(),
+                 'stroke_color': tuple(m.stroke_color),
+                 'fill_color': tuple(m.fill_color),
+                 'same_color': m.same_color,
+                 'holdout': m.holdout}
+                for m in prefs.material_stack if m.name.strip()]
+    return [dict(m) for m in DEFAULT_MATERIAL_STACK]
 
-    base = pfp / 'base.json'
-    if not base.exists():
-        return ('ERROR', f'base.json palette not found in {pfp.as_posix()}')
-    
-    load_palette(base, ob=ob)
-    return ('FINISHED', f'Loaded base Palette')
+def load_default_palette(ob=None):
+    """Load default material stack on object (from addon preferences)
+    Return a tuple compatible with Blender operator return values
+    """
+    ob = ob or bpy.context.object
+
+    for mat_def in get_default_material_stack_entries():
+        mat_name = mat_def['name']
+        curmat = bpy.data.materials.get(mat_name)
+        if curmat:
+            # exists
+            if curmat.is_grease_pencil:
+                # add only if it's not already in stack
+                if curmat not in ob.data.materials[:]:
+                    ob.data.materials.append(curmat)
+                continue
+            else:
+                mat_name = mat_name + '.01' # rename to avoid conflict
+
+        ## Create a GP mat
+        mat = bpy.data.materials.new(name=mat_name)
+        bpy.data.materials.create_gpencil_data(mat)
+        mat.grease_pencil.color = mat_def['stroke_color']
+        mat.grease_pencil.fill_color = mat_def['stroke_color'] if mat_def['same_color'] else mat_def['fill_color']
+        if mat_def['holdout']:
+            mat.grease_pencil.use_stroke_holdout = True
+            mat.grease_pencil.use_fill_holdout = True
+        ob.data.materials.append(mat)
+
+    return ('FINISHED', f'Loaded default material stack')
 
 def set_material_association(ob, layer, mat_name):
     '''Take an object, a gp layer and a material name
