@@ -336,6 +336,7 @@ def register_keymap():
     kmi.properties.name = 'Fill Draw'
     kmi.properties.mode = 'PAINT_GREASE_PENCIL'
     kmi.properties.tool = 'builtin.brush'
+    kmi.properties.brush = 'Ink Pen'
     kmi.properties.stroke_type = 'FILL'
     kmi.properties.layer = 'Color'
     kmi.properties.icon = 'NODE_MATERIAL'
