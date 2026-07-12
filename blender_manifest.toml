@@ -7,7 +7,7 @@ tagline = "Set of tools for Storyboarding and 2D animation"
 maintainer = "Samuel Bernou <bernou.samuel@gmail.com>"
 type = "add-on"
 
-blender_version_min = "5.0.0"
+blender_version_min = "5.1.0"
 
 tags = ["Animation", "Grease Pencil", "3D View"]
 license = ["SPDX:GPL-3.0-or-later"]
