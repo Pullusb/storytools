@@ -372,7 +372,7 @@ def register_keymap():
     kmi.properties.tool = 'builtin.brush'
     kmi.properties.stroke_type = 'STROKE'
     kmi.properties.layer = 'Annotate'
-    kmi.properties.material = 'line_red' # Sync override material
+    kmi.properties.material = 'Red' # Sync override material
     kmi.properties.order = 70
     kmi.properties.icon = 'SYNTAX_ON' # CURRENT_FILE, TEXT
     addon_keymaps.append((km, kmi))
