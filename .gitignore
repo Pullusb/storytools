@@ -3,3 +3,4 @@ __pycache__
 *.blend1
 pyrightconfig.json
 *.vscode
+tests
