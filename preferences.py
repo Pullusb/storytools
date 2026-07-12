@@ -362,6 +362,47 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         description="Choose if layers should have use light on when creating a grease pencil object using popup",
         default=False)
 
+    ## Default modifiers and effects on new GP objects
+
+    ## HSV modifier
+    use_hsv_modifier : BoolProperty(
+        name='Add Hue/Saturation Modifier',
+        description="Add a Hue/Saturation modifier on new grease pencil objects",
+        default=False)
+
+    # hsv_hue : FloatProperty(
+    #     name='Hue',
+    #     description="Hue of the Hue/Saturation modifier added on new grease pencil objects",
+    #     default=0.5, min=0.0, max=1.0)
+
+    # hsv_saturation : FloatProperty(
+    #     name='Saturation',
+    #     description="Saturation of the Hue/Saturation modifier added on new grease pencil objects",
+    #     default=1.0, min=0.0, soft_max=2.0)
+
+    # hsv_value : FloatProperty(
+    #     name='Value',
+    #     description="Value of the Hue/Saturation modifier added on new grease pencil objects",
+    #     default=1.0, min=0.0, soft_max=2.0)
+
+    ## Blur FX:
+    use_blur_effect : BoolProperty(
+        name='Add Blur Effect',
+        description="Add a Blur FX on newly created grease pencil objects",
+        default=False)
+    
+    # blur_use_dof_mode : BoolProperty(
+    #     name='Use Depth Of Field',
+    #     description="Blur intensity is driven by the active camera depth of field settings\
+    #         \n(camera DoF must be enabled)",
+    #     default=True)
+
+    # blur_samples : IntProperty(
+    #     name='Samples',
+    #     description="Number of blur samples of the Blur effect added on new grease pencil objects\
+    #         \n(zero disables the blur)",
+    #     default=32, min=0, max=32)
+
     ## Default layer and material stacks
     ## Filled with default values at first registration (when empty -> using seed_default_stacks)
     layer_stack : CollectionProperty(type=STORYTOOLS_PG_layer_stack_entry)
@@ -631,6 +672,26 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
                 op_hint.text = f'Toolpreset shortcut "{preset_name}" is targeting material name "{props.layer}"\
                                \nThis name is not in material stack.\
                                \nAdd this name in material stack or change/remove the material tool preset target (in Tool Presets Tab)'
+
+            ## Default modifiers and effects on new objects
+            box = col.box()
+            bcol = box.column()
+            bcol.label(text='Modifiers And Effects', icon='MODIFIER')
+
+            # mod_box = box.box()
+            bcol.prop(self, 'use_hsv_modifier')
+            # if self.use_hsv_modifier:
+            #     subcol = mod_box.column(align=True)
+            #     subcol.prop(self, 'hsv_hue')
+            #     subcol.prop(self, 'hsv_saturation')
+            #     subcol.prop(self, 'hsv_value')
+
+            # mod_box = box.box()
+            bcol.prop(self, 'use_blur_effect', text='Add Blur Effect (With DOF enabled)')
+            # if self.use_blur_effect:
+            #     subcol = mod_box.column(align=True)
+            #     subcol.prop(self, 'blur_samples')
+            #     subcol.prop(self, 'blur_use_dof_mode')
 
             ## gp local settings
             ## GP properties that are also in scene through property group

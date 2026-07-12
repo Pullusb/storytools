@@ -877,6 +877,18 @@ def create_gp_object(
         # Create default layers
         create_default_layers(ob, use_lights=prefs.use_lights)
     
+    ## Add default modifiers and effects from preferences
+    if prefs.use_hsv_modifier:
+        mod = ob.modifiers.new('HSV', 'GREASE_PENCIL_COLOR') # HSV, Hue/Saturation, Color (Default)
+        # mod.hue = prefs.hsv_hue
+        # mod.saturation = prefs.hsv_saturation
+        # mod.value = prefs.hsv_value
+
+    if prefs.use_blur_effect:
+        fx = ob.shader_effects.new('Blur', 'FX_BLUR')
+        fx.use_dof_mode = True # getattr(prefs, 'blur_use_dof_mode', True)
+        fx.samples = 32 # getattr(prefs, 'blur_samples', 32)
+
     # Set default active layer from preferences, fallback to top layer
     target_name = get_default_active_layer_name(prefs=prefs)
     target_active = gp.layers.get(target_name) if target_name else None
