@@ -19,7 +19,11 @@ from mathutils import (Matrix,
                        geometry,
                        )
 
-from .constants import LAYERMAT_PREFIX, DEFAULT_LAYER_STACK, DEFAULT_MATERIAL_STACK
+from .constants import (LAYERMAT_PREFIX,
+                        DEFAULT_LAYER_STACK,
+                        DEFAULT_MATERIAL_STACK,
+                        DEFAULT_ACTIVE_LAYER,
+                        )
 
 
 ### ---
@@ -708,6 +712,16 @@ def get_default_layer_stack_entries(prefs=None):
         return [(l.name.strip(), l.material.strip()) for l in prefs.layer_stack if l.name.strip()]
     return list(DEFAULT_LAYER_STACK)
 
+def get_default_active_layer_name(prefs=None):
+    '''Return the layer name to set active on new GP objects, or None if nothing is flagged
+    Use the flagged entry from the customized stack in addon preferences when defined,
+    fallback to hardcoded default name when the stack is empty
+    '''
+    prefs = prefs or get_addon_prefs()
+    if len(prefs.layer_stack):
+        return next((l.name.strip() for l in prefs.layer_stack if l.set_active and l.name.strip()), None)
+    return DEFAULT_ACTIVE_LAYER
+
 def create_default_layers(object, frame=None, use_lights=False, set_material_sync=True):
     gp = object.data
     if frame is None:
@@ -863,8 +877,9 @@ def create_gp_object(
         # Create default layers
         create_default_layers(ob, use_lights=prefs.use_lights)
     
-    # Set default active layer (Could also be a preference but may be too much)
-    target_active = gp.layers.get('Sketch')
+    # Set default active layer from preferences, fallback to top layer
+    target_name = get_default_active_layer_name(prefs=prefs)
+    target_active = gp.layers.get(target_name) if target_name else None
     if not target_active and len(gp.layers):
         target_active = gp.layers[-1]
     gp.layers.active = target_active
@@ -968,7 +983,6 @@ def name_to_hue(name):
     hash_value = hashlib.md5(name.encode()).hexdigest()
     # Convert first 8 characters of hash to integer and scale to 0-1
     return int(hash_value[:8], 16) / 0xffffffff
-
 
 def get_default_material_stack_entries(prefs=None):
     """Return the default material stack as a list of dicts

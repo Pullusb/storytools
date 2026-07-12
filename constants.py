@@ -10,6 +10,8 @@ DEFAULT_LAYER_STACK = (
     ('Color', 'White'),
 )
 
+DEFAULT_ACTIVE_LAYER = 'Sketch'
+
 ## Default material stack for new GP objects
 ## same_color bool: use the stroke color for both stroke and fill
 ## holdout bool: Activate holdout for this material

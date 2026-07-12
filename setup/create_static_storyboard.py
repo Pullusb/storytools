@@ -1740,7 +1740,8 @@ class STORYTOOLS_OT_create_static_storyboard_pages(Operator):
             ## Create default layers and palette
             fn.load_default_palette(obj)
             fn.create_default_layers(obj, frame=frame_number)
-            target_active = gp_data.layers.get('Sketch')
+            target_name = fn.get_default_active_layer_name()
+            target_active = gp_data.layers.get(target_name) if target_name else None
             if not target_active and len(gp_data.layers):
                 target_active = gp_data.layers[-1]
             gp_data.layers.active = target_active

@@ -15,7 +15,9 @@ from bpy.props import (FloatProperty,
 from bpy.app.handlers import persistent
 from textwrap import dedent
 
-from .constants import DEFAULT_LAYER_STACK, DEFAULT_MATERIAL_STACK
+from .constants import (DEFAULT_LAYER_STACK,
+                        DEFAULT_MATERIAL_STACK,
+                        DEFAULT_ACTIVE_LAYER)
 from .fn import (get_addon_prefs, 
                  open_addon_prefs, 
                  draw_kmi_custom, 
@@ -79,6 +81,17 @@ def ui_in_sidebar_update(self, _):
 
 # region layer/mat stacks
 
+def set_active_update(self, _context):
+    ## Only one entry can be flagged as active
+    if not self.set_active:
+        return
+    prefs = get_addon_prefs()
+    for entry in prefs.layer_stack:
+        ## check all entry that are not the one currently clicked (set active to False on those)
+        ## (same as entry != self and entry.set_active)
+        if entry.as_pointer() != self.as_pointer() and entry.set_active:
+            entry.set_active = False
+
 class STORYTOOLS_PG_layer_stack_entry(bpy.types.PropertyGroup):
     name : StringProperty(
         name="Layer Name",
@@ -91,6 +104,12 @@ class STORYTOOLS_PG_layer_stack_entry(bpy.types.PropertyGroup):
             \nShould match a material from the default material stack (exact name, case sensitive)\
             \nEmpty field = no association",
         default="")
+
+    set_active : BoolProperty(
+        name="Set As Active Layer",
+        description="Set this layer as the active one on new grease pencil objects\
+            \nWhen no layer is flagged, the top layer is used",
+        default=False, update=set_active_update)
 
 def same_color_update(self, _context):
     ## Keep stored fill in sync when enabling same color mode
@@ -135,6 +154,7 @@ class STORYTOOLS_UL_layer_stack_entries(bpy.types.UIList):
         row.prop(item, 'name', text='', emboss=True, icon='OUTLINER_DATA_GP_LAYER')
         ## data is the addon prefs (collection owner), search associated material in material stack
         row.prop_search(item, 'material', data, 'material_stack', text='', icon='MATERIAL')
+        row.prop(item, 'set_active', text='', icon='RADIOBUT_ON' if item.set_active else 'RADIOBUT_OFF', emboss=False)
 
 class STORYTOOLS_UL_material_stack_entries(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_property, index):
@@ -795,6 +815,7 @@ def fill_stack_with_defaults(prefs, stack):
             item = collection.add()
             item.name = l_name
             item.material = mat_name
+            item.set_active = l_name == DEFAULT_ACTIVE_LAYER
     else:
         for mat_def in DEFAULT_MATERIAL_STACK:
             item = collection.add()
