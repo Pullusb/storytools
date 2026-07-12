@@ -2,9 +2,15 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-3.4.2
+3.5.0
 
-- added: `Stroke Type` option in toolpresets to define if brush stroke type: `No Change`, `Stroke`, `Fill`, `Both`. Only affect blender 5.1+ where brush define stroke type instead of the material.
+- added: `Stroke Type` option in toolpresets to define if brush stroke type: `No Change`, `Stroke`, `Fill`, `Both`.
+  - Only affect blender 5.1+ where brush define stroke type instead of the material.
+  - Tool preset `Fill Draw` (lasso fill), now set `Ink Pen` with stroke type `Fill`
+- added: Customizable defaults stacks in preferences (`GP Settings`):
+  - Customizable GP layer stack. Layer name, order, material pairing and default active (Still `Sketch` by default)
+  - Customizable GP material stack. Material name, stroke/fill colors (with possibility to keep same color for both ) and holdout toggle
+- added: Option to add Hue/Saturation modifier and Blur FX (disable by default)
 
 3.4.1
 
