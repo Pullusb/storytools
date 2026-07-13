@@ -184,9 +184,11 @@ class STORYTOOLS_UL_camera_list(bpy.types.UIList):
         #     # row.label(text='', icon='HIDE_ON')
         #     row.operator('storytools.visibility_toggle', text='', icon='HIDE_ON', emboss=False).name = item.name
 
-        if settings.show_cam_settings_lens == 'SHOW' or (settings.show_cam_settings_lens == 'AUTO' and sidebar_width > 320):
-            # Select camera 
-            show_lens(row, item)
+        if settings.show_cam_settings_lens == 'SHOW' or (settings.show_cam_settings_lens == 'AUTO' and sidebar_width > 305):
+            # Contract the lens slide to keep less dead space when appearing (otherwise need limit at 320px)
+            subrow = row.row()
+            subrow.scale_x = 0.75
+            show_lens(subrow, item)
         # else:
         #     ## Collapsed panel with infos
 
