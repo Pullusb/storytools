@@ -105,6 +105,28 @@ class STORYTOOLS_PG_layer_stack_entry(bpy.types.PropertyGroup):
             \nEmpty field = no association",
         default="")
 
+    brush : StringProperty(
+        name="Brush",
+        description="Brush associated with this layer for default layer/brush synchronisation\
+            \nAsset name from the Essentials Grease Pencil draw brushes (ex: 'Pencil', 'Ink Pen', 'Fill')\" \
+            \nFor user custom asset with path containing a '/': 'Saved/Brushes/MyBrush.asset.blend/Brush/MyBrush')\
+            \nFor online brush of the asset essential , ex: 'ONLINE_ESSENTIALS::::brushes/grease_pencil/Graphite_Dense.blend/Brush/Graphite Dense'\
+            \nEmpty field = no association",
+        default="")
+    # User custom brush is resolved as: CUSTOM::User Library::Saved/Brushes/turbo_brush.asset.blend/Brush/turbo_brush
+
+    stroke_type : EnumProperty(
+        name="Stroke Type",
+        description="Brush stroke type associated with this layer (Blender 5.1+)\
+            \nNo Change = keep the brush's own stroke type",
+        default='NONE',
+        items=(
+            ('NONE', 'No Change', 'Do not set a stroke type on this layer', 0),
+            ('STROKE', 'Stroke', 'Set brush to stroke-only', 1),
+            ('FILL', 'Fill', 'Set brush to fill-only', 2),
+            ('BOTH', 'Stroke And Fill', 'Set brush to both stroke and fill', 3),
+            ))
+
     set_active : BoolProperty(
         name="Set As Active Layer",
         description="Set this layer as the active one on new grease pencil objects\
@@ -154,6 +176,8 @@ class STORYTOOLS_UL_layer_stack_entries(bpy.types.UIList):
         row.prop(item, 'name', text='', emboss=True, icon='OUTLINER_DATA_GP_LAYER')
         ## data is the addon prefs (collection owner), search associated material in material stack
         row.prop_search(item, 'material', data, 'material_stack', text='', icon='MATERIAL')
+        row.prop(item, 'brush', text='', icon='BRUSH_DATA')
+        row.prop(item, 'stroke_type', text='')
         row.prop(item, 'set_active', text='', icon='RADIOBUT_ON' if item.set_active else 'RADIOBUT_OFF', emboss=False)
 
 class STORYTOOLS_UL_material_stack_entries(bpy.types.UIList):
@@ -593,7 +617,7 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
 
             ## Layers and material stacks list
 
-            layer_names = [l_name for l_name, _mat in get_default_layer_stack_entries(prefs=self)]
+            layer_names = [entry[0] for entry in get_default_layer_stack_entries(prefs=self)]
             material_names = [m['name'] for m in get_default_material_stack_entries(prefs=self)]
             ## Active tool presets, to check name pairing with stacks (skip inactive keymaps)
             preset_kmis = [kmi for _km, kmi in get_tool_presets_keymap() if kmi.active]
@@ -656,7 +680,7 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
 
             ## Warn on material references with no match in stack (layer associations and tool preset targets)
             wcol = bcol.column(align=True)
-            for l_name, mat_name in get_default_layer_stack_entries(prefs=self):
+            for l_name, mat_name, *_ in get_default_layer_stack_entries(prefs=self):
                 if not mat_name or mat_name in material_names:
                     continue
                 wcol.label(text=f'Material "{mat_name}" associated to layer "{l_name}" is not in stack', icon='ERROR')
@@ -872,10 +896,12 @@ def fill_stack_with_defaults(prefs, stack):
     collection = getattr(prefs, stack)
     collection.clear()
     if stack == 'layer_stack':
-        for l_name, mat_name in DEFAULT_LAYER_STACK:
+        for l_name, mat_name, brush, stroke_type in DEFAULT_LAYER_STACK:
             item = collection.add()
             item.name = l_name
             item.material = mat_name
+            item.brush = brush
+            item.stroke_type = stroke_type
             item.set_active = l_name == DEFAULT_ACTIVE_LAYER
     else:
         for mat_def in DEFAULT_MATERIAL_STACK:

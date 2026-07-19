@@ -432,6 +432,18 @@ def update_object_change(self, context):
     prev_active = context.object
     mode_swap = False
 
+    ## Name of the outgoing object's active layer (to follow it by name on the destination)
+    prev_layer_name = None
+    if prev_active and prev_active.type == 'GREASEPENCIL' and prev_active.data.layers.active:
+        prev_layer_name = prev_active.data.layers.active.name
+
+    ## Brush sync: an object switch is a "leave" event for the outgoing object. The active brush is
+    ## global (unchanged by the mode/object swap) so here it still reflects what was used on it.
+    scn = context.scene
+    brush_mode = scn.storytools_settings.brush_layer_sync
+    if (brush_mode != 'DISABLED' and prev_mode == 'PAINT_GREASE_PENCIL' and prev_layer_name):
+        fn.store_layer_brush(scn, prev_active, prev_active.data.layers.active, brush_mode)
+
     ## Full skip if object is not visible
     if not ob.visible_get(view_layer=context.view_layer):
         return
@@ -469,6 +481,20 @@ def update_object_change(self, context):
     if prev_active and prev_active != ob:
         ## Deselect previous active object
         prev_active.select_set(False)
+
+    ## Sync active layer by name across objects (also naturally drives brush & material restore)
+    if (scn.storytools_settings.sync_object_layers and prev_layer_name
+            and prev_layer_name in ob.data.layers):
+        ob.data.layers.active = ob.data.layers[prev_layer_name]
+
+    ## Restore the incoming object's active-layer brush + material for the (possibly followed) layer
+    active_layer = ob.data.layers.active
+    if active_layer:
+        if context.mode == 'PAINT_GREASE_PENCIL':
+            fn.restore_layer_brush(scn, ob, active_layer, brush_mode)
+        fn.restore_layer_material(scn, ob, active_layer, scn.storytools_settings.material_sync)
+        from .. import handles
+        handles._prev_layer = (ob.name, active_layer.name)
 
 
 

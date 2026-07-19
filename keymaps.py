@@ -8,7 +8,6 @@ from pathlib import Path
 from . import fn
 
 def get_blender_icons_as_enum():
-    # return ((i.identifier, i.name, '', i.value) for i in bpy.types.UILayout.bl_rna.functions['prop'].parameters['icon'].enum_items)
     return tuple((i.identifier, i.name, '') for i in bpy.types.UILayout.bl_rna.functions['prop'].parameters['icon'].enum_items)
 
 class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
@@ -175,7 +174,22 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
 
         ob = context.object
 
-        # Mode change (Need context aware shortcut protection to work well with other modes)...
+        ## Brush layer-sync precedence: preset-specified brush/stroke_type always win (per-field).
+        ## Unspecified fields take the target layer's paired values.
+        ## The whole outcome is resolved synchronously here: pre-store the current brush on the outgoing layer
+        ## as a normal layer-leave would, mute the deferred sync callback, then merge below.
+        ## This part must run BEFORE mode/tool set: switching tool already activates the new tool's own brush, 
+        ## which would get wrongly attributed to the outgoing layer.
+        brush_mode = context.scene.storytools_settings.brush_layer_sync
+        target_layer = ob.data.layers.get(self.layer) if self.layer else None
+        preset_touches_brush = bool(self.brush) or self.stroke_type != 'NONE'
+        if target_layer and preset_touches_brush and brush_mode != 'DISABLED':
+            if target_layer != ob.data.layers.active and ob.data.layers.active:
+                fn.store_layer_brush(context.scene, ob, ob.data.layers.active, brush_mode)
+            ## mute even when the layer is already active: re-assigning the same
+            ## active layer still publishes a msg_bus update (trigger a restore)
+            fn.suppress_brush_sync()
+
         if self.mode != 'NONE':
             bpy.ops.object.mode_set(mode=self.mode)
 
@@ -186,15 +200,10 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
             except:
                 self.report({'ERROR'}, f'Cannot set tool {self.tool}, need identifier (ex: "builtin.brush")')
                 return {"CANCELLED"}
-        
+
         if '/' in self.brush:
             ## if the brush name is a path,  always Consider that this is a custom user brush to use with asset_activate
-            try:
-                bpy.ops.brush.asset_activate(asset_library_type='CUSTOM',
-                    asset_library_identifier="User Library",
-                    relative_asset_identifier=self.brush)
-            except Exception as e:
-                print('Error loading brush from asset', e)
+            if not fn.activate_brush_from_reference('CUSTOM', "User Library", self.brush):
                 self.report({'ERROR'}, f'Cannot load {self.brush}, need to be an asset path, ex: "Saved/Brushes/CustomFill.asset.blend/Brush/CustomFill"')
                 return {"CANCELLED"}
 
@@ -205,16 +214,19 @@ class STORYTOOLS_OT_set_draw_tool(bpy.types.Operator):
             # with bpy.data.libraries.load(str(essential_brush_lib), assets_only=True, link=False) as (data_from, data_to):
             #     if self.brush in data_from.brushes:
             #         brush_exists = True
-            try:
-                bpy.ops.brush.asset_activate(asset_library_type='ESSENTIALS', 
-                    asset_library_identifier="", 
-                    relative_asset_identifier=f"brushes/essentials_brushes-gp_draw.blend/Brush/{self.brush}")
-            except Exception as e:
-                print("Error loading brush from essentials library", e)
+            if not fn.activate_brush_from_reference('ESSENTIALS', "",
+                    f"brushes/essentials_brushes-gp_draw.blend/Brush/{self.brush}"):
                 self.report({'WARNING'}, f'Could not find brush named {self.brush}')
+
+        ## Merge with the target layer pairing: restore fields the preset does not specify
+        ## (deferred sync callback is muted, this is the only restore that will run)
+        if target_layer and preset_touches_brush and brush_mode != 'DISABLED':
+            fn.restore_layer_brush(context.scene, ob, target_layer, brush_mode,
+                skip_brush=bool(self.brush), skip_stroke=self.stroke_type != 'NONE')
 
         if self.stroke_type != 'NONE' and bpy.app.version >= (5, 1, 0):
             ## Starting Blender 5.1, brush define stroke/fill (not material)
+            ## (kept after the pairing merge so it applies to the final active brush)
             if (brush := context.tool_settings.gpencil_paint.brush) and brush.gpencil_settings:
                 brush.gpencil_settings.stroke_type = self.stroke_type
 

@@ -451,8 +451,17 @@ def materials_layout(layout, context):
         # sub.operator("grease_pencil.material_isolate", icon='LOCKED', text="").affect_visibility = False
     
     ## Material sync mode
+    settings = bpy.context.scene.storytools_settings
     col = layout.column()
-    col.prop(bpy.context.scene.storytools_settings, 'material_sync', text='')
+    row = col.row(align=True)
+    row.prop(settings, 'material_sync', text='')
+    if settings.material_sync == 'GLOBAL':
+        row.operator('storytools.reset_global_pairing', text='', icon='LOOP_BACK').target = 'MATERIAL'
+    row = col.row(align=True)
+    row.prop(settings, 'brush_layer_sync', text='')
+    if settings.brush_layer_sync == 'GLOBAL':
+        row.operator('storytools.reset_global_pairing', text='', icon='LOOP_BACK').target = 'BRUSH'
+    col.prop(settings, 'sync_object_layers')
 
 
 class STORYTOOLS_PT_materials_ui(Panel):

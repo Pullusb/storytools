@@ -3,6 +3,7 @@
 import bpy
 import json
 import math
+import time
 import hashlib
 import numpy as np
 
@@ -20,6 +21,8 @@ from mathutils import (Matrix,
                        )
 
 from .constants import (LAYERMAT_PREFIX,
+                        LAYERSTROKE_PREFIX,
+                        LAYERBRUSH_PREFIX,
                         DEFAULT_LAYER_STACK,
                         DEFAULT_MATERIAL_STACK,
                         DEFAULT_ACTIVE_LAYER,
@@ -703,13 +706,14 @@ def get_gp_draw_plane_matrix(context):
 
 
 def get_default_layer_stack_entries(prefs=None):
-    '''Return the default layer stack as a list of (layer_name, material_name) tuples
+    '''Return the default layer stack as a list of (layer_name, material_name, brush, stroke_type) tuples
     Top layer first (as displayed in Blender's layer list)
     Use the customized stack from addon preferences when defined, fallback to hardcoded default
     '''
     prefs = prefs or get_addon_prefs()
     if len(prefs.layer_stack):
-        return [(l.name.strip(), l.material.strip()) for l in prefs.layer_stack if l.name.strip()]
+        return [(l.name.strip(), l.material.strip(), l.brush.strip(), l.stroke_type)
+                for l in prefs.layer_stack if l.name.strip()]
     return list(DEFAULT_LAYER_STACK)
 
 def get_default_active_layer_name(prefs=None):
@@ -727,14 +731,19 @@ def create_default_layers(object, frame=None, use_lights=False, set_material_syn
     if frame is None:
         frame = bpy.context.scene.frame_current
     # Create default layers (entries are stored top layer first, create bottom layer first)
-    for l_name, mat_name in reversed(get_default_layer_stack_entries()):
+    for l_name, mat_name, brush, stroke_type in reversed(get_default_layer_stack_entries()):
         layer = gp.layers.new(l_name)
         layer.frames.new(frame)
         layer.use_lights = use_lights
 
-        if set_material_sync and mat_name:
-            # Set default material association
-            set_material_association(object, layer, mat_name)
+        if set_material_sync:
+            # Set default material / brush / stroke type association (per-object custom props)
+            if mat_name:
+                set_material_association(object, layer, mat_name)
+            if brush:
+                object[LAYERBRUSH_PREFIX + layer.name] = brush_reference_from_name(brush)
+            if stroke_type and stroke_type != 'NONE':
+                object[LAYERSTROKE_PREFIX + layer.name] = stroke_type
 
 def create_gp_object(
         name="",
@@ -868,9 +877,9 @@ def create_gp_object(
             layer.use_lights = ref_layer.use_lights
             layer.opacity = ref_layer.opacity
         
-        ## Copy custom properties for layer-material sync
+        ## Copy custom properties for layer-material and layer-brush sync
         for k, v in layer_from_obj.items():
-            if k.startswith(LAYERMAT_PREFIX):
+            if k.startswith((LAYERMAT_PREFIX, LAYERSTROKE_PREFIX, LAYERBRUSH_PREFIX)):
                 ob[k] = v
 
     else:
@@ -1042,6 +1051,181 @@ def load_default_palette(ob=None):
         ob.data.materials.append(mat)
 
     return ('FINISHED', f'Loaded default material stack')
+
+def get_active_gp_brush(context=None):
+    '''Return the active grease pencil paint brush (or None)'''
+    context = context or bpy.context
+    paint = context.tool_settings.gpencil_paint
+    return paint.brush if paint else None
+
+def serialize_brush_reference(paint) -> str:
+    '''Serialize the paint active brush asset reference to a single-line string
+    Format: "library_type::library_identifier::relative_identifier"
+    Return empty string if no usable reference'''
+    ref = getattr(paint, 'brush_asset_reference', None)
+    if ref is None or not ref.relative_asset_identifier:
+        return ''
+    return '::'.join((
+        ref.asset_library_type,
+        ref.asset_library_identifier,
+        ref.relative_asset_identifier,
+    ))
+
+def activate_brush_from_reference(library_type, library_identifier, relative_identifier) -> bool:
+    '''Activate a brush asset from its reference fields. Return True on success'''
+    try:
+        bpy.ops.brush.asset_activate(
+            asset_library_type=library_type,
+            asset_library_identifier=library_identifier,
+            relative_asset_identifier=relative_identifier,
+        )
+        return True
+    except Exception as e:
+        print(f'Storytools: Could not activate brush asset "{relative_identifier}":', e)
+        return False
+
+def set_brush_by_reference(ref_str) -> bool:
+    '''Activate a brush from a serialized reference string (see serialize_brush_reference)'''
+    if not ref_str:
+        return False
+    ## maxsplit keeps a '::' appearing in the asset path/brush name harmless
+    parts = ref_str.split('::', 2)
+    if len(parts) != 3:
+        return False
+    return activate_brush_from_reference(*parts)
+
+## Short mute window for the brush layer-sync callback. 
+## So other operators can do things without triggering a restore.
+## ex: toolpresets do a merge of preset + paired values)
+## muting deferred msgbus callback so it cannot restore over the result. 
+## A time window is used because the callback fires after the operator returns and may fire multiple times
+## (a one-shot flag would break on double-fires, and would stay armed forever - eating the next legitimate sync)
+_brush_sync_suppress_until = 0.0
+
+def suppress_brush_sync(duration=0.3) -> None:
+    '''Mute the brush layer-sync store/restore for a short time window'''
+    global _brush_sync_suppress_until
+    _brush_sync_suppress_until = time.monotonic() + duration
+
+def brush_sync_suppressed() -> bool:
+    return time.monotonic() < _brush_sync_suppress_until
+
+def brush_reference_from_name(brush_str) -> str:
+    '''Build a serialized brush AssetWeakReference string from a user brush name or asset path.
+    A '/' in the string is treated as a custom User Library asset path, otherwise it is an
+    Essentials Grease Pencil draw brush or an already serialized string.
+    Mirrors the resolution used in set_draw_tool (keymaps.py).'''
+    if not brush_str:
+        return ''
+    if '/' in brush_str:
+        if '::' in brush_str:
+            # Already a serialized reference string, return as-is
+            return brush_str
+        # Treat as a custom User Library asset path, return a serialized reference string
+        return '::'.join(('CUSTOM', 'User Library', brush_str))
+    # consider it's part of the Essential pack
+    return '::'.join(('ESSENTIALS', '', f'brushes/essentials_brushes-gp_draw.blend/Brush/{brush_str}'))
+
+def set_stroke_type(brush, stroke_type) -> None:
+    '''Set the brush stroke type (Blender 5.1+). No-op if already set or unavailable'''
+    if not stroke_type or bpy.app.version < (5, 1, 0):
+        return
+    if brush and brush.gpencil_settings and brush.gpencil_settings.stroke_type != stroke_type:
+        brush.gpencil_settings.stroke_type = stroke_type
+
+def store_layer_brush(scn, ob, layer, mode) -> None:
+    '''Store the active gp brush reference + stroke_type for (ob, layer) according to the sync mode.
+    INDIVIDUAL: object custom props keyed by layer name. GLOBAL: session dict keyed by layer name
+    (mirrors gp_mat_by_layer). DISABLED: no-op.'''
+    if mode == 'DISABLED':
+        return
+    paint = scn.tool_settings.gpencil_paint
+    brush = paint.brush if paint else None
+    if not brush:
+        return
+    if getattr(brush, 'gpencil_brush_type', None) == 'ERASE':
+        ## never pair an eraser with a layer (would restore an eraser when entering the layer)
+        return
+    ref = serialize_brush_reference(paint)
+    stroke = brush.gpencil_settings.stroke_type if brush.gpencil_settings else None
+    if mode == 'GLOBAL':
+        if not hasattr(bpy.types.Scene, 'gp_brush_by_layer'):
+            bpy.types.Scene.gp_brush_by_layer = {}
+        scn.gp_brush_by_layer[layer.name] = (ref, stroke)
+    else: # INDIVIDUAL
+        if ref:
+            ob[LAYERBRUSH_PREFIX + layer.name] = ref
+        if stroke:
+            ob[LAYERSTROKE_PREFIX + layer.name] = stroke
+
+def restore_layer_brush(scn, ob, layer, mode, skip_brush=False, skip_stroke=False) -> None:
+    '''Activate the brush + stroke_type stored for (ob, layer) according to the sync mode.
+    skip_brush/skip_stroke: leave that field untouched (preset-specified value takes precedence)'''
+    if mode == 'DISABLED':
+        return
+    if mode == 'GLOBAL':
+        data = getattr(scn, 'gp_brush_by_layer', {}).get(layer.name)
+        ref, stroke = data if data else (None, None)
+    else: # INDIVIDUAL
+        ref = ob.get(LAYERBRUSH_PREFIX + layer.name)
+        stroke = ob.get(LAYERSTROKE_PREFIX + layer.name)
+    if ref and not skip_brush:
+        set_brush_by_reference(ref)
+    if stroke and not skip_stroke:
+        set_stroke_type(scn.tool_settings.gpencil_paint.brush, stroke)
+
+def transfer_brush_pairing_to_global(scn, ob) -> None:
+    '''Seed the GLOBAL brush dict from the object's per-layer INDIVIDUAL pairings
+    (existing layers only, object values win over previous global entries).
+    Called when brush_layer_sync is switched to GLOBAL with an active GP object.'''
+    if not ob or ob.type != 'GREASEPENCIL':
+        return
+    if not hasattr(bpy.types.Scene, 'gp_brush_by_layer'):
+        bpy.types.Scene.gp_brush_by_layer = {}
+    for l in ob.data.layers:
+        ref = ob.get(LAYERBRUSH_PREFIX + l.name)
+        stroke = ob.get(LAYERSTROKE_PREFIX + l.name)
+        if ref or stroke:
+            scn.gp_brush_by_layer[l.name] = (ref, stroke)
+
+def transfer_material_pairing_to_global(scn, ob) -> None:
+    '''Seed the GLOBAL material dict from the object's per-layer INDIVIDUAL pairings
+    (existing layers only, object values win over previous global entries).
+    Called when material_sync is switched to GLOBAL with an active GP object.'''
+    if not ob or ob.type != 'GREASEPENCIL':
+        return
+    if not hasattr(bpy.types.Scene, 'gp_mat_by_layer'):
+        bpy.types.Scene.gp_mat_by_layer = {}
+    for l in ob.data.layers:
+        mat_name = ob.get(LAYERMAT_PREFIX + l.name)
+        if mat_name:
+            scn.gp_mat_by_layer[l.name] = mat_name
+
+def store_layer_material(scn, ob, layer, mode) -> None:
+    '''Store the object's active material name for (ob, layer) according to the material_sync mode.
+    INDIVIDUAL: object custom props keyed by layer name. GLOBAL: session dict keyed by layer name
+    (mirrors gp_brush_by_layer, shared across scenes). DISABLED: no-op.'''
+    if mode == 'DISABLED':
+        return
+    if not ob.active_material:
+        return
+    if mode == 'GLOBAL':
+        if not hasattr(bpy.types.Scene, 'gp_mat_by_layer'):
+            bpy.types.Scene.gp_mat_by_layer = {}
+        scn.gp_mat_by_layer[layer.name] = ob.active_material.name
+    else: # INDIVIDUAL
+        ob[LAYERMAT_PREFIX + layer.name] = ob.active_material.name
+
+def restore_layer_material(scn, ob, layer, mode) -> None:
+    '''Set the material stored for (ob, layer) according to the material_sync mode.
+    No-op if the material name is missing or not present in the object slots (set_material_by_name checks).'''
+    if mode == 'DISABLED':
+        return
+    if mode == 'GLOBAL':
+        mat_name = getattr(scn, 'gp_mat_by_layer', {}).get(layer.name)
+    else: # INDIVIDUAL
+        mat_name = ob.get(LAYERMAT_PREFIX + layer.name)
+    set_material_by_name(ob, mat_name)
 
 def set_material_association(ob, layer, mat_name):
     '''Take an object, a gp layer and a material name

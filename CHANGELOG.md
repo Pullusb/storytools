@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+3.5.1
+
+- added: Sync brush & stroke_type accross objects (same options as material sync, also default)
+- added: Sync layer when swithing objects
+
 3.5.0
 
 - added: `Stroke Type` option in toolpresets to define brush stroke type: `No Change`, `Stroke`, `Fill`, `Both`.

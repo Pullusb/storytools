@@ -125,15 +125,20 @@ class STORYTOOLS_PGT_gp_settings(PropertyGroup):
         default='SYNC_GLOBAL'
     )
 
-    # sync_scene : BoolProperty(name='Sync Between Scenes',
-    #                     description="Synchronise those settings with other scenes\
-    #                         \nIf False, change won't be send to other scene and won't be affected by other scenes",
-    #                     default=True)
-    
-    # sync_preferences : BoolProperty(name='Sync With Preferences',
-    #                     description='Local scene storytools GP settings will be restore to values in preferences\
-    #                         \nOtherwise local settings will be kept when opening file',
-    #                     default=True)
+
+def material_sync_update(self, context):
+    ## When switching to global mode, seed the global dict with the
+    ## active object's current pairing (if a GP object is active)
+    if self.material_sync == 'GLOBAL':
+        from . import fn
+        fn.transfer_material_pairing_to_global(context.scene, context.object)
+
+def brush_layer_sync_update(self, context):
+    ## When switching to global mode, seed the global dict with the
+    ## active object's current pairing (if a GP object is active)
+    if self.brush_layer_sync == 'GLOBAL':
+        from . import fn
+        fn.transfer_brush_pairing_to_global(context.scene, context.object)
 
 class STORYTOOLS_PGT_main_settings(PropertyGroup):
     ## HIDDEN to hide the animatable dot thing
@@ -166,11 +171,28 @@ class STORYTOOLS_PGT_main_settings(PropertyGroup):
     material_sync : EnumProperty(
         name="Material Sync", description="Define how to switch material when active layer is changed",
         default='INDIVIDUAL', options={'HIDDEN', 'SKIP_SAVE'},
+        update=material_sync_update,
         items=(
             ('INDIVIDUAL', 'Sync Materials', 'Sync material and layer per object', 0),
-            ('GLOBAL', 'Sync Across Objects', 'Sync material and layer globally ', 1),
-            ('DISABLED', 'No Sync', 'No material association when changing layer', 2),
+            ('GLOBAL', 'Sync Materials Globally', 'Sync material and layer globally ', 1),
+            ('DISABLED', 'No Materials Sync', 'No material association when changing layer', 2),
             ))
+
+    brush_layer_sync : EnumProperty(
+        name="Brush Sync", description="Define how to switch brush & stroke type when active layer / object changes",
+        default='INDIVIDUAL', options={'HIDDEN', 'SKIP_SAVE'},
+        update=brush_layer_sync_update,
+        items=(
+            ('INDIVIDUAL', 'Sync Brushes', 'Remember brush & stroke type per object', 0),
+            ('GLOBAL', 'Sync Brushes Globally', 'Remember brush & stroke type globally by layer name', 1),
+            ('DISABLED', 'No Brushes Sync', 'No brush and stroke type association when changing layer', 2),
+            ))
+
+    sync_object_layers : BoolProperty(
+        name="Sync Object Layers",
+        description="When switching object, if a layer with the same name exists, make it active\
+            \n(this drives the brush & material sync for that layer)",
+        default=True, options={'HIDDEN', 'SKIP_SAVE'})
 
     show_session_toolbar : BoolProperty(
         name='Show Toolbar',
@@ -277,9 +299,43 @@ class STORYTOOLS_PGT_main_settings(PropertyGroup):
     ## Collection is much cleaner, But incompatible with selective pref load...
 
 
+class STORYTOOLS_OT_reset_global_pairing(bpy.types.Operator):
+    bl_idname = "storytools.reset_global_pairing"
+    bl_label = "Reset Global Pairing"
+    bl_description = "Reset the global layer pairing to the defaults\
+        \nof the layer stack in addon preferences"
+    bl_options = {"REGISTER", "INTERNAL"}
+
+    target : EnumProperty(
+        name="Target", options={'HIDDEN', 'SKIP_SAVE'},
+        items=(
+            ('MATERIAL', 'Material', 'Reset the material pairing'),
+            ('BRUSH', 'Brush', 'Reset the brush & stroke type pairing'),
+            ))
+
+    @classmethod
+    def description(cls, context, properties) -> str:
+        what = 'material' if properties.target == 'MATERIAL' else 'brush & stroke type'
+        return f"Reset the global {what} pairing\
+            \nUse the default layer associations of the layer stack in addon preferences"
+
+    def execute(self, context):
+        from . import fn
+        entries = fn.get_default_layer_stack_entries()
+        if self.target == 'MATERIAL':
+            bpy.types.Scene.gp_mat_by_layer = {name: mat for name, mat, _brush, _stroke in entries if mat}
+            self.report({'INFO'}, 'Material pairing reset to preferences defaults')
+        else:
+            bpy.types.Scene.gp_brush_by_layer = {
+                name: (fn.brush_reference_from_name(brush), stroke if stroke != 'NONE' else None)
+                for name, _mat, brush, stroke in entries if brush or stroke != 'NONE'}
+            self.report({'INFO'}, 'Brush pairing reset to preferences defaults')
+        return {'FINISHED'}
+
 classes=(
 STORYTOOLS_PGT_main_settings,
 STORYTOOLS_PGT_gp_settings,
+STORYTOOLS_OT_reset_global_pairing,
 # STORYTOOLS_PGT_board_animatic,
 # STORYTOOLS_PGT_km_preset, # old
 # STORYTOOLS_PGT_keymap_presets, # old

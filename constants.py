@@ -2,12 +2,18 @@ from pathlib import Path
 
 LAYERMAT_PREFIX = 'mat--'
 
-## Default layer stack for new GP objects: (layer name + default associated material)
+## Per-layer brush association (stored as object custom props keyed by layer name)
+LAYERSTROKE_PREFIX = 'stroketype--' # value: brush stroke_type enum ('STROKE' | 'FILL' | 'BOTH')
+LAYERBRUSH_PREFIX = 'brush--'       # value: brush AssetWeakReference as 'library_type::library_identifier::relative_path' (see fn.serialize_brush_reference)
+
+## Default layer stack for new GP objects: (layer name, associated material, brush, stroke_type)
+## brush: essentials GP draw brush name (or custom asset path containing '/'), empty = no association
+## stroke_type: 'STROKE' | 'FILL' | 'BOTH' | 'NONE' (no change)
 DEFAULT_LAYER_STACK = (
-    ('Annotate', 'Red'),
-    ('Sketch', 'Black'),
-    ('Line', 'Black'),
-    ('Color', 'White'),
+    ('Annotate', 'Red', 'Pen', 'STROKE'),
+    ('Sketch', 'Black', 'Pencil', 'STROKE'),
+    ('Line', 'Black', 'Ink Pen', 'STROKE'),
+    ('Color', 'White', 'Fill', 'NONE'),
 )
 
 DEFAULT_ACTIVE_LAYER = 'Sketch'
