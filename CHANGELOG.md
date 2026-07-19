@@ -2,10 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-3.5.1
+3.6.0
 
+- added: Sync layer when switching objects
 - added: Sync brush & stroke_type accross objects (same options as material sync, also default)
-- added: Sync layer when swithing objects
+- changed: `sync across object` renamed to `Sync Global`
 
 3.5.0
 
