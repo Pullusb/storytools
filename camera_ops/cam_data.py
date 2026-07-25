@@ -11,7 +11,6 @@ from bpy.props import CollectionProperty, PointerProperty
 # from bl_operators.presets import AddPresetBase
 
 from .. import fn
-from .cam_create import invalidate_cache
 
 # class STORYTOOLS_OT_camera_change_focal(Operator):
 #     bl_idname = "storytools.camera_change_focal"
@@ -333,8 +332,6 @@ class STORYTOOLS_OT_camera_data_asset_toggle(Operator):
 
         if cam_data.asset_data:
             cam_data.asset_clear()
-            ## The asset list of this file changed, force a rescan on next camera creation
-            invalidate_cache()
             self.report({'INFO'}, f'"{cam_data.name}" is not an asset anymore')
             return {"FINISHED"}
 
@@ -348,21 +345,19 @@ class STORYTOOLS_OT_camera_data_asset_toggle(Operator):
         cam_data.asset_mark()
         cam_data.asset_generate_preview()
 
-        ## Only discoverable once the file is saved within an asset library directory
+        ## Always usable in this file (listed as "Current File" in the new camera popup).
+        ## Reusable from other files only once saved within an asset library directory
         library_roots = [Path(bpy.path.abspath(lib.path)) for lib in
                          context.preferences.filepaths.asset_libraries if lib.enabled and lib.path]
         blend = Path(bpy.data.filepath) if bpy.data.filepath else None
         in_library = blend and any(root in blend.parents for root in library_roots)
 
         if in_library:
-            self.report({'INFO'}, f'"{cam_data.name}" marked as asset (save the file to make it available)')
+            self.report({'INFO'}, f'"{cam_data.name}" marked as asset (save the file to share it with other blends)')
         else:
-            self.report({'WARNING'}, f'"{cam_data.name}" marked as asset, \
-but this file must be saved inside an asset library directory to be found')
+            self.report({'INFO'}, f'"{cam_data.name}" marked as asset, usable in this file. \
+Save it inside an asset library directory to reuse it from other blends')
 
-        ## A new camera data is marked as asset in current file:
-        ## invalidate the cache from camera create so it can be scanned in the same session
-        invalidate_cache()
         return {"FINISHED"}
 
 

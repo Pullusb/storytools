@@ -60,10 +60,6 @@ def get_library_blends() -> list:
 ## scan cams from blend path
 def read_blend_camera_assets(blend) -> list:
     '''Return the names of the camera data marked as asset in blend, None if unreadable'''
-    if bpy.data.filepath and Path(bpy.data.filepath) == blend:
-        ## Current file: use local data (the version on disk may be outdated)
-        return sorted(cam.name for cam in bpy.data.cameras if cam.asset_data)
-
     try:
         with bpy.data.libraries.load(str(blend), assets_only=True, link=False) as (data_from, _data_to):
             return sorted(data_from.cameras)
@@ -72,8 +68,8 @@ def read_blend_camera_assets(blend) -> list:
         return None
 
 
-## Result of the last scan: list of entries as
-## {'id': str, 'name': str, 'blend': str, 'library': str, 'relative': str}
+## Result of the last library scan: list of entries as
+## {'id': str, 'name': str, 'blend': str, 'library': str, 'relative': str, 'local': bool}
 _ASSET_ENTRIES = []
 
 ## Items returned by the EnumProperty callback (must be kept alive on the python side)
@@ -82,11 +78,8 @@ _ENUM_ITEMS = []
 ## True once a scan ran in this session (avoid re-walking libraries on every dialog opening)
 _IS_SCANNED = False
 
-def invalidate_cache():
-    """Force the next get_camera_assets() call to rescan the libraries.
-    Called when the asset list of the current file changed (mark/clear camera data asset)"""
-    global _IS_SCANNED
-    _IS_SCANNED = False
+## Identifier prefix of the assets living in the current file
+LOCAL_PREFIX = 'LOCAL::'
 
 def get_camera_assets():
     """Fill _ASSET_ENTRIES global variable (once per session) to be read by enum update"""
@@ -95,7 +88,6 @@ def get_camera_assets():
         return
 
     _IS_SCANNED = True
-    # current_file = Path(bpy.data.filepath) if bpy.data.filepath else None
     seen = set()
     entries = []
     for lib_name, root, blend in get_library_blends():
@@ -115,21 +107,52 @@ def get_camera_assets():
                 'blend': key,
                 'library': lib_name,
                 'relative': blend.relative_to(root).as_posix(),
+                'local': False,
                 })
 
     entries.sort(key=lambda e: (e['library'], e['relative'], e['name']))
     _ASSET_ENTRIES = entries
 
-def load_camera_asset_data(blend_path, data_name):
-    '''Append a local copy of the camera data named data_name from blend_path.
-    Return the new camera data, None if it could not be loaded'''
-    blend = Path(blend_path)
+def get_local_camera_assets() -> list:
+    '''Return the entries for camera data marked as asset in the current file.
+    Read live from bpy.data (cheap, always up to date), so this needs no scan or cache'''
+    return [{
+        'id': f'{LOCAL_PREFIX}{cam.name}',
+        'name': cam.name,
+        'blend': '',
+        'library': 'Current File',
+        'relative': '',
+        'local': True,
+        } for cam in sorted(bpy.data.cameras, key=lambda c: c.name) if cam.asset_data]
 
-    if bpy.data.filepath and Path(bpy.data.filepath) == blend:
-        ## Asset lives in the current file, just duplicate it
-        source = bpy.data.cameras.get(data_name)
-        return source.copy() if source else None
+def get_all_asset_entries() -> list:
+    '''Return the library assets of the last scan, followed by the current file ones'''
+    ## The current file may also be inside a library: skip its scanned (on disk, possibly
+    ## outdated) version, local data is listed instead
+    current = Path(bpy.path.abspath(bpy.data.filepath)) if bpy.data.filepath else None
+    entries = [e for e in _ASSET_ENTRIES if not current or Path(e['blend']) != current]
+    return entries + get_local_camera_assets()
 
+def clear_asset_metadata(cam_data):
+    '''An appended or copied asset keeps its asset metadata and may get a fake user.
+    Clear both (as blender's own asset append does): this local copy is a plain camera data'''
+    if cam_data.asset_data:
+        cam_data.asset_clear()
+    cam_data.use_fake_user = False
+
+def load_camera_asset_data(entry):
+    '''Return a local copy of the camera data described by entry, None if it could not be loaded.
+    Local assets are directly duplicated, library ones are appended from their blend'''
+    if entry['local']:
+        source = bpy.data.cameras.get(entry['name'])
+        if not source or not source.asset_data:
+            return None
+        cam_data = source.copy()
+        clear_asset_metadata(cam_data)
+        return cam_data
+
+    blend = Path(entry['blend'])
+    data_name = entry['name']
     try:
         with bpy.data.libraries.load(str(blend), assets_only=True, link=False) as (data_from, data_to):
             if data_name not in data_from.cameras:
@@ -143,39 +166,41 @@ def load_camera_asset_data(blend_path, data_name):
         return None
 
     cam_data = data_to.cameras[0]
-    ## An appended asset keeps its asset metadata and gets a fake user.
-    ## Clear both (as blender's own asset append does): this local copy is a plain camera data
-    if cam_data.asset_data:
-        cam_data.asset_clear()
-    cam_data.use_fake_user = False
+    clear_asset_metadata(cam_data)
     return cam_data
 
 def get_camera_asset_entry(identifier) -> dict:
     '''Return the camera asset entry matching an enum identifier, None if not found'''
     if not identifier:
         return None
-    return next((e for e in _ASSET_ENTRIES if e['id'] == identifier), None)
+    return next((e for e in get_all_asset_entries() if e['id'] == identifier), None)
 
 def camera_asset_enum_items(self, context):
-    '''Items callback listing camera assets found by the last scan.
+    '''Items callback listing camera assets of last library scan and current file.
     Called on every redraw'''
     global _ENUM_ITEMS
 
-    if not _ASSET_ENTRIES:
-        _ENUM_ITEMS = [('NONE', 'No Camera Asset Found', 'No camera data marked as asset was found in your asset libraries')]
+    entries = get_all_asset_entries()
+    if not entries:
+        _ENUM_ITEMS = [('NONE', 'No Camera Asset Found', 'No camera data marked as asset was found in this file or in your asset libraries')]
         return _ENUM_ITEMS
 
     ## Same camera name can exists in multiple blends, show the source file in this case
-    names = [e['name'] for e in _ASSET_ENTRIES]
+    names = [e['name'] for e in entries]
     _ENUM_ITEMS = []
-    for i, entry in enumerate(_ASSET_ENTRIES):
+    for i, entry in enumerate(entries):
         label = entry['name']
-        if names.count(label) > 1:
-            label = f'{label}  [{Path(entry["blend"]).stem}]'
-        _ENUM_ITEMS.append((
-            entry['id'], label,
-            f'Camera asset "{entry["name"]}" from library "{entry["library"]}"\n{entry["relative"]}',
-            'CAMERA_DATA', i))
+        if entry['local']:
+            ## Current file assets are listed last, always tag them (no scan or save needed)
+            label = f'{label} [Current File]'
+            description = f'Camera asset "{entry["name"]}" from the current file'
+            icon = 'FILE_BLEND'
+        else:
+            if names.count(label) > 1:
+                label = f'{label}  [{Path(entry["blend"]).stem}]'
+            description = f'Camera asset "{entry["name"]}" from library "{entry["library"]}"\n{entry["relative"]}'
+            icon = 'CAMERA_DATA'
+        _ENUM_ITEMS.append((entry['id'], label, description, icon, i))
 
     return _ENUM_ITEMS
 
@@ -201,13 +226,13 @@ class STORYTOOLS_OT_create_camera(Operator):
         description="Choose the camera data used by the new camera",
         items=(
             ('NEW', 'New', 'Create a new camera data using addon preferences defaults', 'CAMERA_DATA', 0),
-            ('ASSET', 'Asset', 'Use a copy of a camera data marked as asset in your asset libraries', 'ASSET_MANAGER', 1),
+            ('ASSET', 'Asset', 'Use a copy of a camera data marked as asset in this file or in your asset libraries', 'ASSET_MANAGER', 1),
             ),
         update=update_camera_source)
 
     asset : bpy.props.EnumProperty(
         name='Camera Asset',
-        description="Camera data marked as asset, found in your asset libraries",
+        description="Camera data marked as asset, found in your asset libraries or in current file",
         items=camera_asset_enum_items)
 
     create_marker : bpy.props.BoolProperty(
@@ -256,17 +281,17 @@ class STORYTOOLS_OT_create_camera(Operator):
         ## Camera data source: brand new or copy of an asset
         layout.row().prop(self, 'source', expand=True)
         if self.source == 'ASSET':
-            ## Only use the last scan result here, scanning in draw code is not an option
-            assets = _ASSET_ENTRIES
+            ## Only use the last scan result here (plus live local ones), scanning in draw code is not an option
+            assets = get_all_asset_entries()
             row = layout.row(align=True)
             if assets:
                 row.prop(self, 'asset', text='Camera')
             else:
                 row.label(text='No camera asset found', icon='ERROR')
-            if not assets:
                 col = layout.column(align=True)
-                col.label(text='Mark a camera data as asset in a blend', icon='INFO')
-                col.label(text='saved inside one of your asset libraries', icon='BLANK1')
+                col.label(text='Mark a camera data as asset to reuse it', icon='INFO')
+                col.label(text='in this file, or in any blend saved inside', icon='BLANK1')
+                col.label(text='one of your asset libraries', icon='BLANK1')
 
         layout.prop(self, 'make_active')
         if context.space_data.region_3d.view_perspective == 'CAMERA':
@@ -316,9 +341,10 @@ class STORYTOOLS_OT_create_camera(Operator):
             if not entry:
                 self.report({'ERROR'}, 'No valid camera asset selected')
                 return {"CANCELLED"}
-            cam_data = load_camera_asset_data(entry['blend'], entry['name'])
+            cam_data = load_camera_asset_data(entry)
             if not cam_data:
-                self.report({'ERROR'}, f'Could not load camera asset "{entry["name"]}" from {entry["blend"]}')
+                source = entry['blend'] if not entry['local'] else 'current file'
+                self.report({'ERROR'}, f'Could not load camera asset "{entry["name"]}" from {source}')
                 return {"CANCELLED"}
         else:
             cam_data = bpy.data.cameras.new(self.name)

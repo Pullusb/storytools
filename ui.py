@@ -195,7 +195,8 @@ class STORYTOOLS_PT_camera_settings(Panel):
         info.title = 'Camera Data Asset'
         info.text = "Mark the camera data (not the camera object) as asset\n"\
             "The new camera popup can then create cameras using a copy of this camera data\n"\
-            "The file has to be saved in one of your asset library directories to be found\n"\
+            "It is immediately available in this file, listed as 'Current File'\n"\
+            "To reuse it from other blends, the file has to be saved in one of your asset library directories\n"\
             "(Asset libraries are listed in Preferences > File Paths > Asset Libraries)"
 
         ## Cam delete
