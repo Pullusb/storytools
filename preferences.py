@@ -386,6 +386,34 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
         description="Choose if layers should have use light on when creating a grease pencil object using popup",
         default=False)
 
+    ## Default settings for newly created cameras (storytools.create_camera)
+
+    default_cam_lens : FloatProperty(
+        name='Focal Length',
+        description="Focal length (millimeters) of newly created cameras\
+            \nBlender default is 50",
+        default=50.0, min=1.0, soft_max=250.0, max=5000.0, precision=1, subtype='NONE')
+
+    default_cam_clip_start : FloatProperty(
+        name='Clip Start',
+        description="Near clipping distance of newly created cameras\
+            \nBlender default is 0.1\
+            \nAvoid very small values, ex: below 0.01\
+            \nToo small value lower z-buffer precision in EEVEE, can cause Z-fighting",
+        default=0.1, min=0.0001, soft_max=10.0, precision=3, subtype='DISTANCE')
+
+    default_cam_clip_end : FloatProperty(
+        name='Clip End',
+        description="Far clipping distance of newly created cameras\
+            \nSet far to avoid distant objects being cut in camera view\
+            \nBlender default is 100m",
+        default=100000.0, min=1.0, soft_max=1000000.0, subtype='DISTANCE')
+
+    default_cam_use_dof : BoolProperty(
+        name='Use Depth Of Field',
+        description="Enable depth of field on newly created cameras",
+        default=False)
+
     ## Default modifiers and effects on new GP objects
 
     ## HSV modifier
@@ -586,6 +614,17 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             subcol.prop(self, 'top_view_map_size', text='Top View Size')
             subcol.active = self.use_top_view_map
 
+            ## Camera defaults
+            box = col.box()
+            bcol = box.column()
+            bcol.label(text='New Camera Settings:', icon='CAMERA_DATA')
+            bcol.prop(self, 'default_cam_lens')
+            row = bcol.row(align=True)
+            row.prop(self, 'default_cam_clip_start', text='Clip Range')
+            row.prop(self, 'default_cam_clip_end', text='')
+            bcol.prop(self, 'default_cam_use_dof')
+
+            ## Minimap
             box = col.box()
             bcol = box.column()
             bcol.label(text='Minimap Settings', icon='WORLD_DATA')
@@ -601,6 +640,7 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
             # tool_col.prop(self, 'map_toolbar_margin')
             # tool_col.prop(self, 'map_toolbar_gap_size', text='Buttons Spread')
             # tool_col.prop(self, 'map_toolbar_backdrop_size')
+
 
         elif self.pref_tab == 'GPSETTINGS':
             # region GP settings

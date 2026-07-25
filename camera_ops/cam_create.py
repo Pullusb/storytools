@@ -30,7 +30,15 @@ class STORYTOOLS_OT_create_camera(Operator):
         description="Enter in newly created camera view",
         default=True)
 
+    ## Add local Dof toggle (reset by preferences on call)
+    # use_dof : bpy.props.BoolProperty(
+    #     name='Use Depth Of Field',
+    #     description="Use Depth of field (default value can be changed in addon preferences > Settings > Camera)",
+    #     default=False)
+
     def invoke(self, context, event):
+        # self.use_dof = fn.get_addon_prefs().default_cam_use_dof
+
         # cam_ct = len(bpy.data.cameras)
         cam_ct = len([o for o in bpy.data.objects if o.type == 'CAMERA'])
         self.name = f'Camera_{cam_ct+1:03d}'
@@ -50,20 +58,21 @@ class STORYTOOLS_OT_create_camera(Operator):
         if context.space_data.region_3d.view_perspective == 'CAMERA':
             col = layout.column(align=True)
             col.label(text='Already in camera view', icon='INFO')
-            col.label(text='New camera will be at same place and same focal', icon='BLANK1')
+            col.label(text='New camera will have same placement and settings', icon='BLANK1')
         else:
             row = layout.row()
             row.active = self.make_active
             row.prop(self, 'enter_camera')
 
-        row =  layout.row()
+        # layout.prop(self, 'use_dof')
 
+        row =  layout.row()
         row.prop(self, 'create_marker')
         info = row.operator('storytools.info_note', text='', icon='QUESTION', emboss=False)
         info.title = 'Camera Marker Creation'
-        info.text = 'This will bind camera to a new marker at current frame\
-            \nA camera-bound marker changes the active camera when playhead is at marker position\
-            \nMarkers behave like keys,they can be selected/renamed/moved/deleted in timeline editors'
+        info.text = "This will bind camera to a new marker at current frame\n"\
+            "A camera-bound marker changes the active camera when playhead is at marker position\n"\
+            "Markers behave like keys,they can be selected/renamed/moved/deleted in timeline editors"
         if any(m.camera for m in context.scene.timeline_markers):
             layout.label(text='There are camera markers in scene', icon='INFO')
             # layout.label(text='A camera marker', icon='BLANK1')
@@ -81,6 +90,7 @@ class STORYTOOLS_OT_create_camera(Operator):
         if already_in_cam:
             cam_ref = scn.camera
         
+        prefs = fn.get_addon_prefs()
         cam_data = bpy.data.cameras.new(self.name)
         cam = bpy.data.objects.new(self.name, cam_data)
         if already_in_cam:
@@ -89,12 +99,18 @@ class STORYTOOLS_OT_create_camera(Operator):
             cam_data.lens = cam_ref.data.lens
             cam_data.clip_start = cam_ref.data.clip_start
             cam_data.clip_end = cam_ref.data.clip_end
+            cam_data.dof.use_dof = cam_ref.data.dof.use_dof
+            cam_data.dof.focus_distance = cam_ref.data.dof.focus_distance
+            cam_data.dof.aperture_fstop = cam_ref.data.dof.aperture_fstop
         else:
-            ## TODO place according to view
-            area = bpy.context.area            
+            ## Apply addon preferences camera defaults
+            cam_data.lens = prefs.default_cam_lens
+            cam_data.clip_start = prefs.default_cam_clip_start
+            cam_data.clip_end = prefs.default_cam_clip_end
+            cam_data.dof.use_dof = prefs.default_cam_use_dof # self.use_dof
+
             rv3d = bpy.context.region_data
             cam.matrix_world = rv3d.view_matrix.inverted()
-            # cam_data.lens = area.spaces.active.lens
 
         ## Link in active collection or create a dedicated collection for current scene
         ## using scene name in collection name might allow identification on multi_scene...
