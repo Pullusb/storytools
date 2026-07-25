@@ -2,9 +2,13 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-3.6.1
+3.7.0
 
 - added: Preferences for default camera: focal length, start/end clip, Dof
+- added: Option to load camera data marked as asset from asset library (Assets are scanned once per session when new camera popup is called)
+- added: New `Mark camera as asset` button in camera dropdown to toggle asset mark on active
+  - if camera data dont have the same name as object, popup a window to let user know an choose
+  - blend still need to be saved manually in the library folder
 
 3.6.0
 

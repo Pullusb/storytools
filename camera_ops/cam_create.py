@@ -82,6 +82,12 @@ _ENUM_ITEMS = []
 ## True once a scan ran in this session (avoid re-walking libraries on every dialog opening)
 _IS_SCANNED = False
 
+def invalidate_cache():
+    """Force the next get_camera_assets() call to rescan the libraries.
+    Called when the asset list of the current file changed (mark/clear camera data asset)"""
+    global _IS_SCANNED
+    _IS_SCANNED = False
+
 def get_camera_assets():
     """Fill _ASSET_ENTRIES global variable (once per session) to be read by enum update"""
     global _ASSET_ENTRIES, _IS_SCANNED
@@ -99,6 +105,9 @@ def get_camera_assets():
             continue
         seen.add(key)
         names = read_blend_camera_assets(blend)
+        if not names:
+            ## Unreadable blend (returned None) or no camera asset in it
+            continue
         for name in names:
             entries.append({
                 'id': f'{key}::{name}',

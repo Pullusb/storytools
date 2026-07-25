@@ -11,7 +11,7 @@ from bpy.props import CollectionProperty, PointerProperty
 # from bl_operators.presets import AddPresetBase
 
 from .. import fn
-
+from .cam_create import invalidate_cache
 
 # class STORYTOOLS_OT_camera_change_focal(Operator):
 #     bl_idname = "storytools.camera_change_focal"
@@ -333,6 +333,8 @@ class STORYTOOLS_OT_camera_data_asset_toggle(Operator):
 
         if cam_data.asset_data:
             cam_data.asset_clear()
+            ## The asset list of this file changed, force a rescan on next camera creation
+            invalidate_cache()
             self.report({'INFO'}, f'"{cam_data.name}" is not an asset anymore')
             return {"FINISHED"}
 
@@ -358,8 +360,9 @@ class STORYTOOLS_OT_camera_data_asset_toggle(Operator):
             self.report({'WARNING'}, f'"{cam_data.name}" marked as asset, \
 but this file must be saved inside an asset library directory to be found')
 
-        ## if a new camera is marked as asset in current file
-        ## Invalidate the cache from camera create so it can be scanned in the same session
+        ## A new camera data is marked as asset in current file:
+        ## invalidate the cache from camera create so it can be scanned in the same session
+        invalidate_cache()
         return {"FINISHED"}
 
 
