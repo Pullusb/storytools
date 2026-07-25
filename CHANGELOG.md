@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+3.6.1
+
+- added: Preferences for default camera: focal length, start/end clip, Dof
+
 3.6.0
 
 - added: Sync layer when switching objects
