@@ -204,10 +204,25 @@ def camera_asset_enum_items(self, context):
 
     return _ENUM_ITEMS
 
+def get_default_camera_name() -> str:
+    '''Return the incremental name used for a brand new camera'''
+    cam_ct = len([o for o in bpy.data.objects if o.type == 'CAMERA'])
+    return f'Camera_{cam_ct+1:03d}'
+
+def update_camera_asset(self, context):
+    '''Name the new camera object after the selected asset'''
+    entry = get_camera_asset_entry(self.asset)
+    if entry:
+        self.name = entry['name']
+
 def update_camera_source(self, context):
-    '''Trigger asset libraries scan when switching to asset source'''
+    '''Trigger asset libraries scan when switching to asset source
+    and keep the camera name in sync with the source'''
     if self.source == 'ASSET':
         get_camera_assets()
+        update_camera_asset(self, context)
+    else:
+        self.name = get_default_camera_name()
 
 # endregion scan blend camera as asset
 
@@ -233,7 +248,8 @@ class STORYTOOLS_OT_create_camera(Operator):
     asset : bpy.props.EnumProperty(
         name='Camera Asset',
         description="Camera data marked as asset, found in your asset libraries or in current file",
-        items=camera_asset_enum_items)
+        items=camera_asset_enum_items,
+        update=update_camera_asset)
 
     create_marker : bpy.props.BoolProperty(
         name='Create Marker',
@@ -259,16 +275,16 @@ class STORYTOOLS_OT_create_camera(Operator):
 
     def invoke(self, context, event):
         # self.use_dof = fn.get_addon_prefs().default_cam_use_dof
-        # cam_ct = len(bpy.data.cameras)
-        cam_ct = len([o for o in bpy.data.objects if o.type == 'CAMERA'])
-        self.name = f'Camera_{cam_ct+1:03d}'
-        
+        self.name = get_default_camera_name()
+
         if any(m.camera for m in context.scene.timeline_markers):
             self.create_marker = True
 
         if self.source == 'ASSET':
             ## Source is kept between calls, scan if it was not done yet in this session
             get_camera_assets()
+            ## Name after the selected asset (fallback on default name if it disappeared)
+            update_camera_asset(self, context)
 
         # return self.execute(context)
         return context.window_manager.invoke_props_dialog(self, width=300)
