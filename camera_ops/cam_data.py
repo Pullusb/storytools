@@ -82,6 +82,8 @@ def show_lens(layout, object):
         else:
             layout.prop(object.data, 'lens', text='', emboss=False)
 
+# region Camera options (ops menu)
+
 class STORYTOOLS_OT_camera_options(bpy.types.Operator):
     bl_idname = "storytools.camera_options"
     bl_label = 'Camera Options Menu'
@@ -130,6 +132,8 @@ class STORYTOOLS_OT_camera_options(bpy.types.Operator):
 
     def execute(self, context):
         return {"FINISHED"}
+
+# region Camera UIlist
 
 class STORYTOOLS_UL_camera_list(bpy.types.UIList):
 
@@ -225,6 +229,8 @@ class STORYTOOLS_UL_camera_list(bpy.types.UIList):
 
         return flt_flags, flt_neworder
 
+# region Set Focal
+
 class STORYTOOLS_OT_set_focal(Operator):
     bl_idname = "storytools.set_focal"
     bl_label = 'Set Focal'
@@ -241,6 +247,23 @@ class STORYTOOLS_OT_set_focal(Operator):
         context.scene.camera.data.lens = self.lens
         return {"FINISHED"}
 
+# region Mark Cam as Asset
+
+def update_use_object_name(self, context):
+    '''Copy the camera object name in the data name field when the button is pressed'''
+    ## transfer only when boolean is False (not needed if we want it to behave like an ops)
+    # if not self.use_object_name:
+    #     return
+    cam = context.scene.camera
+    if cam and self.data_name != cam.name:
+        self.data_name = cam.name
+
+def update_asset_data_name(self, context):
+    '''Untoggle the transfer button as soon as the name is manually edited'''
+    cam = context.scene.camera
+    if cam and self.use_object_name and self.data_name != cam.name:
+        self.use_object_name = False
+
 class STORYTOOLS_OT_camera_data_asset_toggle(Operator):
     bl_idname = "storytools.camera_data_asset_toggle"
     bl_label = "Toggle Camera Data Asset"
@@ -248,9 +271,62 @@ class STORYTOOLS_OT_camera_data_asset_toggle(Operator):
                     \nThe camera data is marked, not the camera object"
     bl_options = {"REGISTER", "UNDO"}
 
+    data_name : bpy.props.StringProperty(
+        name='Asset Name',
+        description="Name of the camera data, this is the name the asset will be listed with",
+        options={'SKIP_SAVE'})
+
+    use_object_name : bpy.props.BoolProperty(
+        name='Use Camera Object Name',
+        description="Copy the camera object name in the asset name field",
+        default=False, 
+        update=update_use_object_name,
+        options={'SKIP_SAVE'})
+
     @classmethod
     def poll(cls, context):
         return context.scene.camera
+
+    def invoke(self, context, event):
+        cam = context.scene.camera
+        cam_data = cam.data
+
+        ## Clearing needs no confirmation
+        if cam_data.asset_data:
+            return self.execute(context)
+
+        ## Only ask when the listed name may be misleading:
+        ## Data name differing from the object name or with ".001" duplication suffix
+        if cam_data.name == cam.name and not re.search(r'\.\d{3}$', cam_data.name):
+            return self.execute(context)
+
+        self.data_name = cam_data.name
+        # self.use_object_name = False
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
+    def draw(self, context):
+        cam = context.scene.camera
+        layout = self.layout
+        col = layout.column(align=True)
+        col.label(text='The camera DATA name is used to list the asset,', icon='INFO')
+        col.label(text='(not the camera object name)', icon='BLANK1')
+        if re.search(r'\.\d{3}$', self.data_name):
+            col.label(text='The number suffix comes from a duplication', icon='BLANK1')
+
+        layout.separator()
+        col = layout.column(align=False)
+        row = col.row(align=True)
+        row.label(text=f'Camera object name: "{cam.name}"')
+        row.prop(self, 'use_object_name', text='Transfer object name', icon='TRIA_DOWN_BAR', emboss=False)
+        col.prop(self, 'data_name')
+
+        ## Name already used by another camera data: blender would add a suffix back
+        other = bpy.data.cameras.get(self.data_name)
+        if other and other != cam.data:
+            warn = layout.column(align=True)
+            warn.alert = True
+            warn.label(text='Another camera data already uses this name', icon='ERROR')
+            warn.label(text='A number suffix will be added', icon='BLANK1')
 
     def execute(self, context):
         cam_data = context.scene.camera.data
@@ -259,6 +335,13 @@ class STORYTOOLS_OT_camera_data_asset_toggle(Operator):
             cam_data.asset_clear()
             self.report({'INFO'}, f'"{cam_data.name}" is not an asset anymore')
             return {"FINISHED"}
+
+        ## Rename first, so the asset is listed with the chosen name
+        new_name = self.data_name.strip()
+        if new_name and new_name != cam_data.name:
+            cam_data.name = new_name
+            if cam_data.name != new_name:
+                self.report({'WARNING'}, f'Name "{new_name}" was already used, renamed to "{cam_data.name}"')
 
         cam_data.asset_mark()
         cam_data.asset_generate_preview()
@@ -275,9 +358,8 @@ class STORYTOOLS_OT_camera_data_asset_toggle(Operator):
             self.report({'WARNING'}, f'"{cam_data.name}" marked as asset, \
 but this file must be saved inside an asset library directory to be found')
 
-        # if cam_data.name != context.scene.camera.name or re.search(r'\.\d{3}$', cam_data.name):
-        #     ## Popup a warning that camera.DATA name is the one be listed, allow quick correction
-        #     pass
+        ## if a new camera is marked as asset in current file
+        ## Invalidate the cache from camera create so it can be scanned in the same session
         return {"FINISHED"}
 
 
