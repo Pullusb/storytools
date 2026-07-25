@@ -181,6 +181,23 @@ class STORYTOOLS_PT_camera_settings(Panel):
             col.separator()
             col.operator('storytools.add_track_to_constraint', text='Remove Track To constraints', icon='X').remove = True
 
+        ## Mark camera data as asset (source for camera creation using "Asset" source)
+        col.separator()
+        col.label(text='Camera Management:')
+        row = col.row()
+        if cam.data.asset_data:
+            row.operator('storytools.camera_data_asset_toggle',
+                text='Clear Camera Data Asset', icon='X')
+        else:
+            row.operator('storytools.camera_data_asset_toggle',
+                text='Mark Camera Data As Asset', icon='ASSET_MANAGER')
+        info = row.operator('storytools.info_note', text='', icon='QUESTION', emboss=False)
+        info.title = 'Camera Data Asset'
+        info.text = "Mark the camera data (not the camera object) as asset\n"\
+            "The new camera popup can then create cameras using a copy of this camera data\n"\
+            "The file has to be saved in one of your asset library directories to be found\n"\
+            "(Asset libraries are listed in Preferences > File Paths > Asset Libraries)"
+
         ## Cam delete
         col.separator()
         row = col.row()

@@ -62,13 +62,16 @@ KEYNUM_MAP = {
 ### ---
 # region prefs
 
+def get_addon_package():
+    '''Return addon package name (can be called from submodules)'''
+    return __package__
+
 def get_addon_prefs():
     return bpy.context.preferences.addons[__package__].preferences
 
 def open_addon_prefs():
     '''Open addon prefs windows with focus on current addon'''
     bpy.ops.preferences.addon_show(module=__package__)
-
 
 ### ---
 # region Vector

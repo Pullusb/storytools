@@ -1,4 +1,6 @@
 import bpy
+import re
+
 from pathlib import Path
 from bpy.types import Operator
 from mathutils import Vector
@@ -239,6 +241,46 @@ class STORYTOOLS_OT_set_focal(Operator):
         context.scene.camera.data.lens = self.lens
         return {"FINISHED"}
 
+class STORYTOOLS_OT_camera_data_asset_toggle(Operator):
+    bl_idname = "storytools.camera_data_asset_toggle"
+    bl_label = "Toggle Camera Data Asset"
+    bl_description = "Mark active camera data as asset, so it can be reused when creating cameras\
+                    \nThe camera data is marked, not the camera object"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.scene.camera
+
+    def execute(self, context):
+        cam_data = context.scene.camera.data
+
+        if cam_data.asset_data:
+            cam_data.asset_clear()
+            self.report({'INFO'}, f'"{cam_data.name}" is not an asset anymore')
+            return {"FINISHED"}
+
+        cam_data.asset_mark()
+        cam_data.asset_generate_preview()
+
+        ## Only discoverable once the file is saved within an asset library directory
+        library_roots = [Path(bpy.path.abspath(lib.path)) for lib in
+                         context.preferences.filepaths.asset_libraries if lib.enabled and lib.path]
+        blend = Path(bpy.data.filepath) if bpy.data.filepath else None
+        in_library = blend and any(root in blend.parents for root in library_roots)
+
+        if in_library:
+            self.report({'INFO'}, f'"{cam_data.name}" marked as asset (save the file to make it available)')
+        else:
+            self.report({'WARNING'}, f'"{cam_data.name}" marked as asset, \
+but this file must be saved inside an asset library directory to be found')
+
+        # if cam_data.name != context.scene.camera.name or re.search(r'\.\d{3}$', cam_data.name):
+        #     ## Popup a warning that camera.DATA name is the one be listed, allow quick correction
+        #     pass
+        return {"FINISHED"}
+
+
 """ # Custom Presets
 class STORYTOOLS_OT_add_focal_preset(AddPresetBase, Operator):
     '''Add a Camera Focal Preset'''
@@ -266,6 +308,7 @@ classes=(
     STORYTOOLS_camera_collection,
     STORYTOOLS_UL_camera_list,
     STORYTOOLS_OT_set_focal,
+    STORYTOOLS_OT_camera_data_asset_toggle,
     # STORYTOOLS_OT_add_focal_preset,
 )
 
