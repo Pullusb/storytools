@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+3.7.1
+
+- changed: sensitivity slowed down for most gizmos interaction movements for better feeling and precision
+
 3.7.0
 
 - added: Preferences for default camera: focal length, start/end clip, Dof
