@@ -64,7 +64,7 @@ class STORYTOOLS_OT_camera_shift(Operator):
         mouse_co = Vector((event.mouse_x, event.mouse_y))
         lock = self.lock
         
-        fac = 0.001 if event.shift else 0.01
+        fac = 0.0002 if event.shift else 0.002
         if event.shift != self.shift_pressed:
             self.shift_pressed = event.shift
             self.cumulated_delta += self.current_delta

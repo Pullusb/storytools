@@ -104,9 +104,13 @@ class STORYTOOLS_OT_camera_depth(Operator):
 
     def modal(self, context, event):
         if self.is_focal_mode and self.cam.data.type == 'ORTHO':
+            # Pre 3.7.0: 0.001 - 0.01
             fac = 0.001 if event.shift else 0.01
+        elif self.is_focal_mode:
+            fac = 0.005 if event.shift else 0.05
         else:
-            fac = 0.01 if event.shift else 0.1
+            # Pre 3.7.0: 0.01 - 0.1
+            fac = 0.001 if event.shift else 0.01
 
         if event.shift != self.shift_pressed:
             self.shift_pressed = event.shift
@@ -381,9 +385,11 @@ class STORYTOOLS_OT_camera_truck(Operator):
         
         ## Adjust factor based on mode and shift key (precision) state
         if self.shift_mode:
-            fac = 0.001 if event.shift else 0.01
+            # Pre 3.7.0: 0.001 - 0.01
+            fac = 0.0002 if event.shift else 0.002
         else:
-            fac = 0.01 if event.shift else 0.1
+            # Pre 3.7.0: 0.01 - 0.1
+            fac = 0.001 if event.shift else 0.01
 
         if event.shift != self.shift_pressed:
             self.shift_pressed = event.shift

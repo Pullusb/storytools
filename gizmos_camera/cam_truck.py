@@ -71,7 +71,7 @@ class STORYTOOLS_OT_camera_truck(Operator):
         lock = self.lock
         
         ## Slower with shift
-        fac = 0.01 if event.shift else 0.1
+        fac = 0.001 if event.shift else 0.01
         if event.shift != self.shift_pressed:
             self.shift_pressed = event.shift
             self.cumulated_delta += self.current_delta

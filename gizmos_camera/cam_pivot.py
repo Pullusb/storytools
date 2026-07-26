@@ -101,8 +101,8 @@ class STORYTOOLS_OT_camera_pivot(Operator):
         mouse_co = Vector((event.mouse_x, event.mouse_y))
         lock = self.lock
 
-        ## Slower with shift (precision mode)
-        fac = 0.0002 if event.shift else 0.004
+        ## Slower with shift (precision mode) # .004 was good as well
+        fac = 0.0002 if event.shift else 0.002
         if event.shift != self.shift_pressed:
             self.shift_pressed = event.shift
             self.cumulated_delta += self.current_delta

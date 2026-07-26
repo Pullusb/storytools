@@ -326,7 +326,8 @@ class STORYTOOLS_OT_object_depth_move(Operator):
 
     def modal(self, context, event):
         if self.mode == 'distance':
-            factor = 0.1 if not event.shift else 0.01
+            # pre 3.7.0: 0.1 - 0.01
+            factor = 0.05 if not event.shift else 0.005
         else:
             # Smaller factor for proportional dist
             factor = 0.01 if not event.shift else 0.001
@@ -536,7 +537,8 @@ class STORYTOOLS_OT_object_rotate(Operator):
             self.init_mouse_x = event.mouse_x
 
         ## Calcualte rotation from last reference point
-        multiplier = 0.01 if not event.shift else 0.001
+        # pre 3.7.0: 0.01 - 0.001
+        multiplier = 0.002 if not event.shift else 0.0002
         self.current_delta = (event.mouse_x - self.init_mouse_x) * multiplier
 
         ## Get final rotation
@@ -631,7 +633,8 @@ class STORYTOOLS_OT_object_scale(Operator):
 
     def modal(self, context, event):
         # context.area.tag_redraw()
-        multiplier = 0.01 if not event.shift else 0.001
+        # pre 3.7.0: 0.01 - 0.001
+        multiplier = 0.001 if not event.shift else 0.0001
         if event.shift != self.shift_pressed:
             self.shift_pressed = event.shift
             self.cumulated_delta += self.current_delta
