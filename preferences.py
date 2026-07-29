@@ -30,21 +30,24 @@ from .properties import STORYTOOLS_PGT_gp_settings # gp local settings
 
 def toggle_gizmo_buttons(self, _):
     from . import gizmo_toolbar
-    if self.active_toolbar:
-        bpy.utils.register_class(gizmo_toolbar.STORYTOOLS_GGT_toolbar)
-        bpy.utils.register_class(gizmo_toolbar.STORYTOOLS_GGT_toolbar_switch)
+    from .prefs_io_core import is_restoring, set_class_registered
+    ## Restore applies the registration once, at the end of the import
+    if is_restoring():
+        return
+    ## set_class_registered is a no-op when already in the wanted state
+    ## (assigning the same value from python would raise on a plain register_class)
+    changed = set_class_registered(gizmo_toolbar.STORYTOOLS_GGT_toolbar, self.active_toolbar)
+    set_class_registered(gizmo_toolbar.STORYTOOLS_GGT_toolbar_switch, self.active_toolbar)
+    if self.active_toolbar and changed:
         # Force active when user tick the box
-        bpy.context.scene.storytools_settings.show_session_toolbar = True 
-    else:
-        bpy.utils.unregister_class(gizmo_toolbar.STORYTOOLS_GGT_toolbar)
-        bpy.utils.unregister_class(gizmo_toolbar.STORYTOOLS_GGT_toolbar_switch)
+        bpy.context.scene.storytools_settings.show_session_toolbar = True
 
 def toggle_toolpreset_buttons(self, _):
     from . import gizmo_toolpreset_bar
-    if self.active_presetbar:
-        bpy.utils.register_class(gizmo_toolpreset_bar.STORYTOOLS_GGT_toolpreset_bar)
-    else:
-        bpy.utils.unregister_class(gizmo_toolpreset_bar.STORYTOOLS_GGT_toolpreset_bar)
+    from .prefs_io_core import is_restoring, set_class_registered
+    if is_restoring():
+        return
+    set_class_registered(gizmo_toolpreset_bar.STORYTOOLS_GGT_toolpreset_bar, self.active_presetbar)
 
 def reload_toolpreset_buttons():
     from . import gizmo_toolpreset_bar
@@ -73,6 +76,11 @@ def ui_in_sidebar_update(self, _):
         unregister_panels,
         register_panels,
     )
+    from .prefs_io_core import is_restoring
+
+    ## Restore re-registers the panels once, at the end of the import
+    if is_restoring():
+        return
 
     unregister_panels()
 
@@ -82,6 +90,10 @@ def ui_in_sidebar_update(self, _):
 # region layer/mat stacks
 
 def set_active_update(self, _context):
+    from .prefs_io_core import is_restoring
+    ## Restore writes the flag of every entry explicitly
+    if is_restoring():
+        return
     ## Only one entry can be flagged as active
     if not self.set_active:
         return
@@ -134,6 +146,10 @@ class STORYTOOLS_PG_layer_stack_entry(bpy.types.PropertyGroup):
         default=False, update=set_active_update)
 
 def same_color_update(self, _context):
+    from .prefs_io_core import is_restoring
+    ## Restore writes both colors explicitly, do not overwrite the stored fill
+    if is_restoring():
+        return
     ## Keep stored fill in sync when enabling same color mode
     ## (so unchecking later starts editing fill from the stroke color)
     if self.same_color:
@@ -543,6 +559,13 @@ class STORYTOOLS_prefs(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
+
+        ## Preferences backup / restore
+        row = layout.row(align=True)
+        row.use_property_split = False
+        row.alignment = 'RIGHT'
+        row.operator('storytools.export_preferences', text='Backup Preferences', icon='EXPORT')
+        row.operator('storytools.import_preferences', text='Restore Preferences', icon='IMPORT')
 
         row = layout.row(align=True)
         row.use_property_split = False

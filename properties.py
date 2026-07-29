@@ -20,6 +20,10 @@ from bpy.types import PropertyGroup
 
 def apply_on_all_scene(self, context):
     '''Propagate settings on other scene from property update'''
+    from .prefs_io_core import is_restoring
+    ## Restore replicates preferences to the scenes once, at the end of the import
+    if is_restoring():
+        return
 
     ## self seem not always good at loading time, use context.scene
     # print('context.scene: ', context.scene.name, '\n====') # Dbg
@@ -127,6 +131,10 @@ class STORYTOOLS_PGT_gp_settings(PropertyGroup):
 
 
 def material_sync_update(self, context):
+    from .prefs_io_core import is_restoring
+    ## Restoring preferences must not seed pairings from the current scene
+    if is_restoring():
+        return
     ## When switching to global mode, seed the global dict with the
     ## active object's current pairing (if a GP object is active)
     if self.material_sync == 'GLOBAL':
@@ -134,6 +142,10 @@ def material_sync_update(self, context):
         fn.transfer_material_pairing_to_global(context.scene, context.object)
 
 def brush_layer_sync_update(self, context):
+    from .prefs_io_core import is_restoring
+    ## Restoring preferences must not seed pairings from the current scene
+    if is_restoring():
+        return
     ## When switching to global mode, seed the global dict with the
     ## active object's current pairing (if a GP object is active)
     if self.brush_layer_sync == 'GLOBAL':

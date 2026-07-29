@@ -4,6 +4,7 @@ import bpy
 
 from . import properties
 from . import preferences
+from . import prefs_io
 from . import setup
 from . import gpencil_ops
 from . import camera_ops
@@ -25,6 +26,7 @@ modules = (
     setup,
     properties,
     preferences,
+    prefs_io,
     gpencil_ops,
     camera_ops,
     handles,
