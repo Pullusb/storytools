@@ -81,7 +81,7 @@ class STORYTOOLS_OT_object_pan(Operator):
         if any(context.object.lock_location):
             self.report({'ERROR'}, "Active object's location is locked")
             return {'CANCELLED'}
-
+        self.current_area = context.area
         self.final_lock = self.lock = None
         self.auto_lock = None  # axis engaged by Ctrl, kept until Ctrl release
         self.shift_pressed = event.shift

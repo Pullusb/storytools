@@ -26,7 +26,7 @@ class STORYTOOLS_OT_camera_pivot(Operator):
 
     def invoke(self, context, event):
         self.cam = context.scene.camera
-
+        self.current_area = context.area
         if any(self.cam.lock_rotation):
             self.report({'ERROR'}, 'Camera rotation is locked')
             return {'CANCELLED'}

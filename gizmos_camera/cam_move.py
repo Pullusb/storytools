@@ -279,7 +279,7 @@ class STORYTOOLS_OT_camera_truck(Operator):
 
     def invoke(self, context, event):
         self.cam = context.scene.camera
-
+        self.current_area = context.area
         if any(self.cam.lock_location):
             self.report({'ERROR'}, 'Camera location is locked')
             return {'CANCELLED'}

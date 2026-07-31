@@ -10,6 +10,9 @@ from . import fn
 ## Draw utils
 
 def lock_axis_draw_callback(self, context):
+    ## Restrict to current viewport
+    if hasattr(self, 'current_area') and context.area != self.current_area:
+        return
     # Draw lock lines
     if not self.final_lock:
         return
