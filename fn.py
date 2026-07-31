@@ -589,6 +589,27 @@ def empty_at(pos, name='Empty', type='PLAIN_AXES', size=1.0, show_name=False, li
     mire.show_name = show_name
     return mire
 
+def clear_asset_metadata(id_data):
+    '''An appended or copied asset keeps its asset metadata and may get a fake user.
+    Clear both (as blender's own asset append does): this local copy is plain data.
+    Linked or overridden data is left untouched (not editable)'''
+    if id_data.library or id_data.override_library:
+        return
+    if id_data.asset_data:
+        id_data.asset_clear()
+    id_data.use_fake_user = False
+
+def get_camera_collection(scene=None):
+    '''Return the collection dedicated to the cameras of the scene, create and link it if needed'''
+    scene = scene or bpy.context.scene
+    ## using scene name in collection name might allow identification on multi_scene...
+    camera_collection_name = f'cam_{scene.name}'
+    cam_col = bpy.data.collections.get(camera_collection_name)
+    if not cam_col:
+        cam_col = bpy.data.collections.new(camera_collection_name)
+        scene.collection.children.link(cam_col)
+    return cam_col
+
 def pack_images_in_object(obj, verbose=False):
     '''Pack all image textures used by object into the blend file.
     obj (Object): object containing materials with image textures.

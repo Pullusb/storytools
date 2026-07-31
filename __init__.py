@@ -8,6 +8,7 @@ from . import prefs_io
 from . import setup
 from . import gpencil_ops
 from . import camera_ops
+from . import asset_ops
 from . import object_ops
 from . import gizmos_objects
 from . import gizmos_camera
@@ -29,6 +30,7 @@ modules = (
     prefs_io,
     gpencil_ops,
     camera_ops,
+    asset_ops,
     handles,
     object_ops,
     gizmos_objects,

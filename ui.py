@@ -39,6 +39,9 @@ def camera_layout(layout, context):
     # addcam.align='VIEW'
     # addcam.location = context.space_data.region_3d.view_matrix.inverted().translation
 
+    col_lateral.operator('storytools.browse_assets', text='', icon='ASSET_MANAGER').kind = 'CAMERA'
+
+
     ## Lens options
     col_lateral.popover('STORYTOOLS_PT_camera_settings', text='', icon='DOWNARROW_HLT')
     
@@ -316,7 +319,11 @@ def object_layout(layout, context):
             col_lateral.operator('storytools.attach_toggle', text='', icon='LINKED') # Attach To Camera
     else:
         col_lateral.operator('storytools.attach_toggle', text='', icon='LINKED') # Attach To Camera
-    
+
+
+    ## Potential addition later
+    # col_lateral.operator('storytools.browse_assets', text='', icon='ASSET_MANAGER').kind = 'GREASEPENCIL'
+
     ## GP Grid toggle (now in header)
     # col_lateral.prop(context.space_data.overlay, "use_gpencil_grid", text='', icon='MESH_GRID')
     
