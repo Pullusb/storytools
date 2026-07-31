@@ -2,6 +2,16 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+3.8.0
+
+- removed: camera mini-asset scan system, replaced by quick call of native asset browser
+- added: Button is added in camera stack's side buttons pop / collapse asset browser, prefiltered for cameras
+  - `Ctrl + Click` on button to quickly swap/cycle on asset library sources. Cycle in:
+    - `Camera` named catalog (if any)
+    - `User Library All`
+    - `Current file` (if any camera mmarked as asset in current file)
+  - `Alt + Click` on button to alternate between "cam" and nothing in asset browser search field
+
 3.7.1
 
 - changed: sensitivity slowed down for most gizmos interaction movements for better feeling and precision
