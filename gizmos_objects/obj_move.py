@@ -421,9 +421,10 @@ class STORYTOOLS_OT_object_depth_move(Operator):
 class STORYTOOLS_OT_object_rotate(Operator):
     bl_idname = "storytools.object_rotate"
     bl_label = 'Object Rotate'
-    bl_description = "Rotate active object on camera axis\
+    bl_description = "Rotate active object on view axis\
                     \n+ Ctrl : Snap on 15 degrees angles\
-                    \n+ Shift : Precision mode"
+                    \n+ Shift : Precision mode\
+                    \n+ Alt : Rotate on world Z axis"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     camera : bpy.props.BoolProperty(default=False, options={'SKIP_SAVE'})
@@ -444,9 +445,10 @@ class STORYTOOLS_OT_object_rotate(Operator):
                     \n+ Shift : Precision mode\
                     \nSingle click : Reset rotation"
 
-        return "Rotate active object on camera axis\
+        return "Rotate active object on view axis\
                     \n+ Ctrl : Snap on 15 degrees angles\
-                    \n+ Shift : Precision mode"
+                    \n+ Shift : Precision mode\
+                    \n+ Alt : Rotate on world Z axis"
 
     def reset_rotation(self, context):
         r3d = context.space_data.region_3d
@@ -550,8 +552,16 @@ class STORYTOOLS_OT_object_rotate(Operator):
 
         context.area.header_text_set(f'Rotation: {degrees(final_rotation):.2f}')
 
-        ## Rotate on view vector
-        rot_matrix = Matrix.Rotation(final_rotation, 4, self.view_vector)
+        if not self.camera and event.alt:
+            # Rotate on global Z axis
+            rot_matrix = Matrix.Rotation(final_rotation, 4, Vector((0, 0, 1)))
+            ## If added to camera, should use inverted axis 
+            ## Redundant with pivot action, unless using cam local Y axis.  
+            # axis = Vector((0, 0, -1)) if self.camera else Vector((0, 0, 1))
+            # rot_matrix = Matrix.Rotation(final_rotation, 4, axis)
+        else:
+            ## Rotate on view vector
+            rot_matrix = Matrix.Rotation(final_rotation, 4, self.view_vector)
 
         mat = self.init_mat.copy()
         mat.translation = Vector((0,0,0))

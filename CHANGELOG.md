@@ -2,6 +2,10 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+3.8.2
+
+- added: During rotate object gizmo action, pressing `Alt` constrains the rotation on world z axis.
+
 3.8.1
 
 - changed: Gizmo axis lock display show only in active viewport (same as native blender ops)
