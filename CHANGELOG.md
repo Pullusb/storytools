@@ -2,6 +2,13 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+3.8.4
+
+- added: `copy settings` option when creating a new camera from the view of an existing one:
+  - checked (default): Copy lens, start/end clips, depth of field toggle, focus_distance and fstops
+  - uncheked: Use settings from preferences
+- changed: when creating a new camera from view of another, transfer the active/select state from the previous
+
 3.8.3
 
 - changed: `Mark Camera As Asset` now marks the camera **object**

@@ -35,6 +35,18 @@ class STORYTOOLS_OT_create_camera(Operator):
         description="Enter in newly created camera view",
         default=True)
 
+    copy_settings : bpy.props.BoolProperty(
+        name='Copy Settings',
+        description="Copy lens, clips and depth of field from the camera currently in view\
+            \nOtherwise use the defaults of the addon preferences",
+        default=True)
+
+    ## Internal prop, set by invoke: the dialog only offers to copy settings when user is already looking through a camera view
+    in_camera : bpy.props.BoolProperty(
+        name='In Camera View',
+        description="Viewport was looking through a camera when the operator was called",
+        default=False, options={'SKIP_SAVE', 'HIDDEN'})
+
     ## Add local Dof toggle (reset by preferences on call)
     # use_dof : bpy.props.BoolProperty(
     #     name='Use Depth Of Field',
@@ -44,6 +56,7 @@ class STORYTOOLS_OT_create_camera(Operator):
     def invoke(self, context, event):
         # self.use_dof = fn.get_addon_prefs().default_cam_use_dof
         self.name = get_default_camera_name()
+        self.in_camera = context.space_data.region_3d.view_perspective == 'CAMERA' and context.scene.camera is not None
 
         if any(m.camera for m in context.scene.timeline_markers):
             self.create_marker = True
@@ -57,10 +70,11 @@ class STORYTOOLS_OT_create_camera(Operator):
         layout.prop(self, 'name')
 
         layout.prop(self, 'make_active')
-        if context.space_data.region_3d.view_perspective == 'CAMERA':
+        if self.in_camera:
             col = layout.column(align=True)
             col.label(text='Already in camera view', icon='INFO')
-            col.label(text='New camera will have same placement and settings', icon='BLANK1')
+            col.label(text='New camera will have same placement', icon='BLANK1')
+            layout.prop(self, 'copy_settings', text='Copy Current Settings')
         else:
             row = layout.row()
             row.active = self.make_active
@@ -98,9 +112,12 @@ class STORYTOOLS_OT_create_camera(Operator):
 
         scn = context.scene
         cam_ref = None
+        is_cam_ref_active = is_cam_ref_selected = None
         if already_in_cam:
             cam_ref = scn.camera
-        
+            is_cam_ref_active = cam_ref == context.object
+            is_cam_ref_selected = cam_ref.select_get()
+
         prefs = fn.get_addon_prefs()
 
         ## Name is set by invoke, fallback for a direct call (from a script or a keymap)
@@ -109,7 +126,7 @@ class STORYTOOLS_OT_create_camera(Operator):
         cam_data = bpy.data.cameras.new(name)
         cam = bpy.data.objects.new(name, cam_data)
 
-        if already_in_cam:
+        if cam_ref and self.copy_settings:
             ## Copy settings from previous camera
             cam_data.lens = cam_ref.data.lens
             cam_data.clip_start = cam_ref.data.clip_start
@@ -124,7 +141,8 @@ class STORYTOOLS_OT_create_camera(Operator):
             cam_data.clip_end = prefs.default_cam_clip_end
             cam_data.dof.use_dof = prefs.default_cam_use_dof # self.use_dof
 
-        if already_in_cam:
+        ## Placement always follows the viewed camera, whatever the settings choice
+        if cam_ref:
             cam.matrix_world = cam_ref.matrix_world
         else:
             rv3d = bpy.context.region_data or context.space_data.region_3d
@@ -150,6 +168,14 @@ class STORYTOOLS_OT_create_camera(Operator):
         # new_gp_index = next((i for i, o in enumerate(scn.objects) if o.type == 'GREASEPENCIL' and context.object == o), None)
         # if new_gp_index is not None:
         #     scn.gp_object_props['index'] = new_gp_index
+
+        ## Transfer active and selection from cam ref (if any)
+        if is_cam_ref_active:
+            context.view_layer.objects.active = cam
+        if is_cam_ref_selected:
+            cam_ref.select_set(False)
+            ## Should it deselect the previous cam ?
+            cam.select_set(True)
 
         self.report({'INFO'}, f'{cam.name} Created')
         return {"FINISHED"}
