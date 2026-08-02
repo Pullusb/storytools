@@ -196,9 +196,8 @@ class STORYTOOLS_PT_camera_settings(Panel):
                 text='Mark Camera As Asset', icon='ASSET_MANAGER')
         info = row.operator('storytools.info_note', text='', icon='QUESTION', emboss=False)
         info.title = 'Camera Asset'
-        info.text = "Mark the camera object as asset (its camera data comes along)\n"\
-            "The asset browser can then drop a copy of this camera in the scene\n"\
-            "It is immediately available in this file, listed in 'Current File' category\n"\
+        info.text = "Mark the camera object as asset\n"\
+            "Immediately available in this file, listed in 'Current File' category\n"\
             "To reuse it from other blends, the file has to be saved in one of your asset library directories\n"\
             "(Asset libraries are listed in Preferences > File Paths > Asset Libraries)"
 
