@@ -184,21 +184,21 @@ class STORYTOOLS_PT_camera_settings(Panel):
             col.separator()
             col.operator('storytools.add_track_to_constraint', text='Remove Track To constraints', icon='X').remove = True
 
-        ## Mark camera data as asset (source for camera creation using "Asset" source)
+        ## Mark camera object as asset (listed by the camera asset browser)
         col.separator()
         col.label(text='Camera Management:')
         row = col.row()
-        if cam.data.asset_data:
-            row.operator('storytools.camera_data_asset_toggle',
-                text='Clear Camera Data Asset', icon='X')
+        if cam.asset_data:
+            row.operator('storytools.camera_asset_toggle',
+                text='Clear Camera Asset', icon='X')
         else:
-            row.operator('storytools.camera_data_asset_toggle',
-                text='Mark Camera Data As Asset', icon='ASSET_MANAGER')
+            row.operator('storytools.camera_asset_toggle',
+                text='Mark Camera As Asset', icon='ASSET_MANAGER')
         info = row.operator('storytools.info_note', text='', icon='QUESTION', emboss=False)
-        info.title = 'Camera Data Asset'
-        info.text = "Mark the camera data (not the camera object) as asset\n"\
-            "The new camera popup can then create cameras using a copy of this camera data\n"\
-            "It is immediately available in this file, listed as 'Current File'\n"\
+        info.title = 'Camera Asset'
+        info.text = "Mark the camera object as asset (its camera data comes along)\n"\
+            "The asset browser can then drop a copy of this camera in the scene\n"\
+            "It is immediately available in this file, listed in 'Current File' category\n"\
             "To reuse it from other blends, the file has to be saved in one of your asset library directories\n"\
             "(Asset libraries are listed in Preferences > File Paths > Asset Libraries)"
 
