@@ -2,6 +2,13 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+3.8.3
+
+- changed: `Mark Camera As Asset` now marks the camera **object**
+- changed: Quick asset library default behavior:
+  - now call on `All Libary` instead of `User library`, still focusing first on any camera(s) named catalog
+  - always add `cam` in search field (except when called directly using Alt+click)
+
 3.8.2
 
 - added: During rotate object gizmo action, pressing `Alt` constrains the rotation on world z axis.

@@ -1,6 +1,6 @@
 """Toggle blender asset browser from an operator.
 Slpit-open on bottom half of current area.
-Specify a kind of asset, cycle its sources (catalog of the user library, whole library, current file).
+Specify a kind of asset, cycle its sources (relevent catalog in "All library", whole "All library", "Current file").
 Specify a search term for Alt + Click
 """
 
@@ -77,16 +77,14 @@ def collapse_asset_browser(context, area, browser) -> bool:
 
 # region libraries and catalogs
 
-def get_user_library():
-    """Return the first enabled user asset library, None if nothing in the preferences"""
-    return next((lib for lib in bpy.context.preferences.filepaths.asset_libraries
-                 if lib.enabled and lib.path), None)
+## Library reference of the 'All Libraries' source: catalogs of every enabled library are
+## merged in it, so their uuids stay valid when browsing from there
+ALL_LIBRARY = 'ALL'
 
-def get_user_library_reference() -> str:
-    """Return the asset library reference of the first enabled user library
-    Fallback on 'ALL' when no asset library is set in the preferences"""
-    library = get_user_library()
-    return library.name if library else 'ALL'
+def get_user_libraries() -> list:
+    """Return the enabled user asset libraries, empty when nothing is in the preferences"""
+    return [lib for lib in bpy.context.preferences.filepaths.asset_libraries
+            if lib.enabled and lib.path]
 
 def set_asset_library(params, library) -> str:
     """Set the library source of an asset browser, return the reference actually in use"""
@@ -132,24 +130,27 @@ def read_library_catalogs(library_path) -> list:
 
     return catalogs
 
-def find_catalog(names=(), prefix='', library=None) -> tuple:
-    """Return the (uuid, path) of the first catalog of a library named after one of names,
-    else of the first one starting with prefix. ('', '') when nothing matches.
+def find_catalog(names=(), prefix='', libraries=None) -> tuple:
+    """Return the (uuid, path) of the first catalog named after one of names, searching every
+    enabled library in preferences order, else of the first one starting with prefix.
+    ('', '') when nothing matches.
     Comparison is case insensitive, on the last component of the catalog path (its name)"""
-    library = library or get_user_library()
-    if not library:
+    libraries = get_user_libraries() if libraries is None else libraries
+    if not libraries:
         return ('', '')
 
     names = tuple(name.lower() for name in names)
     prefix = prefix.lower()
 
+    ## An exact match in any library wins over a prefix match found in an earlier one
     fallback = ('', '')
-    for uuid, path, _simple_name in read_library_catalogs(library.path):
-        name = path.rsplit('/', 1)[-1].strip().lower()
-        if name in names:
-            return (uuid, path)
-        if prefix and not fallback[0] and name.startswith(prefix):
-            fallback = (uuid, path)
+    for library in libraries:
+        for uuid, path, _simple_name in read_library_catalogs(library.path):
+            name = path.rsplit('/', 1)[-1].strip().lower()
+            if name in names:
+                return (uuid, path)
+            if prefix and not fallback[0] and name.startswith(prefix):
+                fallback = (uuid, path)
 
     return fallback
 
@@ -169,14 +170,13 @@ def get_asset_sources(kind) -> list:
     as a list of (library reference, catalog uuid, label).
     The catalog and the current file steps are only listed when they have something to show,
     so the cycle shrinks down to a single source when there is nothing else"""
-    user_library = get_user_library_reference()
     sources = []
 
     catalog, catalog_path = find_catalog(kind['catalog_names'], kind['catalog_prefix'])
     if catalog:
-        sources.append((user_library, catalog, f'{user_library} > {catalog_path}'))
+        sources.append((ALL_LIBRARY, catalog, f'All Libraries > {catalog_path}'))
 
-    sources.append((user_library, '', f'{user_library} (all catalogs)'))
+    sources.append((ALL_LIBRARY, '', 'All Libraries (all catalogs)'))
 
     ## Assets of the current file belong to no library, they get their own step
     if has_local_object_assets(kind['name_prefixes'], kind['object_types']):
@@ -191,7 +191,6 @@ def get_asset_sources(kind) -> list:
 def setup_asset_browser(area, source, search='', filter_id='filter_object') -> bool:
     """Set an asset browser area to list the assets of a source (see get_asset_sources),
     showing only the data type of filter_id ('filter_object', 'filter_material'...).
-    The search field is only used when the source has no catalog to filter the assets out.
     Return False if the space is not initialised yet (params exist after the first draw)"""
     params = area.spaces.active.params
     if params is None:
@@ -200,8 +199,9 @@ def setup_asset_browser(area, source, search='', filter_id='filter_object') -> b
     library, catalog, _label = source
     set_asset_library(params, library)
     params.catalog_id = catalog
-    if not catalog:
-        params.filter_search = search
+    ## Search is filled even on a catalog source, so it is visible and ready to be cleared (Alt)
+    # if not catalog: ## condition to empty the search field if a catalog is found.
+    params.filter_search = search
 
     ## Single data type: an asset to place in the scene is an object asset
     params.use_filter_blendid = True
@@ -255,8 +255,8 @@ def toggle_search_field(params, search) -> str:
 
 ## Customization for browse button, per kind of asset:
 ##   label: name of the assets, used in the button tooltip
-##   search: text set in the search field when there is no catalog to filter on
-##   catalog_names / catalog_prefix: catalog of the user library to select, by exact name first
+##   search: text set in the search field when the browser is opened
+##   catalog_names / catalog_prefix: catalog of the "all library" to select, by exact name first
 ##   name_prefixes / object_types: what identifies those assets in the current file
 ##   filter_id: data type listed by the browser, as named in FileAssetSelectParams.filter_asset_id
 ASSET_KINDS = {
@@ -317,8 +317,8 @@ class STORYTOOLS_OT_browse_assets(Operator):
 
     cycle_library : bpy.props.BoolProperty(
         name='Cycle Library',
-        description="Cycle the source between the asset catalog, your whole user library\
-            \nand the current file when it holds such assets (Ctrl)",
+        description="Cycle the source between the asset catalog, whole All library\
+            \nand the current file (when it holds such assets)",
         default=False, options={'SKIP_SAVE'})
 
     @classmethod
@@ -332,7 +332,7 @@ class STORYTOOLS_OT_browse_assets(Operator):
         return f"Show the {label.lower()} objects of your asset library.\
             \nActivate '{label}' catalog or add '{kind['search']}' in search field.\
             \nClick: Split area to an asset browser or collapse it.\
-            \nCtrl + Click: cycle sources: {label} catalog > User Library > Current File(if any {label} assets).\
+            \nCtrl + Click: cycle sources: {label} catalog > All Library > Current File(if any {label} assets).\
             \nAlt + Click: Swap the search field between '{kind['search']}' and nothing."
 
     def invoke(self, context, event):
