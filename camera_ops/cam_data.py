@@ -251,85 +251,35 @@ class STORYTOOLS_OT_set_focal(Operator):
 class STORYTOOLS_OT_camera_asset_toggle(Operator):
     bl_idname = "storytools.camera_asset_toggle"
     bl_label = "Toggle Camera Asset"
-    bl_description = "Mark active camera object as asset, so it can be reused in other scenes and files\
-                    \nThe camera object is marked, with its data attached"
+    bl_description = "Mark/Unmark active camera object as asset, so it can be reused from asset browser"
     bl_options = {"REGISTER", "UNDO"}
-
-    asset_name : bpy.props.StringProperty(
-        name='Asset Name',
-        description="Name of the camera object, this is the name the asset will be listed with",
-        options={'SKIP_SAVE'})
 
     @classmethod
     def poll(cls, context):
         return context.scene.camera
-
-    def invoke(self, context, event):
-        cam = context.scene.camera
-
-        ## Clearing needs no confirmation
-        if cam.asset_data:
-            return self.execute(context)
-
-        ## Only ask when the listed name may be misleading:
-        ## an object name carrying a ".001" duplication suffix
-        if not re.search(r'\.\d{3}$', cam.name):
-            return self.execute(context)
-
-        self.asset_name = cam.name
-        return context.window_manager.invoke_props_dialog(self, width=400)
-
-    ## Draw is fully Skipped for now (no need to ask for name adjusment)
-    def draw(self, context):
-        cam = context.scene.camera
-        layout = self.layout
-        col = layout.column(align=True)
-        # col.label(text='The camera OBJECT name is used to list the asset', icon='INFO')
-        if re.search(r'\.\d{3}$', self.asset_name):
-            col.label(text='The number suffix comes from a duplication', icon='BLANK1')
-
-        layout.separator()
-        layout.prop(self, 'asset_name')
-
-        ## Name already used by another object: blender would add a suffix back
-        other = bpy.data.objects.get(self.asset_name)
-        if other and other != cam:
-            warn = layout.column(align=True)
-            warn.alert = True
-            warn.label(text='Another object already uses this name', icon='ERROR')
-            warn.label(text='A number suffix will be added', icon='BLANK1')
 
     def execute(self, context):
         cam = context.scene.camera
 
         if cam.asset_data:
             cam.asset_clear()
-            self.report({'INFO'}, f'"{cam.name}" is not an asset anymore')
+            self.report({'INFO'}, f'"{cam.name}" clear asset')
             return {"FINISHED"}
-
-        ## Rename first, so the asset is listed with the chosen name
-        new_name = self.asset_name.strip()
-        if new_name and new_name != cam.name:
-            cam.name = new_name
-            if cam.name != new_name:
-                self.report({'WARNING'}, f'Name "{new_name}" was already used, renamed to "{cam.name}"')
 
         cam.asset_mark()
         cam.asset_generate_preview()
+        self.report({'INFO'}, f'"{cam.name}" marked as asset')
 
-        ## Always usable in this file (listed as "Current File" source of the asset browser).
-        ## Reusable from other files only once saved within an asset library directory
-        library_roots = [Path(bpy.path.abspath(lib.path)) for lib in
-                         context.preferences.filepaths.asset_libraries if lib.enabled and lib.path]
-        blend = Path(bpy.data.filepath) if bpy.data.filepath else None
-        in_library = blend and any(root in blend.parents for root in library_roots)
+        ## Report info if current blend is in a directory scanned by asset libraries ?
+        # library_roots = [Path(bpy.path.abspath(lib.path)) for lib in
+        #                  context.preferences.filepaths.asset_libraries if lib.enabled and lib.path]
+        # blend = Path(bpy.data.filepath) if bpy.data.filepath else None
+        # in_library = blend and any(root in blend.parents for root in library_roots)
 
-        if in_library:
-            self.report({'INFO'}, f'"{cam.name}" marked as asset (save the file to share it with other blends)')
-        else:
-            self.report({'INFO'}, f'"{cam.name}" marked as asset, usable in this file. \
-Save it inside an asset library directory to reuse it from other blends')
-
+        # if in_library:
+        #     self.report({'INFO'}, f'"{cam.name}" marked as asset (Blend is located in an asset library)')
+        # else:
+        #     self.report({'INFO'}, f'"{cam.name}" marked as asset, usable in this file')
         return {"FINISHED"}
 
 
