@@ -68,7 +68,7 @@ class STORYTOOLS_OT_object_pan(Operator):
     bl_description = "Translate active object, X/Y to lock on axis\
                     \n+ Ctrl : autolock on major axis\
                     \n+ Shift : Precision mode\
-                    \n+ Alt : Constraint on horizontal plane"
+                    \n+ Alt (During) : Constraint on horizontal plane"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     @classmethod
@@ -214,7 +214,7 @@ class STORYTOOLS_OT_object_depth_move(Operator):
     bl_description = "Move object Forward/backward (Slide left-right)\
                     \n+ Ctrl : Adjust Scale (Retain same size in camera framing)\
                     \n+ Shift : Precision mode\
-                    \n+ Alt : Constraint on horizontal plane"
+                    \n+ Alt (During) : Constraint on horizontal plane"
     bl_options = {"REGISTER", "INTERNAL", "UNDO"}
 
     @classmethod
@@ -424,7 +424,7 @@ class STORYTOOLS_OT_object_rotate(Operator):
     bl_description = "Rotate active object on view axis\
                     \n+ Ctrl : Snap on 15 degrees angles\
                     \n+ Shift : Precision mode\
-                    \n+ Alt : Rotate on world Z axis"
+                    \n+ Alt (During) : Rotate on world Z axis"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     camera : bpy.props.BoolProperty(default=False, options={'SKIP_SAVE'})
@@ -437,18 +437,18 @@ class STORYTOOLS_OT_object_rotate(Operator):
     def description(self, context, properties):
         if properties.camera:
             if context.region_data and context.region_data.view_perspective != 'CAMERA':
-                return "Rotate View (Roll)\
-                    \nReset rotation on single click (If Grease pencil tools addon is active)"
+                return "Roll View\
+                    \nReset rotation on single click (If 'Grease pencil tools' extension is active)"
 
-            return "Rotate Camera\
+            return "Rotate Camera (Roll)\
                     \n+ Ctrl : Snap on 15 degrees angles\
                     \n+ Shift : Precision mode\
-                    \nSingle click : Reset rotation"
+                    \nSingle click : Reset rotation to horizontal"
 
         return "Rotate active object on view axis\
                     \n+ Ctrl : Snap on 15 degrees angles\
                     \n+ Shift : Precision mode\
-                    \n+ Alt : Rotate on world Z axis"
+                    \n+ Alt (During) : Rotate on world Z axis"
 
     def reset_rotation(self, context):
         r3d = context.space_data.region_3d

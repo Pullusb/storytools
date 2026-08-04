@@ -47,7 +47,8 @@ def apply_offset_at_frame(available_layers, frame_number, offset):
 class STORYTOOLS_OT_new_frame(Operator):
     bl_idname = "storytools.new_frame"
     bl_label = 'New frame'
-    bl_description = "Add or duplicate previous frame" # TODO update description for Ctrl Behavior
+    bl_description = "Add or duplicate previous frame\
+        \n+ Ctrl : Offset subsequent frames"
     bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod

@@ -33,8 +33,8 @@ class STORYTOOLS_OT_camera_depth(Operator):
     bl_idname = "storytools.camera_depth"
     bl_label = 'Camera Depth Move'
     bl_description = "Move Camera Depth (forward and backward)\
-        \n+ Alt : Lock Z axis movements (After call)\
-        \n+ Ctrl : Adjust focal length / orthographic scale"
+        \n+ Ctrl (At Start) : Adjust focal length / orthographic scale\
+        \n+ Alt (During) : Lock Z axis movements"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     @classmethod
@@ -266,11 +266,11 @@ def shift_lines(context):
 class STORYTOOLS_OT_camera_truck(Operator):
     bl_idname = "storytools.camera_truck"
     bl_label = 'Translate Camera Truck/Boom or Shift'
-    bl_description = "Translate Camera (Truck/Boom) or Shift, X/Y to lock on axis\
-                    \n+ Shift : Precision mode\
+    bl_description = "Translate Camera (Truck/Boom) or Framing Offset (X-Y Camera Shift)\
                     \n+ Ctrl (During) : Autolock on moved axis\
-                    \n+ Ctrl (Start) : Camera Shift instead of Pan\
-                    \n+ Alt  (During Shift): Snap to half-frame offset"
+                    \n+ Ctrl (At Start) : Framing Offset\
+                    \n+ Alt (During Framing Offset) : Snap offset in half increments\
+                    \n+ Shift : Precision mode"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     @classmethod
