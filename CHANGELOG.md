@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+4.0.0
+
+- changed: reword some tootips
+- changed: bump to 4.0 to reflect compatibility break. starts at blender 5.1+
+
 3.8.4
 
 - added: `copy settings` option when creating a new camera from the view of an existing one:
