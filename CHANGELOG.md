@@ -32,6 +32,12 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 3.8.0
 
 - removed: camera mini-asset scan system, replaced by quick call of native asset browser
+- added: `Add To View` button in asset browser header: add active asset in scene, aligned with the nearest 3D viewport
+  - a camera is placed at the view point, becomes active and added in `cam_<scene-name>` collection
+  - any other asset is placed in front of the view (GP objects are oriented to face the view)
+  - support object, collection and object-data assets
+- added: Backup / restore all addon preferences to a json file (buttons at the top of addon preferences)
+  - including tool preset shortcuts (keymap items)
 - added: Button is added in camera stack's side buttons pop / collapse asset browser, prefiltered for cameras
   - `Ctrl + Click` on button to quickly swap/cycle on asset library sources. Cycle in:
     - `Camera` named catalog (if any)
@@ -56,17 +62,28 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - added: Sync layer when switching objects
 - added: Sync brush & stroke_type accross objects (same options as material sync, also default)
+- added: Brush and stroke type columns in the preferences layer stack (define the default pairing of each layer)
+- added: Reset button next to global sync modes, restore the pairing from defaults in preferences
 - changed: `sync across object` renamed to `Sync Global`
+- changed: erasers are never memorized as a layer's brush (avoid accidental recall of eraser when coming back on a layer)
 
 3.5.0
 
 - added: `Stroke Type` option in toolpresets to define brush stroke type: `No Change`, `Stroke`, `Fill`, `Both`.
   - Only affect blender 5.1+ where brush define stroke type instead of the material.
   - Tool preset `Fill Draw` (lasso fill), now set `Ink Pen` with stroke type `Fill`
+  - Default tool presets `Sketch Draw`, `Line Draw` and `Annotate` now set stroke type to `Stroke`
 - added: Customizable defaults stacks in preferences (`GP Settings`):
   - Customizable GP layer stack. Layer name, order, material pairing and default active (Still `Sketch` by default)
   - Customizable GP material stack. Material name, stroke/fill colors (with possibility to keep same color for both ) and holdout toggle
+  - Warning displayed in preferences when a tool preset targets a layer or material name missing from the stacks
 - added: Option to add Hue/Saturation modifier and Blur FX (disabled by default)
+- added: Composition guides in camera options popup (`...` button): `Thirds`, `Center`, `Diagonal`, guide color and `Show Limits`
+- changed: Camera list always show select buttons the options button. Only the focal length slider auto-hide when sidebar is too narrow.
+- changed: Default material names (removed `_line`, `_fill` suffixes): 
+ - `Black`, `White`, `Grey_light`, `Grey_mid`, `Grey_dark`, `Red`, `Blue`, `Mask``
+- removed: json palette loading (`palettes/base.json`), the material stack now comes entirely from preferences
+- removed: `Default Edit Line Opacity` preference and its entry in the `Reset Drawing Setup` list (not available anymore since GPv3)
 
 3.4.1
 
