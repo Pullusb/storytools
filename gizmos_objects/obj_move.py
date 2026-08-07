@@ -581,13 +581,16 @@ class STORYTOOLS_OT_object_rotate(Operator):
             fn.key_object(self.ob, use_autokey=True)
             if self.camera:
                 if context.region_data.view_perspective == 'CAMERA':
+                    reset_camera_roll = False
                     ## in camera, reset rotation and key if necessary
                     ## release in less than 0.25 second and moved less than 5px : reset cam rotation
                     if time() - self.start_time < 0.25 and abs(self.init_mouse_x - event.mouse_x) < 5:
+                        rotation_before_reset = self.ob.rotation_euler.copy()
                         self.reset_rotation(context)
                         fn.key_object(self.ob, use_autokey=True)
-                    
-                    if self.init_mat == self.ob.matrix_world:
+                        reset_camera_roll = rotation_before_reset != self.ob.rotation_euler
+
+                    if not reset_camera_roll and self.init_mat == self.ob.matrix_world:
                         ## Avoid undo stack push if there was no moves
                         self.exit_modal(context)
                         return {'CANCELLED'}
