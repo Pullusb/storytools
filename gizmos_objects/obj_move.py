@@ -585,10 +585,12 @@ class STORYTOOLS_OT_object_rotate(Operator):
                     ## in camera, reset rotation and key if necessary
                     ## release in less than 0.25 second and moved less than 5px : reset cam rotation
                     if time() - self.start_time < 0.25 and abs(self.init_mouse_x - event.mouse_x) < 5:
-                        rotation_before_reset = self.ob.rotation_euler.copy()
+                        rotation_before_reset = self.ob.rotation_euler.to_quaternion()
                         self.reset_rotation(context)
                         fn.key_object(self.ob, use_autokey=True)
-                        reset_camera_roll = rotation_before_reset != self.ob.rotation_euler
+                        reset_angle = rotation_before_reset.rotation_difference(
+                            self.ob.rotation_euler.to_quaternion()).angle
+                        reset_camera_roll = reset_angle > 1e-6
 
                     if not reset_camera_roll and self.init_mat == self.ob.matrix_world:
                         ## Avoid undo stack push if there was no moves
