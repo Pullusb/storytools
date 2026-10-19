@@ -67,7 +67,7 @@ class STORYTOOLS_GGT_toolpreset_bar(GizmoGroup):
 
     def draw_prepare(self, context):
         prefs = fn.get_addon_prefs()
-        settings = context.scene.storytools_settings
+        workspace = context.workspace
         
         # icon_size = prefs.toolbar_icon_bounds
         gap_size = prefs.presetbar_gap_size
@@ -78,8 +78,8 @@ class STORYTOOLS_GGT_toolpreset_bar(GizmoGroup):
 
         ## Toggle on/off with same session as bottom control bar
         for gz in self.gizmos:
-            gz.hide = not settings.show_session_toolbar
-        if not settings.show_session_toolbar:
+            gz.hide = not workspace.storytools_show_toolbar
+        if not workspace.storytools_show_toolbar:
             return
         
         region = context.region

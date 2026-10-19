@@ -328,7 +328,7 @@ def object_layout(layout, context):
     
     ## Toobar toggle (now have it's own overlay)
     # if get_addon_prefs().active_toolbar:
-    #     col_lateral.prop(context.scene.storytools_settings, "show_session_toolbar", text='', icon='STATUSBAR')
+    #     col_lateral.prop(context.workspace, "storytools_show_toolbar", text='', icon='STATUSBAR')
     
     # col_lateral.menu("STORYTOOLS_MT_gp_objects_list_options", icon='DOWNARROW_HLT', text='')
     col_lateral.popover(panel="STORYTOOLS_PT_gp_objects_list_options", text="", icon='DOWNARROW_HLT')

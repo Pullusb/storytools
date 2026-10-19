@@ -240,13 +240,13 @@ class STORYTOOLS_GGT_toolbar(GizmoGroup):
 
     def draw_prepare(self, context):
         prefs = get_addon_prefs()
-        settings = context.scene.storytools_settings
+        workspace = context.workspace
         gap_size = prefs.toolbar_gap_size
         backdrop_size = prefs.toolbar_backdrop_size
         
         section_separator = int(gap_size / 2) # Fixed at 20 ?
         px_scale = context.preferences.system.ui_scale
-        hide_gizmos = not settings.show_session_toolbar or not context.space_data.show_gizmo
+        hide_gizmos = not workspace.storytools_show_toolbar or not context.space_data.show_gizmo
         for gz in self.gizmos:
             gz.hide = hide_gizmos
         if hide_gizmos:
@@ -487,7 +487,7 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
         if abs(self.init_mouse_x - self.mx) > 10 or abs(self.init_mouse_y - self.my) > 10:
             return
 
-        settings = context.scene.storytools_settings
+        workspace = context.workspace
         # print('self.target_set_operator: ', self.target_set_operator)
         # print(dir(self))
         # if self.target_set_operator:
@@ -497,7 +497,7 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
         ## Replaced if dragged
         # if self.replace:
         #     prefs = get_addon_prefs()
-        #     if settings.show_session_toolbar:
+        #     if workspace.storytools_show_toolbar:
         #         # Toobar was visible
         #         if prefs.toolbar_margin > 0:
         #             # No hide, just finish replacing
@@ -513,7 +513,7 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
         #             return
         ## /
 
-        settings.show_session_toolbar = not settings.show_session_toolbar
+        workspace.storytools_show_toolbar = not workspace.storytools_show_toolbar
 
         ## Refresh all 3D areas
         for area in context.screen.areas:
@@ -534,7 +534,7 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
 
         # if self.replace:
         #     prefs = get_addon_prefs()
-        #     if settings.show_session_toolbar:
+        #     if workspace.storytools_show_toolbar:
         #         prefs.toolbar_margin = self.init_margin + offset
         #     else:
         #         prefs.toolbar_margin = offset
@@ -579,7 +579,6 @@ class STORYTOOLS_GGT_toolbar_switch(GizmoGroup):
         ## --- Toggle button
         self.gz_toggle_bar = self.gizmos.new("VIEW3D_GT_toggler_shape_widget")
         # props = self.gz_toggle_bar.target_set_operator("storytools.toggle_bottom_bar")
-        # props.prop_name = 'show_session_toolbar'
         self.gz_toggle_bar.scale_basis = 1
 
         # self.gz_toggle_bar.use_draw_hover = True # only draw shape when hovering mouse
@@ -615,7 +614,7 @@ class STORYTOOLS_GGT_toolbar_switch(GizmoGroup):
         y_loc = 4 * px_scale + fn.get_header_margin(context, overlap=True)
 
         mat = Matrix.Translation((x_loc, y_loc, 0))
-        if context.scene.storytools_settings.show_session_toolbar:
+        if context.workspace.storytools_show_toolbar:
             mat = mat @ vertical_flip_mat
 
         self.gz_toggle_bar.matrix_basis = mat
@@ -630,14 +629,9 @@ class STORYTOOLS_OT_toggle_bottom_bar(Operator):
     bl_description = "Toggle Storytools Bar"
     bl_options = {'REGISTER'} # , 'INTERNAL'
 
-    prop_name : bpy.props.StringProperty(default='show_session_toolbar')
-
     def execute(self, context):
-        # print('-- switch toolbar --')
-        # print('prop_name: ', self.prop_name)
-        settings = context.scene.storytools_settings
-        # setattr(settings, self.prop_name, not getattr(settings, self.prop_name))
-        settings.show_session_toolbar = not settings.show_session_toolbar
+        workspace = context.workspace
+        workspace.storytools_show_toolbar = not workspace.storytools_show_toolbar
         for area in context.screen.areas:
             if area.type == 'VIEW_3D':
                 area.tag_redraw()

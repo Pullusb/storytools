@@ -104,7 +104,7 @@ class STORYTOOLS_GGT_map_toolbar(GizmoGroup):
 
     def draw_prepare(self, context):
         prefs = get_addon_prefs()
-        settings = context.scene.storytools_settings
+        workspace = context.workspace
         gap_size = 30 # prefs.toolbar_gap_size # 44
         backdrop_size = 14 # prefs.toolbar_backdrop_size
         
@@ -112,8 +112,8 @@ class STORYTOOLS_GGT_map_toolbar(GizmoGroup):
         px_scale = context.preferences.system.ui_scale
 
         # for gz in self.gizmos:
-        #     gz.hide = not settings.show_session_toolbar
-        # if not settings.show_session_toolbar:
+        #     gz.hide = not workspace.storytools_show_toolbar
+        # if not workspace.storytools_show_toolbar:
         #     return
         
         region = context.region
@@ -273,12 +273,12 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
         if abs(self.init_mouse_x - self.mx) > 10 or abs(self.init_mouse_y - self.my) > 10:
             return
 
-        settings = context.scene.storytools_settings
+        workspace = context.workspace
 
         ## Replaced if dragged
         # if self.replace:
         #     prefs = get_addon_prefs()
-        #     if settings.show_session_toolbar:
+        #     if workspace.storytools_show_toolbar:
         #         # Toobar was visible
         #         if prefs.toolbar_margin > 0:
         #             # No hide, just finish replacing
@@ -294,7 +294,7 @@ class VIEW3D_GT_toggler_shape_widget(Gizmo):
         #             return
         ## /           
 
-        settings.show_session_toolbar = not settings.show_session_toolbar
+        workspace.storytools_show_toolbar = not workspace.storytools_show_toolbar
 
         ## Refresh all 3D areas
         for area in context.screen.areas:
@@ -349,7 +349,7 @@ class STORYTOOLS_GGT_map_toolbar_switch(GizmoGroup):
         y_loc = 4 * px_scale + fn.get_header_margin(context, overlap=True)
 
         mat = Matrix.Translation((x_loc, y_loc, 0))
-        if context.scene.storytools_settings.show_session_toolbar:
+        if context.workspace.storytools_show_toolbar:
             mat = mat @ vertical_flip_mat
 
         self.gz_toggle_bar.matrix_basis = mat
@@ -365,8 +365,8 @@ class STORYTOOLS_OT_toggle_bottom_bar(Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):
-        settings = context.scene.storytools_settings
-        settings.show_session_toolbar = not settings.show_session_toolbar
+        workspace = context.workspace
+        workspace.storytools_show_toolbar = not workspace.storytools_show_toolbar
         for area in context.screen.areas:
             if area.type == 'VIEW_3D':
                 area.tag_redraw()

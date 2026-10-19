@@ -206,12 +206,6 @@ class STORYTOOLS_PGT_main_settings(PropertyGroup):
             \n(this drives the brush & material sync for that layer)",
         default=True, options={'HIDDEN', 'SKIP_SAVE'})
 
-    show_session_toolbar : BoolProperty(
-        name='Show Toolbar',
-        description="Show/Hide viewport Bottom Toolbar buttons on this session\
-            \nTo completely disable, uncheck 'Active Toolbar' in addon Storytools preferences",
-        default=True)
-    
     show_cam_settings_lens : EnumProperty(
         name='Show Camera Lens',
         description="Show Camera focal length of every camera in list (when sidebar size allow)",
@@ -359,7 +353,12 @@ def register():
 
     bpy.types.Scene.storytools_settings = bpy.props.PointerProperty(type = STORYTOOLS_PGT_main_settings)
     bpy.types.Scene.storytools_gp_settings = bpy.props.PointerProperty(type = STORYTOOLS_PGT_gp_settings)
-    
+    bpy.types.WorkSpace.storytools_show_toolbar = bpy.props.BoolProperty(
+        name='Show Toolbar',
+        description="Show/Hide viewport Bottom Toolbar buttons in this workspace\
+            \nTo completely disable, uncheck 'Active Toolbar' in addon Storytools preferences",
+        default=True)
+
 
 def unregister():
     for cls in reversed(classes):
@@ -367,3 +366,4 @@ def unregister():
 
     del bpy.types.Scene.storytools_settings
     del bpy.types.Scene.storytools_gp_settings
+    del bpy.types.WorkSpace.storytools_show_toolbar
